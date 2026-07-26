@@ -26,6 +26,13 @@ theme), `hub/src/tally/ColorScheme.ts` (physical LED colour schemes), `hub/src/c
 If a button, a link, a chart, or a brand flourish is red or green, it competes with the one signal
 that matters. Interactive chrome is achromatic (white / neutral). The old theme spent its accent
 colour (`#00bc8c`) on text fields and links — that green is one glance away from *preview*.
+This isn't limited to interactive chrome: tally state colours (`--color-live`, `--color-preview`,
+`--color-idle`) are reserved exclusively for tally state, full stop. A stepper's "done" step, a form's
+"saved" toast, a chart's positive series — none of them get to reach for `--color-preview` just because
+green reads as "good." Everything that isn't tally state picks from the neutral ramp (`--color-n-*`)
+instead. (Caught in the routes 3/4 sign-off: `design-components.md` §3.1's stepper had borrowed
+`text-preview` for a completed step — fixed there, generalised here so the next component doesn't
+re-derive the same borrow.)
 
 **2. State changes are instant. Never animate a tally into a state.**
 A 200ms cross-fade means that for 200ms the screen is showing something that is not true. In a live

@@ -600,11 +600,19 @@ drift apart, and the spec reads `data-done`.
 
 | `data-state` | Icon | Icon colour | Label | Connector below |
 |---|---|---|---|---|
-| `complete` | filled check circle | `text-preview` | `text-text` | `bg-n-300` (solid, walked) |
+| `complete` | filled check circle | `text-n-100` | `text-text` | `bg-n-300` (solid, walked) |
 | `active` | 20px spinner ring | `text-n-100` | `text-text` `font-medium` | `bg-n-600` |
 | `error` | filled X circle | `text-live-text` | `text-live-text` | `bg-n-600` |
 | `skipped` | hollow dash circle | `text-n-500` | `text-text-muted line-through` | `bg-n-600` dashed |
 | `pending` | hollow circle | `text-n-600` | `text-text-muted` | `bg-n-600` |
+
+**Correction (routes 3/4 sign-off):** `complete` originally spec'd `text-preview` for the check icon.
+`--color-preview` is a tally semantic (see `design-tokens.md` §1 principle 1) and must not be spent on
+"this step finished" — that teaches the eye green sometimes means *preview*, sometimes means *done*,
+which is exactly the ambiguity the palette exists to prevent. Use `text-n-100` instead: it's already the
+brightest neutral in this same table (`active`'s spinner), so a walked step reads as "arrived at full
+neutral prominence" without borrowing tally hue. `bg-n-300` for the connector below stays — it's a
+neutral-ramp token already, no borrow.
 
 `--color-live-text` (`#FF6257`) for the error, not `--color-live` — on `--color-n-800` the
 plain live red is 4.41:1 and fails AA body (tokens §3.2). This is the one place a red is
