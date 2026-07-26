@@ -8,12 +8,7 @@ import { ObsConfigurationLiveMode } from '../../../../shared/mixer/obs/ObsConfig
 import { OBS_ID } from '../../../../shared/mixer/ids'
 import ObsLiveModeSelect from './ObsLiveModeSelect'
 
-type ObsSettingsProps = {
-    id: typeof OBS_ID,
-    label: string,
-}
-
-function ObsSettings(props: ObsSettingsProps) {
+function ObsSettings() {
     const configuration = useObsConfiguration()
     const [ip, setIp] = useState<string|null>(null)
     const [ipValid, setIpValid] = useState(true)
@@ -35,8 +30,6 @@ function ObsSettings(props: ObsSettingsProps) {
     const handleSave = () => {
         if (configuration === undefined) {
             console.error("Not saving, because there is an invalid value in the form.")
-        } else if (props.id !== OBS_ID) {
-            console.warn(`Changing id prop of ObsSettings is not supported. But got ${props.id}.`)
         } else {
             const config = configuration.clone()
             config.setIp(ip)
@@ -44,7 +37,7 @@ function ObsSettings(props: ObsSettingsProps) {
             config.setPassword(password)
             config.setLiveMode(liveMode)
 
-            socket.emit('config.change.obs', config.toJson(), props.id)
+            socket.emit('config.change.obs', config.toJson(), OBS_ID)
         }
     }
 
@@ -65,11 +58,6 @@ function ObsSettings(props: ObsSettingsProps) {
             </>)}
         </MixerSettingsWrapper>
     )
-}
-
-ObsSettings.defaultProps = {
-    id: OBS_ID,
-    label: "OBS Studio",
 }
 
 export default ObsSettings

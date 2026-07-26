@@ -5,12 +5,7 @@ import { useMockConfiguration } from '../../../hooks/useConfiguration'
 import { socket } from '../../../hooks/useSocket'
 import { MOCK_ID } from '../../../../shared/mixer/ids'
 
-type MockSettingsProps = {
-    id: typeof MOCK_ID,
-    label: string,
-}
-
-function MockSettings(props: MockSettingsProps) {
+function MockSettings() {
     const configuration = useMockConfiguration()
     const [tickTime, setTickTime] = useState<string|null>(null)
     const [tickTimeValid, setTickTimeValid] = useState(true)
@@ -24,8 +19,6 @@ function MockSettings(props: MockSettingsProps) {
     const handleSave = () => {
         if (configuration === undefined) {
             console.error("Not saving, because there is an invalid value in the form.")
-        } else if (props.id !== MOCK_ID) {
-            console.warn(`Changing id prop of MockSettings is not supported. But got ${props.id}.`)
         } else {
             const config = configuration.clone()
             config.setTickTime(tickTime)
@@ -53,11 +46,6 @@ function MockSettings(props: MockSettingsProps) {
             <ValidatingInput label="Channel Names" testId="mock-channelNames" object={configuration} propertyName="channelNames" onValid={(channelNames) => { setChannelNames(channelNames); setChannelNamesValid(true) }} onInvalid={() => setChannelNamesValid(false)} />
         </>)}</MixerSettingsWrapper>
     )
-}
-
-MockSettings.defaultProps = {
-    id: MOCK_ID,
-    label: "Built-In Mock for testing",
 }
 
 export default MockSettings

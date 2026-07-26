@@ -5,12 +5,7 @@ import { useAtemConfiguration } from '../../../hooks/useConfiguration'
 import { socket } from '../../../hooks/useSocket'
 import { ATEM_ID } from '../../../../shared/mixer/ids'
 
-type AtemSettingsProps = {
-    id: typeof ATEM_ID,
-    label: string,
-}
-
-function AtemSettings(props: AtemSettingsProps) {
+function AtemSettings() {
     const configuration = useAtemConfiguration()
     const [ip, setIp] = useState<string|null>(null)
     const [ipValid, setIpValid] = useState(true)
@@ -22,14 +17,12 @@ function AtemSettings(props: AtemSettingsProps) {
     const handleSave = () => {
         if (configuration === undefined) {
             console.error("Not saving, because there is an invalid value in the form.")
-        } else if (props.id !== ATEM_ID) {
-            console.warn(`Changing id prop of AtemSettings is not supported. But got ${props.id}.`)
         } else {
             const config = configuration.clone()
             config.setIp(ip)
             config.setPort(port)
 
-            socket.emit('config.change.atem', config.toJson(), props.id)
+            socket.emit('config.change.atem', config.toJson(), ATEM_ID)
         }
     }
 
@@ -49,11 +42,6 @@ function AtemSettings(props: AtemSettingsProps) {
             
         </MixerSettingsWrapper>
     )
-}
-
-AtemSettings.defaultProps = {
-    id: ATEM_ID,
-    label: "ATEM by Blackmagic Design",
 }
 
 export default AtemSettings
