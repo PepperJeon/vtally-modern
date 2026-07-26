@@ -1,3 +1,7 @@
+// The reference is load-bearing: ts-node does not read tsconfig's `include`, so
+// the ambient declaration below would not be loaded without it and the server
+// would fail to boot with TS2307.
+/// <reference path="./obs-websocket-js-json.d.ts" />
 // The bare specifier resolves to the msgpack build under Node - which speaks a
 // binary subprotocol. We want JSON, hence the explicit `/json` subpath.
 import OBSWebSocket from 'obs-websocket-js/json'
