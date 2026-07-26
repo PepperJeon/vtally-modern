@@ -251,16 +251,34 @@ component unchanged.
 
 ### 2.0 Two rules that apply to every wrapper
 
-**Rule A — `...rest` spreads onto the interactive element, not the wrapper.**
+**Rule A — `data-testid` goes wherever the existing specs already look for it; don't relocate
+it to "clean up" the DOM.**
 
-MUI's `TextField` forwards unknown props (including `data-testid`) down to the inner
-`<input>`. Specs then use *both* selector shapes against the same id: `*[data-testid=x]` for
-existence/click, and `*[data-testid=x] input` for value assertions after reload
-(ui-contract §1.2, Hazard H1 — `configAtem.spec.ts` does exactly this). A naive shadcn
-wrapper puts `data-testid` on the outer `<div>`, and `*[data-testid=x] input` still resolves
-— but `cy.getTestId("atem-ip").type(...)` then types into a `<div>` and fails opaquely.
+Correction: an earlier draft of this section claimed MUI's `TextField` forwards
+`data-testid` straight onto the inner `<input>`, and used that as the reason the replacement
+must too. That's backwards — MUI v4 spreads `...other` onto `TextField`'s **root** node (a
+`FormControl` `<div>`), not the input; the input only receives it by being a descendant.
+`ui-contract.md` §1.2 (Hazard H1) already has this right: `*[data-testid=x]` resolves to the
+field's root `<div>`, and `*[data-testid=x] input` is a separate, deliberate descendant
+selector some specs use to read the typed value after reload (`configAtem.spec.ts`, etc.).
+Both selector shapes are load-bearing.
 
-The shape that satisfies both:
+So the rule isn't "spread onto the interactive element" — it's **match whatever DOM shape the
+specs already assert against**:
+
+- If specs only ever touch `*[data-testid=x]` directly (click, existence, reading the value
+  off the element itself) and never a descendant selector, `data-testid` can live on the
+  interactive element itself — the simple case, e.g. a plain `<Input>` with no wrapper.
+- If specs use *both* `*[data-testid=x]` (click/existence) *and* `*[data-testid=x]
+  <descendant>` (value reads) — as with every `ValidatingInput` field and `NativeSelect` — put
+  `data-testid` on the wrapper so the root selector still resolves, and let the interactive
+  descendant resolve on its own tag (`input`, `select`). That's why `ValidatingInput.tsx` and
+  `native-select.tsx` put `data-testid` on the wrapper rather than the inner control: it's the
+  only placement that satisfies both selector shapes at once, not a shortcut. §2.6 (switch)
+  documents the same wrapper-first placement, there because the wrapper is the click target
+  rather than because of a descendant selector — same rule, different reason.
+
+Example of the simple case (no descendant selector in play):
 
 ```tsx
 // wrapper renders: <div data-field><Label/><input data-testid="atem-ip" .../><Help/></div>
@@ -276,11 +294,12 @@ function Field({ label, help, error, className, ...rest }: FieldProps) {
 ```
 
 `...rest` lands on `<Input>` → the native `<input>`. `*[data-testid=atem-ip]` resolves to the
-input; `.type()` works; `.should("have.value", ...)` works directly. `*[data-testid=atem-ip]
-input` now resolves to **nothing**, which is why ui-contract §1.2 flags this as needing an
-explicit test — see `spec-changes.md`. Whichever way it is resolved, the rule is unchanged:
-**the attribute goes on the element you can type into, click, or read a value from.** State
-this in every wrapper's own spec and assert it in `data-contract.spec.ts`.
+input directly; `.type()` and `.should("have.value", ...)` both work without a descendant
+selector. Before reusing this shape for a field that currently has a `*[data-testid=x]
+<descendant>` spec assertion, check `ui-contract.md` first — moving `data-testid` onto the
+descendant breaks the root selector, and moving it onto the wrapper (as `ValidatingInput`/
+`NativeSelect` do) is very likely the correct call instead. State the chosen placement in
+`data-contract.spec.ts`.
 
 Corollary for Radix: `asChild`/`Slot` merges props onto the child. Verify per component that
 your `data-*` survives the merge; `Slot` merges `className` and event handlers specially and
@@ -363,7 +382,10 @@ const NativeSelect = React.forwardRef<HTMLSelectElement, React.ComponentProps<"s
           "disabled:text-text-disabled",
           className
         )}
-        {...rest}                    {/* Rule A: data-testid lands on <select> */}
+        {...rest}                    {/* data-testid is destructured out above and lands on
+                                          the wrapper <div> instead — see Rule A (§2.0):
+                                          mixer-select/channel-selector/obs-liveMode specs need
+                                          both the root selector and the native <select> DOM */}
       />
       <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 size-4 text-n-400" aria-hidden />
     </div>
@@ -415,12 +437,13 @@ See §3.2 — the brightness slider is a composed component, not raw shadcn. The
 
 - Track 4px `bg-n-700`, range `bg-n-100`, thumb 20px `bg-white` with a 44px hit area via a
   transparent `::before`.
-- **Hazard H2:** `cypress/browserlib/sliderTestTool` drives the slider with synthetic mouse
-  events against MUI's internal DOM. Radix's structure differs, so that helper needs
-  updating regardless of whether `data-testid` placement is correct. Budget for it — this is
-  spec-support code, not a spec file, so changing it does not require the pre-authorised
-  spec-edit process, but two specs (`configTally`, `tally-settings`) stop working until it is
-  done.
+- **Hazard H2 — retracted.** This section previously claimed
+  `cypress/browserlib/sliderTestTool` drives the slider with synthetic mouse events against
+  MUI's internal DOM and would need a rewrite for Radix. Checked the actual helper: it never
+  touches mouse events. `setSliderValue` dispatches `keydown` (End/PageDown/ArrowLeft) at
+  `*[role=slider]`, and `validateSliderValue` reads the `aria-valuenow` attribute off the same
+  element. Radix `Slider` exposes `role="slider"`, responds to the identical key set on its
+  thumb, and updates `aria-valuenow` the same way — this helper needs no changes at all.
 - `data-testid` goes on `Slider.Root`, matching where MUI put it (`BrightnessSlider.tsx:47`).
 
 ### 2.8 dialog
@@ -717,11 +740,10 @@ they are being held above. `minMessage` explains it on focus at the floor.
 thumb. The old code did `darken(white, 0.6)` for the same reason — a 50%-opacity control on a
 near-black background disappears.
 
-**H2 again:** `cypress/browserlib/sliderTestTool` drives this with synthetic mouse events
-against MUI's internal geometry and will need rewriting for the Radix structure. Radix
-responds to `pointerdown`/`pointermove` on `Slider.Root` and computes the value from the
-track rect, so the helper stays conceptually the same — dispatch pointer events at an x
-offset along the root's bounding box — but the event names and target element change.
+**H2, retracted (see §2.7):** `cypress/browserlib/sliderTestTool` does not drive this with
+mouse/pointer events at all — it dispatches `keydown` at `*[role=slider]` and reads
+`aria-valuenow`. Radix `Slider` supports the same keys and the same attribute on its thumb, so
+no rewrite is needed here either.
 
 ## 4. The colour utility
 

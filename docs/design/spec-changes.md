@@ -24,9 +24,12 @@ and DOM-ordering operators (`.eq()`, `.first()`, `.last()`, `.within()`,
 
 ## 1. Assertions that MUST change (real MUI-internal-class dependency)
 
-There is exactly **one** test in the entire suite that asserts against a raw MUI
-class name. Nothing else qualifies — see the note at the end of this section on
-what does *not* qualify.
+**Correction:** this section previously claimed `configVmix.spec.ts:45,50` (§1.1) was
+the only raw-`.Mui*`-class assertion in the suite. That was scoped to the `/config`
+route only — `cypress/e2e/tally-remove.spec.ts` (route 2, the tally menu) also
+asserts on `.MuiMenuItem-root`/`.Mui-disabled` (§1.2 below). §1.2 is a **draft**,
+not pre-authorised: it is out of scope for the current `/config` conversion and
+still needs human sign-off (§3) before anyone implements it.
 
 ### 1.1 `configVmix.spec.ts:45` and `:50`
 
@@ -75,6 +78,63 @@ cy.getTestId("vmix-port-warning").should('contain.text', "This will probably not
 This is not weaker than the original: it still asserts presence/absence and the
 exact copy of the warning, just through a stable selector instead of an MUI
 internal.
+
+### 1.2 `tally-remove.spec.ts:39,46,48,61,62` — DRAFT, NOT YET AUTHORISED
+
+Route 2 (tally menu), not `/config` — out of scope for the current conversion.
+Recorded here only so the next implementer to touch this route doesn't have to
+re-discover it; do not implement without separate §3 sign-off.
+
+```ts
+// line 39 — still connected: remove must stay disabled
+cy.getTestId(`tally-${name}-remove`).find('.MuiMenuItem-root').should('have.class', 'Mui-disabled')
+
+// line 46 — after disconnect: remove becomes enabled
+cy.getTestId(`tally-${name}-remove`).find('.MuiMenuItem-root').should('not.have.class', 'Mui-disabled')
+
+// line 48 — click the (now enabled) remove item
+cy.getTestId(`tally-${name}-remove`).find('.MuiMenuItem-root').click()
+
+// line 61 — web tally variant: remove is enabled immediately, no isConnected gate
+cy.getTestId(`tally-${name}-remove`).find('.MuiMenuItem-root').should('not.have.class', 'Mui-disabled')
+
+// line 62 — click
+cy.getTestId(`tally-${name}-remove`).find('.MuiMenuItem-root').click()
+```
+
+**Why it can't survive:** all five assertions depend on `.MuiMenuItem-root` (MUI's
+generated class on each `<Menu>` item) and its sibling `.Mui-disabled` state class.
+Both are MUI-internal; a Radix `DropdownMenu.Item` produces neither. As with §1.1,
+these are testing "MUI rendered this internal node in this state," not the actual
+user-visible behaviour (whether the remove option is clickable).
+
+**What it's actually testing (user-visible behaviour to preserve):** the tally
+menu's "remove" item is disabled while the tally is still connected, and becomes
+clickable (and removes the tally) once it disconnects — for both UDP-backed and
+web tallies.
+
+**Proposed stable-selector replacement:** put `data-testid="tally-${name}-remove"`
+directly on the menu item element itself (it already carries that testid per
+`TallyMenu.tsx`, wrapped via `.find('.MuiMenuItem-root')` only to reach the actual
+clickable/disableable node) and assert disabled state via the native `disabled`
+attribute or `aria-disabled`, whichever the redesigned `DropdownMenu.Item`
+surfaces, instead of a MUI class name:
+
+```ts
+// line 39 replacement
+cy.getTestId(`tally-${name}-remove`).should('have.attr', 'aria-disabled', 'true')
+
+// line 46 replacement
+cy.getTestId(`tally-${name}-remove`).should('not.have.attr', 'aria-disabled', 'true')
+
+// lines 48/61/62 replacement — click directly on the testid'd node
+cy.getTestId(`tally-${name}-remove`).click()
+```
+
+This assumes the testid already resolves to the clickable item itself (per §2.0
+Rule A's "no descendant selector in play" case) rather than a wrapper — confirm
+against the actual redesigned `TallyMenu.tsx` before implementing, since that
+determines whether `.click()`/`.should(...)` need a `.find()` at all.
 
 ### Note: what does NOT belong in this section
 
