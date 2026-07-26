@@ -1,0 +1,53 @@
+diff --git a/lib/transport/serialport.js b/lib/transport/serialport.js
+index b7525b9..6729ed3 100755
+--- a/lib/transport/serialport.js
++++ b/lib/transport/serialport.js
+@@ -1,5 +1,5 @@
+-const _serialport = require('serialport');
+-const _delimiterParser = _serialport.parsers.Delimiter;
++const { SerialPort } = require('serialport');
++const { DelimiterParser } = require('@serialport/parser-delimiter');
+ const _logger = require('logging-facility').getLogger('serialport');
+ 
+ // current device
+@@ -22,13 +22,14 @@ function connect(devicename, baudrate=115200, onData=null, onError=null){
+     return new Promise(function(resolve, reject){
+ 
+         // try to open the serial port
+-        _device = new _serialport(devicename, {
++        _device = new SerialPort({
++            path: devicename,
+             baudRate: parseInt(baudrate),
+             autoOpen: false
+-        }); 
++        });
+ 
+         // new delimiter parser
+-        const parser = _device.pipe(new _delimiterParser({ delimiter: Buffer.from(_delimiterSequence) }));
++        const parser = _device.pipe(new DelimiterParser({ delimiter: Buffer.from(_delimiterSequence) }));
+ 
+         // add listener
+         if (onData !== null){
+@@ -149,7 +150,7 @@ function drain(){
+ }
+ 
+ function list(){
+-    return _serialport.list();
++    return SerialPort.list();
+ }
+ 
+ function isConnected(){
+diff --git a/package.json b/package.json
+index 5c2bb85..158fdb4 100755
+--- a/package.json
++++ b/package.json
+@@ -49,7 +49,8 @@
+         "logging-facility": "^2.0.1",
+         "luamin": "^1.0.4",
+         "prompt": "^0.2.14",
+-        "serialport": "^8.0.5"
++        "serialport": "^13.0.0",
++        "@serialport/parser-delimiter": "^13.0.0"
+     },
+     "devDependencies": {
+         "eslint": "^4.18.0",

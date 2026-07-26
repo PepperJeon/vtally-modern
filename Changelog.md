@@ -1,3 +1,11 @@
+> **The v1.0.0 entry below describes work that was lost, not work that is in
+> this tree.** Its source was never pushed; only this file, `Readme.md`,
+> `LICENSE` and a partial `hub/package.json` survived. The tree was restored
+> from upstream `release-0.5.2` and is being rebuilt against this entry as the
+> specification. `hub/package.json` correctly reads `0.5.2` — the version will
+> move to 1.0.0 when the described work actually exists again. See
+> `BASELINE.md` for what is measured today and `docs/design/` for the plan.
+
 # v1.0.0 - Modernization Release (2026-01-11)
 
 **BREAKING CHANGES:**
