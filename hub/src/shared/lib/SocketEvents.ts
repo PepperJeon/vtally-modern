@@ -116,12 +116,13 @@ export interface ClientSideSocket {
     on(event: "disconnect", listener: () => void) : any // @TODO: shouldn't this be defined in the parent?
     on(event: "connect", listener: () => void) : any // @TODO: shouldn't this be defined in the parent?
     on(event: "connect_error", listener: () => void) : any // @TODO: shouldn't this be defined in the parent?
-    // socket.io v4 dropped connect_timeout / reconnecting / reconnect_failed
-    // from the client Socket; declaring them here would let a caller register
-    // a listener that can never fire.
-    on(event: "disconnected", listener: () => void) : any // @TODO: shouldn't this be defined in the parent?
-    on(event: "reconnect", listener: () => void) : any // @TODO: shouldn't this be defined in the parent?
-    on(event: "reconnect_error", listener: () => void) : any // @TODO: shouldn't this be defined in the parent?
+    // connect / disconnect / connect_error above are the complete v4 client
+    // lifecycle. socket.io v4 does not emit connect_timeout, reconnecting,
+    // reconnect_failed, reconnect or reconnect_error on the Socket (some moved
+    // to the Manager, socket.io), and "disconnected" was never an event at all
+    // — a typo for "disconnect". All six were declared here and registered in
+    // useSocket.ts; declaring them lets a caller attach a listener that can
+    // never fire, which is exactly how the outage signal got lost.
 
     off<EventName extends keyof ServerSentEvents>(
         event: EventName,

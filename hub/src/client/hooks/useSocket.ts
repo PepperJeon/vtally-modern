@@ -28,15 +28,18 @@ const onDisconnection = function() {
 }
 if (typeof window !== 'undefined') {
   // on client only
-  // "connect" is the signal four trackers re-subscribe on — socket.io v4 fires
-  // it again after every successful reconnect, so this stays the whole story.
-  // connect_timeout / reconnecting / reconnect_failed were removed here: v4's
-  // client Socket does not emit them at all (v2 did).
+  // This is socket.io v4's *complete* client lifecycle — three events, no more.
+  // "connect" fires on the first connection and again after every successful
+  // reconnect, so it is the whole re-subscribe story four trackers depend on.
+  // "disconnect" is what v4 emits when the transport dies; v2 announced that
+  // via "reconnecting"/"connect_timeout", which v4 does not emit at all.
+  // Registering the old names here left nothing listening for a real outage —
+  // that is what drives useSocketInfo() and the "Hub disconnected" banner.
+  // ("disconnected", "reconnect" and "reconnect_error" were also registered
+  // before; none of the three is an event the client Socket emits in v4.)
   socket.on("connect", onConnection)
+  socket.on("disconnect", onDisconnection)
   socket.on("connect_error", onDisconnection)
-  socket.on("disconnected", onDisconnection)
-  socket.on("reconnect", onDisconnection)
-  socket.on("reconnect_error", onDisconnection)
 }
 
 /** @deprecated */
