@@ -1,5 +1,5 @@
-import { makeStyles, FormControlLabel, Checkbox } from '@material-ui/core';
 import React, { useMemo, useState } from 'react'
+import { Checkbox } from '@/components/ui/checkbox'
 import Tally from '../../shared/domain/Tally';
 import { useDefaultTallyConfiguration } from '../hooks/useConfiguration';
 import { socket } from '../hooks/useSocket';
@@ -11,14 +11,35 @@ import FormDialog from './layout/FormDialog';
 import Spinner from './layout/Spinner';
 import TallySettingsField from './TallySettingsField';
 
-const useStyles = makeStyles(theme => ({
-  input: {
-    margin: theme.spacing(0, 0, 2, 0),
-  },
-  checkboxLabel: {
-    fontSize: "1em",
-  }
-}))
+const fieldClass = "mb-4"
+
+/* The checkbox keeps `data-testid` AND `data-value` on the interactive element
+ * itself: tally-settings.spec.ts both clicks it and reads `data-value` off the
+ * same node, and no spec uses a descendant selector here (design-components.md
+ * §2.0 Rule A, simple case). Radix's Checkbox root is a real <button>, so both
+ * still work. */
+type CheckboxFieldProps = {
+  testId: string
+  value: boolean
+  disabled: boolean
+  label: string
+  onChange: (value: boolean) => void
+}
+
+function CheckboxField({testId, value, disabled, label, onChange}: CheckboxFieldProps) {
+  return (
+    <label className="flex items-center gap-2 text-base text-text">
+      <Checkbox
+        data-testid={testId}
+        data-value={value}
+        checked={value}
+        disabled={disabled}
+        onCheckedChange={(checked) => onChange(checked === true)}
+      />
+      {label}
+    </label>
+  )
+}
 
 type TallySettingsProps = {
   tally: Tally
@@ -84,7 +105,6 @@ function TallySettings({ tally, open, onClose }: TallySettingsProps) {
   }, [settings])
 
   const isLoading = !defaultSettings || !tally
-  const classes = useStyles()
 
   const handleSave = () => {
     if (!tally) { return }
@@ -113,7 +133,7 @@ function TallySettings({ tally, open, onClose }: TallySettingsProps) {
           isDefault={isObDefault}
           onChange={setObDefault}
           testId="tally-settings-ob"
-          className={classes.input}
+          className={fieldClass}
         >
           <BrightnessSlider
             testId="tally-settings-ob"
@@ -129,7 +149,7 @@ function TallySettings({ tally, open, onClose }: TallySettingsProps) {
           isDefault={isOcDefault}
           onChange={setOcDefault}
           testId="tally-settings-oc"
-          className={classes.input}
+          className={fieldClass}
         >
           <ColorSchemeSelector
             testId="tally-settings-oc"
@@ -143,19 +163,13 @@ function TallySettings({ tally, open, onClose }: TallySettingsProps) {
           isDefault={isOiDefault}
           onChange={setOiDefault}
           testId="tally-settings-oi"
-          className={classes.input}
+          className={fieldClass}
         >
-          <FormControlLabel
-            classes={{label: classes.checkboxLabel}}
-            control={<Checkbox
-              data-testid="tally-settings-oi"
-              data-value={isOiDefault ? defaultSettings.getOperatorShowsIdle() : oi}
-              checked={isOiDefault ? defaultSettings.getOperatorShowsIdle() : oi}
-              disabled={isOiDefault}
-              color="primary"
-              onChange={(e) => {setOi(e.target.checked)}}
-              size="small"
-            />}
+          <CheckboxField
+            testId="tally-settings-oi"
+            value={isOiDefault ? defaultSettings.getOperatorShowsIdle() : oi}
+            disabled={isOiDefault}
+            onChange={setOi}
             label="Shows Idle State"
           />
         </TallySettingsField>
@@ -165,7 +179,7 @@ function TallySettings({ tally, open, onClose }: TallySettingsProps) {
           isDefault={isSbDefault}
           onChange={setSbDefault}
           testId="tally-settings-sb"
-          className={classes.input}
+          className={fieldClass}
         >
             <BrightnessSlider
               testId="tally-settings-sb"
@@ -179,7 +193,7 @@ function TallySettings({ tally, open, onClose }: TallySettingsProps) {
           isDefault={isScDefault}
           onChange={setScDefault}
           testId="tally-settings-sc"
-          className={classes.input}
+          className={fieldClass}
         >
           <ColorSchemeSelector
               testId="tally-settings-sc"
@@ -193,19 +207,13 @@ function TallySettings({ tally, open, onClose }: TallySettingsProps) {
           isDefault={isSpDefault}
           onChange={setSpDefault}
           testId="tally-settings-sp"
-          className={classes.input}
+          className={fieldClass}
         >
-          <FormControlLabel
-            classes={{label: classes.checkboxLabel}}
-            control={<Checkbox
-              data-testid="tally-settings-sp"
-              data-value={isSpDefault ? defaultSettings.getStageShowsPreview() : sp}
-              checked={isSpDefault ? defaultSettings.getStageShowsPreview() : sp}
-              disabled={isSpDefault}
-              color="primary"
-              onChange={(e) => {setSp(e.target.checked)}}
-              size="small"
-            />}
+          <CheckboxField
+            testId="tally-settings-sp"
+            value={isSpDefault ? defaultSettings.getStageShowsPreview() : sp}
+            disabled={isSpDefault}
+            onChange={setSp}
             label="Shows Preview State"
           />
         </TallySettingsField>

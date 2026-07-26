@@ -27,9 +27,9 @@ and DOM-ordering operators (`.eq()`, `.first()`, `.last()`, `.within()`,
 **Correction:** this section previously claimed `configVmix.spec.ts:45,50` (§1.1) was
 the only raw-`.Mui*`-class assertion in the suite. That was scoped to the `/config`
 route only — `cypress/e2e/tally-remove.spec.ts` (route 2, the tally menu) also
-asserts on `.MuiMenuItem-root`/`.Mui-disabled` (§1.2 below). §1.2 is a **draft**,
-not pre-authorised: it is out of scope for the current `/config` conversion and
-still needs human sign-off (§3) before anyone implements it.
+asserts on `.MuiMenuItem-root`/`.Mui-disabled` (§1.2 below). §1.2 was drafted as
+NOT AUTHORISED and has since been **authorised** (see §1.2) for the route-2
+conversion; it is implemented there.
 
 ### 1.1 `configVmix.spec.ts:45` and `:50`
 
@@ -79,11 +79,15 @@ This is not weaker than the original: it still asserts presence/absence and the
 exact copy of the warning, just through a stable selector instead of an MUI
 internal.
 
-### 1.2 `tally-remove.spec.ts:39,46,48,61,62` — DRAFT, NOT YET AUTHORISED
+### 1.2 `tally-remove.spec.ts:39,46,48,61,62` — AUTHORISED
 
-Route 2 (tally menu), not `/config` — out of scope for the current conversion.
-Recorded here only so the next implementer to touch this route doesn't have to
-re-discover it; do not implement without separate §3 sign-off.
+**AUTHORISED** by the team lead at the start of the route-2 (`/` + `/tally/:tallyId`)
+conversion, on the grounds stated below: `.MuiMenuItem-root`/`.Mui-disabled` cannot
+exist under a Radix `DropdownMenu.Item`, and the replacement asserts the same
+user-visible behaviour (remove disabled while connected, clickable once
+disconnected, for both UDP and web tallies) through a stable selector. Implemented
+as written, using `aria-disabled` — Radix sets it on the item itself, so no
+`.find()` is needed and the testid now sits on the clickable node.
 
 ```ts
 // line 39 — still connected: remove must stay disabled
@@ -113,7 +117,7 @@ menu's "remove" item is disabled while the tally is still connected, and becomes
 clickable (and removes the tally) once it disconnects — for both UDP-backed and
 web tallies.
 
-**Proposed stable-selector replacement:** put `data-testid="tally-${name}-remove"`
+**Stable-selector replacement (implemented):** put `data-testid="tally-${name}-remove"`
 directly on the menu item element itself (it already carries that testid per
 `TallyMenu.tsx`, wrapped via `.find('.MuiMenuItem-root')` only to reach the actual
 clickable/disableable node) and assert disabled state via the native `disabled`
@@ -314,6 +318,8 @@ make it one of the three kinds.
 | 2026-07-26 | `configTally.spec.ts`, `manual_atem.spec.ts`, `tally-settings.spec.ts`, `tally.spec.ts`, `webtally.spec.ts` (10 lines, commit `fb96fb6`) | `import` paths updated after the Cypress 6→15 / `cypress/integration`→`cypress/e2e` restructure moved the imported modules | follows a moved module | orchestrating agent | Paths were dangling post-restructure; `git diff -U0` confirmed all 10 changed lines are `import` statements, zero assertions/selectors/testids touched |
 | 2026-07-26 | `dialog-cancel.spec.ts`, `hub-disconnected-banner.spec.ts`, `tally-remove.spec.ts` (commit `273201f`) | `afterEach` cleanup hardened so `cy.task('tallyCleanup')` runs even when an earlier assertion in the test threw (previously chained off a `.then()` a thrown assertion could skip, leaking mock tallies onto the shared backend) | fixes cleanup/isolation | orchestrating agent | Prevented one test's failure from cascading into unrelated later tests via leaked backend state |
 | 2026-07-26 | `tally-settings.spec.ts` (14 sites) | `cy.task('tallyLastCommand', name).then(v => expect(v).to.eq(X))` → `cy.task('tallyLastCommand', name).should('eq', X)` | removes a race | orchestrating agent | `.then()` samples the task result exactly once; `.should()` polls it until it matches or times out. Asserted values unchanged — verified this is **not yet proven to have fixed the underlying flake** (see note below) |
+
+| 2026-07-27 | `tally-remove.spec.ts` (lines 39, 46, 48, 61, 62) | `.find('.MuiMenuItem-root')` + `.Mui-disabled` class assertions → `aria-disabled` on the item itself (§1.2) | human sign-off, §1.2 now AUTHORISED | team lead (explicit, at task hand-off) | MUI's generated classes cannot exist under a Radix `DropdownMenu.Item`. Same states, same outcomes, stable selector; the testid now sits on the clickable node so no `.find()` is needed |
 
 **Flagging one entry above for the human owner, not deciding it here:** commit
 `273201f` also added `.skip()` to one test each in `dialog-cancel.spec.ts` and

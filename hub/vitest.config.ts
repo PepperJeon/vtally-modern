@@ -1,8 +1,15 @@
+import path from 'path'
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
+  // Same '@' → src/client alias as vite.config.ts. Any component spec whose
+  // subject imports a shadcn component ('@/components/ui/...') fails to resolve
+  // without it — ChannelSelector.spec.tsx was the first to hit this.
+  resolve: {
+    alias: { '@': path.resolve(__dirname, 'src/client') },
+  },
   test: {
     globals: true,
     // Most specs are pure logic. The two that render React opt into jsdom with
