@@ -62,7 +62,14 @@
  * dropping. */
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
-@theme {
+/* `static`, not a bare `@theme`: Tailwind v4 tree-shakes theme variables and
+ * emits only the ones some generated utility actually references. Nothing uses
+ * these yet — this phase converts no component — so a plain `@theme` block
+ * compiles to an empty :root and every token silently vanishes from the
+ * stylesheet. `static` forces all of them out, which is what makes the tokens
+ * usable from `var(--color-live)` in hand-written CSS and inline styles, not
+ * just from class names. */
+@theme static {
   /* --- neutrals (§2.1) — cool-shifted greys ------------------------------ */
   --color-n-950: #0B0E11;   /* app bg; also text on any bright fill */
   --color-n-900: #12161A;   /* surface */
@@ -203,26 +210,56 @@
  *    air. §2.1 drops variant="destructive" entirely; the variable exists only
  *    so the stock class strings resolve instead of computing to nothing.
  *  - The focus ring is white (--shadow-focus), never a state colour.
+ *
+ * The two-step shape (bare name on :root, --color-* alias in @theme inline)
+ * is shadcn's own and is load-bearing, not ceremony: generated components use
+ * BOTH forms. `bg-secondary` needs the --color-* theme entry to exist as a
+ * utility, while arbitrary values like
+ * `bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)]` (dropdown-menu,
+ * select) emit raw var() references that only resolve if the bare name is a
+ * real custom property. Define only one and half the components render
+ * transparent — with no build error to tell you.
  * ========================================================================= */
+:root {
+  --background:           var(--color-bg);
+  --foreground:           var(--color-text);
+  --card:                 var(--color-surface-raised);
+  --card-foreground:      var(--color-text);
+  --popover:              var(--color-surface-raised);
+  --popover-foreground:   var(--color-text);
+  --primary:              var(--color-white);
+  --primary-foreground:   var(--color-n-950);
+  --secondary:            var(--color-surface-hover);
+  --secondary-foreground: var(--color-text);
+  --muted:                var(--color-surface-hover);
+  --muted-foreground:     var(--color-text-muted);
+  --accent:               var(--color-surface-hover);
+  --accent-foreground:    var(--color-text);
+  --destructive:          var(--color-n-500);   /* achromatic on purpose */
+  --destructive-foreground: var(--color-n-950);
+  --input:                var(--color-n-600);
+  --ring:                 var(--color-white);
+}
+
 @theme inline {
-  --color-background:          var(--color-bg);
-  --color-foreground:          var(--color-text);
-  --color-card:                var(--color-surface-raised);
-  --color-card-foreground:     var(--color-text);
-  --color-popover:             var(--color-surface-raised);
-  --color-popover-foreground:  var(--color-text);
-  --color-primary:             var(--color-white);
-  --color-primary-foreground:  var(--color-n-950);
-  --color-secondary:           var(--color-surface-hover);
-  --color-secondary-foreground:var(--color-text);
-  --color-muted:               var(--color-surface-hover);
-  --color-muted-foreground:    var(--color-text-muted);
-  --color-accent:              var(--color-surface-hover);
-  --color-accent-foreground:   var(--color-text);
-  --color-destructive:         var(--color-n-500);   /* achromatic on purpose */
-  --color-destructive-foreground: var(--color-n-950);
+  --color-background:          var(--background);
+  --color-foreground:          var(--foreground);
+  --color-card:                var(--card);
+  --color-card-foreground:     var(--card-foreground);
+  --color-popover:             var(--popover);
+  --color-popover-foreground:  var(--popover-foreground);
+  --color-primary:             var(--primary);
+  --color-primary-foreground:  var(--primary-foreground);
+  --color-secondary:           var(--secondary);
+  --color-secondary-foreground:var(--secondary-foreground);
+  --color-muted:               var(--muted);
+  --color-muted-foreground:    var(--muted-foreground);
+  --color-accent:              var(--accent);
+  --color-accent-foreground:   var(--accent-foreground);
+  --color-destructive:         var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
   /* --color-border is already a token above; shadcn's name for it is identical,
    * so it needs no bridge entry and must not be redeclared here. */
-  --color-input:               var(--color-n-600);
-  --color-ring:                var(--color-white);
+  --color-input:               var(--input);
+  --color-ring:                var(--ring);
 }
