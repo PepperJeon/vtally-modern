@@ -19,6 +19,7 @@ function ObsSettings(props: ObsSettingsProps) {
     const [ipValid, setIpValid] = useState(true)
     const [port, setPort] = useState<string|null>(null)
     const [portValid, setPortValid] = useState(true)
+    const [password, setPassword] = useState<string|null>(null)
     const [liveMode, setLiveMode] = useState<ObsConfigurationLiveMode|null>(null)
     const liveModeValid = liveMode !== null
     const isLoading = !configuration
@@ -40,6 +41,7 @@ function ObsSettings(props: ObsSettingsProps) {
             const config = configuration.clone()
             config.setIp(ip)
             config.setPort(port)
+            config.setPassword(password)
             config.setLiveMode(liveMode)
 
             socket.emit('config.change.obs', config.toJson(), props.id)
@@ -50,14 +52,15 @@ function ObsSettings(props: ObsSettingsProps) {
         <MixerSettingsWrapper 
             title="OBS Studio Configuration"
             testId="obs"
-            description={<>Connects to OBS Studio over network. The <ExternalLink href="https://github.com/Palakis/obs-websocket">obs-websocket plugin version 4.x.x</ExternalLink> has to be installed. Version 5 of the plugin is not yet supported.</>}
+            description={<>Connects to OBS Studio over network. Needs <ExternalLink href="https://github.com/obsproject/obs-websocket">obs-websocket version 5</ExternalLink>, which is built into OBS 28 and newer. Version 4 of the plugin is no longer supported.</>}
             canBeSaved={isValid}
             isLoading={isLoading}
             onSave={handleSave}
         >
             { configuration && (<>
                 <ValidatingInput label="Obs IP" testId="obs-ip" object={configuration} propertyName="ip" onValid={(newIp) => { setIp(newIp); setIpValid(true) }} onInvalid={() => setIpValid(false)} />
-                <ValidatingInput label="Obs Port" testId="obs-port" object={configuration} propertyName="port" onValid={(newPort) => { setPort(newPort); setPortValid(true) }} onInvalid={() => setPortValid(false)} />
+                <ValidatingInput label="Obs Port" testId="obs-port" object={configuration} propertyName="port" warningMessage="OBS 28 and newer use 4455" onValid={(newPort) => { setPort(newPort); setPortValid(true) }} onInvalid={() => setPortValid(false)} />
+                <ValidatingInput label="Obs Password" testId="obs-password" object={configuration} propertyName="password" warningMessage="Leave empty if authentication is disabled" onValid={setPassword} />
                 <ObsLiveModeSelect label="On-Air Status" testId="obs-liveMode" value={liveMode} onChange={setLiveMode} />
             </>)}
         </MixerSettingsWrapper>
