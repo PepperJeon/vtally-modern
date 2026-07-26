@@ -5,8 +5,10 @@ Companion to `docs/design/ui-contract.md`. This document is the sole authority f
 Nothing outside it may be touched without human sign-off (§3).
 
 **Important correction before anything else:** `ui-contract.md`'s Hazard H6
-("duplicate testid per field" in `TallySettings.tsx`) is **wrong**. See §4. Do not
-plan around it.
+("duplicate testid per field" in `TallySettings.tsx`) was **wrong** and has been
+retracted at source in that document (its H6 hazard-list row and §1.4 table are
+now corrected, not just noted here). See §4 below for the full evidence. Do not
+plan around the original claim.
 
 ---
 
@@ -201,6 +203,17 @@ listed here only because the team-lead's brief asked for it to be checked.
 >
 > `cypress/integration/manual_*.spec.ts` are out of scope entirely (hardware
 > required) — do not run, fix, or edit them as part of this rebuild.
+>
+> **Sign-off, not self-certification.** Before any merge, `git diff` against
+> `hub/cypress/` must be run and reviewed line-by-line by a human or by a
+> separate reviewing agent — never by you, the implementing agent, and never as
+> a step you perform on yourself. Every changed line must match one of the two
+> pre-authorised edits above, verbatim in intent (same assertion strength, same
+> new attribute); anything else in that diff is an automatic block, not a
+> judgment call for the reviewer to wave through. A green Cypress run is not
+> evidence this rule was followed — only the diff review is. This is the actual
+> mechanism this document exists to enforce; do not let it collapse into "the
+> agent said it only touched the authorised lines."
 
 ---
 
