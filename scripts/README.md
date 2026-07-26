@@ -76,21 +76,39 @@ treating `got > want` as a pass).
 Every test counted in `cypress_failed` must be named here, so the number is
 never a place to quietly hide new red tests:
 
-- **`tally-settings.spec.ts`** (1 test) — racy `cy.task('tallyLastCommand',
-  ...)` read with no retry, racing the browser → socket.io → hub → UDP round
-  trip. A single flaky read, not a real defect; see the FLAKINESS NOTE at the
-  top of `tally-remove.spec.ts` for the full explanation of why this file
-  alone uses a bare task read instead of `cy.getTestId(...).should(...)`.
+- **`tally-settings.spec.ts`** (1 test, `'correctly implements settings into
+  udp commands'`) — was two distinct flakes stacked in the same test; one is
+  now fixed, one remains:
+  - **Fixed** (`b4bbadc`): the test mixer's config compare used raw
+    `toJson()`, which includes live `programs`/`previews` — every
+    `mixerProgPrev` cypress task call looked like a settings change and
+    restarted the connector, producing a transient `(null, null)` read on
+    `tallyLastCommand`. `Configuration.getRestartFingerprint()` (defaults to
+    `toJson()`, overridden to `{}` on `TestConfiguration`) is what
+    `MixerDriver` now compares, so live program/preview values no longer
+    trigger a restart. Confirmed gone across 15 `flake2.sh` runs (0
+    occurrences), down from 5/15 before the fix.
+  - **Remaining** (not fixed, root cause not identified): the test's second
+    `cy.task('tallyLastCommand', ...).should('eq', ...)` assertion — the one
+    following a *second* `mixerProgPrev` call — sometimes stalls permanently
+    on the *first* `mixerProgPrev`'s value and never resolves within
+    Cypress's retry window. 3/15 `flake2.sh` runs after the fix above (was
+    masked by the restart bug before). Ruled out: the `config.changed.test`
+    subscription `TestConnector` holds (same emitter instance confirmed at
+    `server.ts:63-79`, live throughout, never torn down in this sequence
+    since the tally-settings-submit that precedes it doesn't touch the test
+    mixer's `{}` fingerprint so no restart fires); and any server-side delay
+    (`config.change.test` → UDP wire is fully synchronous via
+    `TallyContainer`'s `program.changed` listener, not gated on the 100ms
+    keep-alive, which would self-heal a drop anyway). Remaining candidate:
+    `cypress/plugins/mixer.ts:13`'s `socket.emit('config.change.test', ...)`
+    returns `null` with no ack, so a lost or delayed *delivery* of that
+    second emit fits the symptom — needs live socket-level instrumentation
+    to confirm, not yet done. Tracked for Phase 3.
 - **`dialog-cancel.spec.ts`** (1 test) — `'closes without saving edits when
   Cancel is clicked'` fails reproducibly on a second open cycle: MUI's
   popover doesn't survive the settings dialog being reopened after Cancel.
   Root cause not yet identified; tracked for Phase 3.
-- **`hub-disconnected-banner.spec.ts`** (1 test) — `'keeps already-loaded
-  tally data visible (stale, not blank) during the outage'` fails
-  reproducibly: CDP's `Network.emulateNetworkConditions` (`goOffline`)
-  doesn't reliably re-interrupt an already-established socket.io WebSocket
-  the second time it's used against the same page. Root cause not yet
-  identified; tracked for Phase 3.
 
 These two used to be `.skip`'d instead of allowlisted. A permanent skip
 vanishes from the run output entirely — nobody sees it's still broken — while
