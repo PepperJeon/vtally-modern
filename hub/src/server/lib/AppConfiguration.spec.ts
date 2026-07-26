@@ -1,6 +1,7 @@
 import { AppConfiguration } from './AppConfiguration'
 import { EventEmitter } from 'events'
 import Channel from '../../shared/domain/Channel'
+import { MixerDriver } from './MixerDriver'
 import AtemConfiguration from '../../shared/mixer/atem/AtemConfiguration'
 import MockConfiguration from '../../shared/mixer/mock/MockConfiguration'
 import ObsConfiguration from '../../shared/mixer/obs/ObsConfiguration'
@@ -136,6 +137,59 @@ describe("toJson/fromJson", () => {
         expect(channels[0]?.id).toEqual("one")
         expect(channels[0]?.name).toEqual("Channel One")
         expect(channels[1]?.id).toEqual("2")
+    })
+    test('it keeps channels of each mixer apart', () => {
+        const emitter = new EventEmitter()
+        const config = new AppConfiguration(emitter)
+
+        config.setMixerSelection('mock')
+        config.setChannels([new Channel("1", "Dave's Cam"), new Channel("2", "Judy's Cam")])
+
+        config.setMixerSelection('obs')
+        config.setChannels([new Channel("Scene 1", "Scene 1")])
+        expect(config.getChannels().map(c => c.name)).toEqual(["Scene 1"])
+
+        // the actual user facing bug: switching back must not have lost anything
+        config.setMixerSelection('mock')
+        expect(config.getChannels().map(c => c.name)).toEqual(["Dave's Cam", "Judy's Cam"])
+
+        // ... and it survives a save/load round trip
+        const otherConfig = new AppConfiguration(emitter)
+        otherConfig.fromJson(config.toJson())
+        expect(otherConfig.getMixerSelection()).toEqual('mock')
+        expect(otherConfig.getChannels().map(c => c.name)).toEqual(["Dave's Cam", "Judy's Cam"])
+        otherConfig.setMixerSelection('obs')
+        expect(otherConfig.getChannels().map(c => c.name)).toEqual(["Scene 1"])
+    })
+    test('a mixer that never reported channels gets the defaults', () => {
+        const emitter = new EventEmitter()
+        const config = new AppConfiguration(emitter)
+
+        config.setMixerSelection('mock')
+        config.setChannels([new Channel("1", "Dave's Cam")])
+
+        // null and test never call notifyChannels, so they fall through to defaults
+        config.setMixerSelection('null')
+        expect(config.getChannels()).toEqual(MixerDriver.defaultChannels)
+        config.setMixerSelection('test')
+        expect(config.getChannels()).toEqual(MixerDriver.defaultChannels)
+    })
+    test('it announces the new channel list when the mixer changes', () => {
+        const emitter = new EventEmitter()
+        const config = new AppConfiguration(emitter)
+        config.setMixerSelection('mock')
+        config.setChannels([new Channel("1", "Dave's Cam")])
+
+        const seen: string[][] = []
+        emitter.on('config.changed.channels', (channels: Channel[]) => seen.push(channels.map(c => c.id)))
+
+        config.setMixerSelection('obs')
+        expect(seen).toHaveLength(1)
+        expect(seen[0]).toEqual(MixerDriver.defaultChannels.map(c => c.id))
+
+        config.setMixerSelection('mock')
+        expect(seen).toHaveLength(2)
+        expect(seen[1]).toEqual(["1"])
     })
     test('it can persist default tally configuration', () => {
         const emitter = new EventEmitter()

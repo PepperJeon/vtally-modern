@@ -3,13 +3,17 @@ import dgram from 'dgram'
 // a mock to be used in tests. It generates network traffic like a hardware tally would do
 class MockUdpTally {
   name: string
+  port: number
   io?: dgram.Socket
   messages: string[] = []
   interval?: NodeJS.Timeout
   type: "udp" = "udp"
 
-  constructor(name: string) {
+  // port is the hub's UDP tally port (UdpTallyDriver.getTallyPort()), not this
+  // mock's own socket — that one always binds to 0 (whatever's free).
+  constructor(name: string, port = 7411) {
     this.name = name
+    this.port = port
   }
 
   connect() {
@@ -30,7 +34,7 @@ class MockUdpTally {
         exclusive: false
       }, () => {
         this.interval = setInterval(() => {
-          this.io.send(`tally-ho "${this.name}"`, 7411)
+          this.io.send(`tally-ho "${this.name}"`, this.port)
         }, 100)
       })
       
@@ -51,7 +55,7 @@ class MockUdpTally {
   log(message:string, severity: string) {
     const command = `log "${this.name}" ${severity} "${message}"`
     console.log(command)
-    this.io.send(command, 7411)
+    this.io.send(command, this.port)
   }
 
 }

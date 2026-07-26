@@ -24,11 +24,26 @@ chosen ports through `PORT`/`DEV_PROXY_PORT` (backend) and
 `hub/vite.config.ts`), and through `CYPRESS_BASE_URL` for Cypress. Multiple
 worktrees can each run `scripts/verify.sh` at the same time without
 stomping each other's servers. The chosen ports are printed at the top of
-the output (`ports: backend=... frontend=...`) so a failed run can be
-traced back to its processes.
+the output (`ports: backend=... frontend=... tally=.../udp`) so a failed
+run can be traced back to its processes.
+
+The tally protocol (`hub/src/server/tally/UdpTallyDriver.ts`) is UDP, not
+HTTP, and used to be hardcoded to port 7411 with no override — a second
+concurrent run either failed to bind it (its cypress tally specs then time
+out waiting for a tally that can never arrive) or received the other run's
+tally traffic on top of its own (phantom tallies that look exactly like
+cross-spec state leakage but aren't). `TALLY_PORT` is now allocated the same
+race-proof way (bind UDP port 0), read by `AppConfiguration.getTallyPort()`
+the same way `getHttpPort()` reads `PORT`, and forwarded to the Cypress
+mock tally (`hub/cypress/MockUdpTally.ts`, wired up in
+`hub/cypress/plugins/tally.ts`) via `CYPRESS_TALLY_PORT` so the mock sends
+to the same port the hub is actually listening on. A pre-flight check
+(`lsof -iUDP`, no `-sTCP:LISTEN` — UDP has no listen state) aborts if
+either the allocated port or the historical default 7411 is already bound,
+the same way the TCP check catches a leftover HTTP server.
 
 Cleanup kills only what this run started: tracked PIDs first, then anything
-still listening on this run's own two ports (`lsof` by port, not `pkill -f`
+still listening on this run's own ports (`lsof` by port, not `pkill -f`
 by command line — a command-line pattern can't distinguish "my server" from
 "a sibling worktree's server", since concurrent runs' command lines are
 identical).
