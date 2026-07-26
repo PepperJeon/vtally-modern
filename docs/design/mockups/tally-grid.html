@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>vTally — IndexPage (tally grid)</title>
+<style>
+  /* ---- tokens: verbatim from docs/design/design-tokens.md §2.9 ---- */
+  :root {
+    color-scheme: dark;
+
+    --color-n-950: #0B0E11;
+    --color-n-900: #12161A;
+    --color-n-850: #171C21;
+    --color-n-800: #1E242B;
+    --color-n-700: #2A323B;
+    --color-n-600: #3A444F;
+    --color-n-500: #6B7787;
+    --color-n-400: #8A98A8;
+    --color-n-300: #A3B0BD;
+    --color-n-100: #E3E8ED;
+
+    --color-bg:             var(--color-n-950);
+    --color-surface:        var(--color-n-900);
+    --color-surface-hover:  var(--color-n-850);
+    --color-surface-raised: var(--color-n-800);
+    --color-border:         var(--color-n-700);
+    --color-border-strong:  var(--color-n-500);
+    --color-text:           var(--color-n-100);
+    --color-text-muted:     var(--color-n-400);
+    --color-on-fill:        var(--color-n-950);
+
+    --color-live:         #FF3B30;
+    --color-live-text:    #FF6257;
+    --color-preview:      #34D07A;
+    --color-idle:         #6B7787;
+    --color-unpatched:    #4C8DFF;
+    --color-disconnected: #8A98A8;
+    --color-missing:      #FFB020;
+    --color-highlight:    #FFFFFF;
+
+    --font-sans: Inter, Lato, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+    --text-2xs: 0.6875rem;
+    --text-xs:  0.75rem;
+    --text-sm:  0.875rem;
+    --text-base:1rem;
+    --text-xl:  1.375rem;
+    --text-2xl: 1.75rem;
+    --tracking-tight: -0.015em;
+    --tracking-wide:   0.06em;
+
+    --space-1: .25rem; --space-2: .5rem;  --space-3: .75rem; --space-4: 1rem;
+    --space-6: 1.5rem; --space-8: 2rem;   --space-12: 3rem;
+
+    --radius-xs: 2px; --radius-sm: 4px; --radius-md: 8px; --radius-full: 9999px;
+
+    --shadow-focus: 0 0 0 2px var(--color-n-950), 0 0 0 4px #FFFFFF;
+    --duration-0: 0ms; --duration-fast: 120ms;
+    --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---- shell ---- */
+  .nav {
+    height: 64px;
+    display: flex; align-items: center; gap: var(--space-1);
+    padding: 0 var(--space-6);
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+  }
+  .logo {
+    font-weight: 700; font-size: var(--text-xl); letter-spacing: var(--tracking-tight);
+    margin-right: var(--space-6);
+  }
+  .logo span { color: var(--color-text-muted); font-weight: 400; }
+  .nav a {
+    display: inline-flex; align-items: center; min-height: 44px;
+    padding: 0 var(--space-3);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-muted);
+    text-decoration: none;
+    transition: background var(--duration-fast) var(--ease-out);
+  }
+  .nav a:hover { background: var(--color-surface-hover); }
+  .nav a[aria-current] { background: var(--color-surface-hover); color: var(--color-text); }
+
+  .page { max-width: 1440px; margin: 0 auto; padding: var(--space-6); }
+
+  /* ---- toolbar ---- */
+  .toolbar {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    flex-wrap: wrap; gap: var(--space-4);
+    margin-bottom: var(--space-4);
+  }
+  .group { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+
+  .toggle {
+    min-height: 44px;
+    display: inline-flex; align-items: center; gap: var(--space-2);
+    padding: 0 var(--space-4);
+    font: inherit; font-size: var(--text-sm);
+    background: transparent;
+    border: 1px solid var(--color-n-600);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: background var(--duration-fast) var(--ease-out);
+  }
+  .toggle:hover { background: var(--color-surface-hover); }
+  .toggle[aria-pressed="true"] {
+    background: var(--color-surface-hover);
+    border-color: var(--color-border-strong);
+    color: var(--color-text);
+  }
+  .toggle .tick { width: 1em; opacity: 0; }
+  .toggle[aria-pressed="true"] .tick { opacity: 1; }
+  .toggle:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
+
+  /* status pills — readouts, not buttons */
+  .pill {
+    min-height: 44px;
+    display: inline-flex; align-items: center; gap: var(--space-2);
+    padding: 0 var(--space-4);
+    font-size: var(--text-xs); font-weight: 600;
+    letter-spacing: var(--tracking-wide); text-transform: uppercase;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-text);
+  }
+  .pill:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
+  .pill .dot { font-size: 1rem; line-height: 1; color: var(--color-preview); }
+  .pill .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+               font-size: var(--text-sm); color: var(--color-text); }
+  .pill[data-connected="false"] {
+    border-style: dashed; border-color: var(--color-missing); color: var(--color-missing);
+  }
+  .pill[data-connected="false"] .dot { color: var(--color-missing); }
+
+  .filter-note {
+    display: flex; align-items: center; gap: var(--space-2);
+    font-size: var(--text-sm); color: var(--color-missing);
+    margin: 0 0 var(--space-6);
+  }
+  .filter-note button {
+    font: inherit; background: none; border: 0; padding: 0;
+    color: var(--color-text); text-decoration: underline; cursor: pointer;
+  }
+
+  /* ---- section heading ---- */
+  .section {
+    display: flex; align-items: center; gap: var(--space-3);
+    font-size: var(--text-xs); font-weight: 600;
+    letter-spacing: var(--tracking-wide); text-transform: uppercase;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-4);
+  }
+  .section::after {
+    content: ""; flex: 1; height: 1px; background: var(--color-border);
+  }
+
+  /* ---- grid ---- */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 250px);
+    gap: var(--space-8);
+    justify-content: start;
+  }
+  .grid + .section { margin-top: var(--space-12); }
+
+  /* ---- the tally card: components §1 ---- */
+  .tally-card {
+    width: 250px;
+    border-radius: var(--radius-md);
+    background: var(--color-surface-raised);
+    border: 1px solid var(--color-border);
+    overflow: hidden;
+    transition: none;                    /* --duration-0: never animate into a state */
+  }
+  .tally-card[data-color="program"]   { background: var(--color-live);
+                                        border-color: var(--color-live);
+                                        color: var(--color-on-fill); }
+  .tally-card[data-color="preview"]   { border-color: var(--color-preview); border-width: 3px; }
+  .tally-card[data-color="idle"]      { border-color: var(--color-idle); }
+  .tally-card[data-color="unpatched"] { border-color: var(--color-unpatched);
+                                        border-width: 2px; border-style: dashed; }
+
+  /* health is an OUTLINE — outside layout, cannot fight border-width */
+  .tally-card[data-health="disconnected"] {
+    outline: 2px dashed var(--color-disconnected);
+    outline-offset: 2px;
+  }
+  .tally-card[data-health="missing"] .tally-foot {
+    background: var(--color-missing); color: var(--color-on-fill);
+  }
+
+  .tally-head {
+    display: flex; align-items: center; gap: var(--space-2);
+    padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+  }
+  .tally-card[data-color="program"] .tally-head,
+  .tally-card[data-color="program"] .tally-body { border-color: rgb(0 0 0 / .25); }
+
+  .marker { width: 20px; height: 20px; flex: none; }
+
+  .tally-name {
+    flex: 1; min-width: 0;
+    font-size: var(--text-2xl); font-weight: 600;
+    letter-spacing: var(--tracking-tight); line-height: 1.2;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  .menu-btn {
+    width: 44px; height: 44px; flex: none;
+    display: grid; place-items: center;
+    background: none; border: 0; border-radius: var(--radius-sm);
+    color: inherit; cursor: pointer; opacity: .7;
+  }
+  .menu-btn:hover { opacity: 1; background: rgb(255 255 255 / .08); }
+  .menu-btn:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
+
+  .tally-body { padding: var(--space-4); border-bottom: 1px solid var(--color-border); }
+
+  select {
+    width: 100%; height: 44px;
+    appearance: none;
+    background: var(--color-n-900);
+    border: 1px solid var(--color-n-600);
+    border-radius: var(--radius-sm);
+    padding: 0 var(--space-8) 0 var(--space-3);
+    color: var(--color-text);
+    font: inherit; font-size: var(--text-base);
+  }
+  .select-wrap { position: relative; }
+  .select-wrap::after {
+    content: "▾"; position: absolute; right: var(--space-3); top: 50%;
+    transform: translateY(-50%); pointer-events: none; color: var(--color-n-400);
+  }
+
+  .tally-foot {
+    display: flex; align-items: center; justify-content: space-between; gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    font-size: var(--text-xs);
+  }
+  .state-word {
+    font-weight: 600; text-transform: uppercase; letter-spacing: var(--tracking-wide);
+    white-space: nowrap;              /* truncation is forbidden */
+  }
+  .addr {
+    font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+    color: var(--color-text-muted); font-weight: 400;
+    overflow: hidden; text-overflow: ellipsis;
+  }
+  .tally-card[data-color="program"] .addr { color: rgb(11 14 17 / .7); }
+
+  .health-word { font-weight: 600; text-transform: uppercase;
+                 letter-spacing: var(--tracking-wide); white-space: nowrap; }
+  .health-word[data-health="disconnected"] { color: var(--color-disconnected); }
+  .tally-card[data-color="program"] .health-word[data-health="disconnected"] {
+    color: var(--color-on-fill);
+  }
+  .struck { text-decoration: line-through; }
+
+  /* ---- add tally ---- */
+  .add-card {
+    width: 250px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: var(--space-2);
+    min-height: 100%;
+    padding: var(--space-8) var(--space-4);
+    background: transparent;
+    border: 2px dashed var(--color-n-600);
+    border-radius: var(--radius-md);
+    color: var(--color-text-muted);
+    font: inherit;
+    cursor: pointer;
+  }
+  .add-card:hover { border-color: var(--color-n-500); color: var(--color-text); }
+  .add-card .plus { font-size: var(--text-2xl); line-height: 1; }
+  .add-card:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
+
+  /* ---- annotation chrome (mockup only, not part of the design) ---- */
+  .note {
+    max-width: 1440px; margin: 0 auto; padding: 0 var(--space-6) var(--space-8);
+    font-size: var(--text-sm); color: var(--color-text-muted);
+  }
+  .note code { font-family: var(--font-mono); font-size: var(--text-xs);
+               background: var(--color-surface); padding: 1px 4px; border-radius: var(--radius-xs); }
+  .note b { color: var(--color-text); font-weight: 600; }
+
+  @media (max-width: 639px) {
+    .grid { justify-content: center; }
+    .group { width: 100%; }
+    .toggle { flex: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition-duration: 0ms !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="logo">v<span>Tally</span></div>
+  <a href="#" aria-current="page">Tallies</a>
+  <a href="#">Configuration</a>
+  <a href="#">Flash</a>
+</nav>
+
+<div class="page">
+
+  <div class="toolbar">
+    <div class="group">
+      <button class="toggle" data-testid="toggle-disconnected" aria-pressed="true">
+        <span class="tick" aria-hidden="true">✓</span> Show Disconnected
+      </button>
+      <button class="toggle" data-testid="toggle-unpatched" aria-pressed="false">
+        <span class="tick" aria-hidden="true">✓</span> Show Unpatched
+      </button>
+    </div>
+
+    <div class="group">
+      <div class="pill" role="status" tabindex="0" data-testid="hub-connected" data-connected="true"
+           title="Hub connected">
+        <span class="dot" aria-hidden="true">●</span> Hub <span class="num">1</span>
+      </div>
+      <div class="pill" role="status" tabindex="0" data-testid="mixer-connected" data-connected="true"
+           title="Video Mixer connected">
+        <span class="dot" aria-hidden="true">●</span> Mixer <span class="num">1</span>
+      </div>
+      <div class="pill" role="status" tabindex="0" data-testid="tallies-connected"
+           title="4 of 6 tallies connected">
+        <span class="num">4 / 6</span> Tallies
+      </div>
+    </div>
+  </div>
+
+  <p class="filter-note" role="status">
+    <span aria-hidden="true">⚠</span> 1 tally hidden by filters
+    <button type="button">Show all</button>
+  </p>
+
+  <h2 class="section">On air</h2>
+
+  <div class="grid">
+
+    <!-- 1. on air, connected -->
+    <article class="tally-card" data-testid="tally-Camera 1"
+             data-color="program" data-isactive="true" data-health="connected"
+             role="group" aria-label="Camera 1, on air, connected">
+      <header class="tally-head">
+        <svg class="marker" viewBox="0 0 20 20" aria-hidden="true">
+          <circle cx="10" cy="10" r="8" fill="currentColor"/>
+        </svg>
+        <div class="tally-name">Camera 1</div>
+        <button class="menu-btn" data-testid="tally-Camera 1-menu" aria-label="Camera 1 menu">⋮</button>
+      </header>
+      <div class="tally-body">
+        <div class="select-wrap">
+          <select data-testid="channel-selector" aria-label="Channel">
+            <option>Channel 1</option>
+          </select>
+        </div>
+      </div>
+      <footer class="tally-foot">
+        <span class="state-word">On air</span>
+        <span class="addr">192.168.1.41:7411</span>
+      </footer>
+    </article>
+
+    <!-- 2. THE WORST CASE: on air AND disconnected -->
+    <article class="tally-card" data-testid="tally-Camera 4"
+             data-color="program" data-isactive="false" data-health="disconnected"
+             role="group" aria-label="Camera 4, on air, no signal">
+      <header class="tally-head">
+        <svg class="marker" viewBox="0 0 20 20" aria-hidden="true">
+          <circle cx="10" cy="10" r="8" fill="currentColor"/>
+        </svg>
+        <div class="tally-name">Camera 4</div>
+        <button class="menu-btn" data-testid="tally-Camera 4-menu" aria-label="Camera 4 menu">⋮</button>
+      </header>
+      <div class="tally-body">
+        <div class="select-wrap">
+          <select data-testid="channel-selector" aria-label="Channel">
+            <option>Channel 4</option>
+          </select>
+        </div>
+      </div>
+      <footer class="tally-foot">
+        <span class="state-word struck">On air</span>
+        <span class="health-word" data-health="disconnected">No signal</span>
+      </footer>
+    </article>
+
+  </div>
+
+  <h2 class="section">All tallies</h2>
+
+  <div class="grid">
+
+    <!-- 3. preview -->
+    <article class="tally-card" data-testid="tally-Camera 2"
+             data-color="preview" data-isactive="true" data-health="connected"
+             role="group" aria-label="Camera 2, preview, connected">
+      <header class="tally-head">
+        <svg class="marker" viewBox="0 0 20 20" aria-hidden="true" style="color:var(--color-preview)">
+          <path d="M4 3 L17 10 L4 17 Z" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linejoin="round"/>
+        </svg>
+        <div class="tally-name">Camera 2</div>
+        <button class="menu-btn" data-testid="tally-Camera 2-menu" aria-label="Camera 2 menu">⋮</button>
+      </header>
+      <div class="tally-body">
+        <div class="select-wrap">
+          <select data-testid="channel-selector" aria-label="Channel"><option>Channel 2</option></select>
+        </div>
+      </div>
+      <footer class="tally-foot">
+        <span class="state-word" style="color:var(--color-preview)">Preview</span>
+        <span class="addr">192.168.1.42:7411</span>
+      </footer>
+    </article>
+
+    <!-- 4. idle -->
+    <article class="tally-card" data-testid="tally-Camera 3"
+             data-color="idle" data-isactive="true" data-health="connected"
+             role="group" aria-label="Camera 3, idle, connected">
+      <header class="tally-head">
+        <svg class="marker" viewBox="0 0 20 20" aria-hidden="true" style="color:var(--color-n-500)">
+          <rect x="6" y="6" width="8" height="8" fill="none" stroke="currentColor" stroke-width="2"/>
+        </svg>
+        <div class="tally-name">Camera 3</div>
+        <button class="menu-btn" data-testid="tally-Camera 3-menu" aria-label="Camera 3 menu">⋮</button>
+      </header>
+      <div class="tally-body">
+        <div class="select-wrap">
+          <select data-testid="channel-selector" aria-label="Channel"><option>Channel 3</option></select>
+        </div>
+      </div>
+      <footer class="tally-foot">
+        <span class="state-word" style="color:var(--color-text-muted)">Idle</span>
+        <span class="addr">192.168.1.43:7411</span>
+      </footer>
+    </article>
+
+    <!-- 5. idle + missing (connected but not reporting) -->
+    <article class="tally-card" data-testid="tally-Camera 5"
+             data-color="idle" data-isactive="true" data-health="missing"
+             role="group" aria-label="Camera 5, idle, not reporting">
+      <header class="tally-head">
+        <svg class="marker" viewBox="0 0 20 20" aria-hidden="true" style="color:var(--color-missing)">
+          <path d="M10 3 L18 17 L2 17 Z" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linejoin="round"/>
+          <path d="M10 8 v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="10" cy="14.5" r="1" fill="currentColor"/>
+        </svg>
+        <div class="tally-name">Camera 5</div>
+        <button class="menu-btn" data-testid="tally-Camera 5-menu" aria-label="Camera 5 menu">⋮</button>
+      </header>
+      <div class="tally-body">
+        <div class="select-wrap">
+          <select data-testid="channel-selector" aria-label="Channel"><option>Channel 5</option></select>
+        </div>
+      </div>
+      <footer class="tally-foot">
+        <span class="state-word">Idle</span>
+        <span class="health-word">Not reporting</span>
+      </footer>
+    </article>
+
+    <!-- 6. idle + disconnected -->
+    <article class="tally-card" data-testid="tally-Camera 6"
+             data-color="idle" data-isactive="false" data-health="disconnected"
+             role="group" aria-label="Camera 6, idle, no signal">
+      <header class="tally-head">
+        <svg class="marker" viewBox="0 0 20 20" aria-hidden="true" style="color:var(--color-n-500)">
+          <rect x="6" y="6" width="8" height="8" fill="none" stroke="currentColor" stroke-width="2"/>
+        </svg>
+        <div class="tally-name">Camera 6</div>
+        <button class="menu-btn" data-testid="tally-Camera 6-menu" aria-label="Camera 6 menu">⋮</button>
+      </header>
+      <div class="tally-body">
+        <div class="select-wrap">
+          <select data-testid="channel-selector" aria-label="Channel"><option>Channel 6</option></select>
+        </div>
+      </div>
+      <footer class="tally-foot">
+        <span class="state-word" style="color:var(--color-text-muted)">Idle</span>
+        <span class="health-word" data-health="disconnected">No signal</span>
+      </footer>
+    </article>
+
+    <!-- 7. unpatched -->
+    <article class="tally-card" data-testid="tally-Spare"
+             data-color="unpatched" data-isactive="true" data-health="connected"
+             role="group" aria-label="Spare, unpatched, connected">
+      <header class="tally-head">
+        <svg class="marker" viewBox="0 0 20 20" aria-hidden="true" style="color:var(--color-unpatched)">
+          <circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" stroke-width="2"/>
+          <text x="10" y="14.5" text-anchor="middle" font-size="11" font-weight="700"
+                fill="currentColor" font-family="sans-serif">?</text>
+        </svg>
+        <div class="tally-name">Spare</div>
+        <button class="menu-btn" data-testid="tally-Spare-menu" aria-label="Spare menu">⋮</button>
+      </header>
+      <div class="tally-body">
+        <div class="select-wrap">
+          <select data-testid="channel-selector" aria-label="Channel">
+            <option>(unpatched)</option>
+          </select>
+        </div>
+      </div>
+      <footer class="tally-foot">
+        <span class="state-word" style="color:var(--color-unpatched)">Unpatched</span>
+        <span class="addr">192.168.1.47:7411</span>
+      </footer>
+    </article>
+
+    <!-- 8. add -->
+    <button class="add-card" data-testid="tally-create">
+      <span class="plus" aria-hidden="true">+</span>
+      Add tally
+    </button>
+
+  </div>
+</div>
+
+<p class="note">
+  <b>Mockup notes.</b> <code>Camera 4</code> is the product's worst case: <code>data-color="program"</code>
+  plus <code>data-health="disconnected"</code>. Solid red fill (the mixer says it is live) <i>and</i> a dashed
+  grey outline, with <code>On air</code> struck through beside <code>No signal</code> — the mixer asserts it,
+  the lamp is not confirming it. Neither erases the other.
+  Greyscale this page: the two on-air cards are still the only solid blocks, which is CVD carrier 1.
+  Every state also carries a distinct shape marker and a word, so no information depends on hue.
+  <code>Camera 5</code> shows the third health value, <code>missing</code> — amber footer strip, tally state
+  untouched. The <code>Show&nbsp;Unpatched</code> filter is deliberately off here to show the
+  &ldquo;1 tally hidden by filters&rdquo; notice; the unpatched <code>Spare</code> card is rendered anyway so
+  the state is visible in one page.
+</p>
+
+</body>
+</html>
