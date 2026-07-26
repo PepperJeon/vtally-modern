@@ -5,42 +5,36 @@
  * that document and its stated ratio.
  * =========================================================================
  *
- * PREFLIGHT IS DELIBERATELY NOT IMPORTED. Read this before "fixing" it.
+ * PREFLIGHT IS STILL DELIBERATELY NOT IMPORTED. Read this before "fixing" it.
  *
- * `@import "tailwindcss"` pulls in three layers: theme, preflight (a global
- * element reset) and utilities. MUI v4's <CssBaseline /> (App.tsx) is doing
- * the reset job today — it sets box-sizing, strips body margin, applies the
- * theme's background/typography to <body>, and normalises headings and lists.
- * Tailwind's preflight resets the same elements with *different* values:
- * headings lose MUI's font-size/margins, lists lose padding, and — worst —
- * both write `background-color`/`color` on <body>, so whichever CSS ships
- * last silently wins the app background.
+ * The earlier version of this note said preflight was blocked by MUI's
+ * <CssBaseline /> fighting it for <body>, and that the one line below could go
+ * in the moment CssBaseline was deleted. CssBaseline is now gone (React 19 /
+ * MUI removal) and the answer was re-evaluated rather than assumed: it stays
+ * out, for a different and weaker reason than before.
  *
- * The two cannot both be authoritative during the transition, and there is no
- * ordering that is safe: MUI injects its baseline into <head> at runtime via
- * JSS, so the loser is decided by React mount timing, not by import order.
+ *     @import "tailwindcss/preflight.css" layer(base);   <- still not this
  *
- * So: import theme + utilities only, and let CssBaseline stay the single
- * reset. Tailwind then contributes *nothing* that applies to an element the
- * conversion has not opted in — it only defines custom properties (inert) and
- * utility classes (inert until a className uses them). That is what makes
- * this phase provably invisible: no existing page can change, because no
- * existing page carries a Tailwind class.
+ * All five routes were built and shipped against *no* preflight. Preflight is
+ * not a superset of what CssBaseline did — it also zeroes every margin and
+ * padding, drops heading font-size/weight to `inherit`, unstyles ol/ul, makes
+ * img/svg `display: block`, and resets <button>. Turning it on is therefore a
+ * visual change to five just-landed routes, and the Cypress suite asserts DOM
+ * and behaviour, not layout, so it would not catch the damage. A React major
+ * plus the removal of the UI library is the wrong commit to also carry an
+ * unverifiable global restyle. Preflight is a separate change with its own
+ * visual review, if anyone wants it.
  *
- * Scoping preflight to a wrapper was the alternative and was rejected: v4's
- * preflight is authored against bare element selectors in `@layer base`, so
- * re-scoping it means forking upstream CSS that then drifts every minor
- * release, and `body`/`html` rules cannot be scoped at all.
+ * What CssBaseline was actually contributing is replaced explicitly in the
+ * `@layer base` block at the bottom of this file — that list is exhaustive,
+ * and it is the only thing removing CssBaseline required.
  *
- * WHEN MUI GOES (last route converted, <CssBaseline /> deleted from App.tsx):
- * add the one line below and delete this block. Nothing else changes.
- *
- *     @import "tailwindcss/preflight.css" layer(base);
- *
- * Until then, shadcn components render without preflight's two globals:
- * `box-sizing: border-box` (already provided by CssBaseline, so covered) and
- * `border-color: currentColor` (not covered — always name a border colour
- * explicitly, e.g. `border border-border`, never a bare `border`).
+ * Two consequences of no-preflight remain load-bearing, unchanged:
+ *  - `border-color` is not reset, so always name a border colour explicitly
+ *    (`border border-border`), never a bare `border`.
+ *  - <button> is not reset, so hand-built buttons keep their explicit
+ *    `border-0 bg-transparent` (e.g. WebTallyPage's icon buttons). Those are
+ *    still doing work; do not tidy them away.
  */
 
 @layer theme, base, components, utilities;
@@ -53,6 +47,51 @@
  * cannot pull server code anywhere near the client bundle. */
 @source "./";
 @source "../shared/";
+
+/* =========================================================================
+ * The CssBaseline replacement — exhaustive.
+ *
+ * MUI v4's <CssBaseline /> injected exactly five things globally. Four of them
+ * were load-bearing for the Tailwind routes and are restored verbatim in
+ * intent below; the fifth is deliberately dropped.
+ *
+ *  1. `html { box-sizing: border-box }` + `*, *::before, *::after {
+ *     box-sizing: inherit }` — Tailwind's whole sizing model (w-*, p-*,
+ *     border-*) assumes border-box. Losing this silently inflates every
+ *     padded, bordered box on every page. This is the one that matters most.
+ *  2. `body { margin: 0 }` — without it the browser's default 8px body margin
+ *     reappears as a gap around the app shell on all five routes.
+ *  3. `body { background-color; color }` — Layout paints `bg-bg text-text` on
+ *     its own root, but WebTallyPage has no Layout, and any overscroll /
+ *     rubber-band area is <body>'s. Set from the tokens (--color-bg /
+ *     --color-text), NOT from MUI's old #222 / rgba(255,255,255,0.87):
+ *     design-tokens.md §2 is the palette authority now, and #222 is not in it.
+ *  4. font smoothing + the base font stack/size on <body>. MUI computed a
+ *     14px-ish body2 off htmlFontSize:15; the tokens say the base is 16px
+ *     (§2.4) and every converted route sets its own text-* class anyway, so
+ *     the inherited default follows the tokens rather than MUI's arithmetic.
+ *
+ * Dropped: `strong, b { font-weight: <theme bold> }`. That existed only to
+ * push MUI's 600 onto the browser's default `bolder`; with no MUI theme there
+ * is nothing to reconcile, and the browser default is already correct.
+ * ========================================================================= */
+@layer base {
+  html {
+    box-sizing: border-box;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  *, *::before, *::after { box-sizing: inherit; }
+
+  body {
+    margin: 0;
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    line-height: var(--text-base--line-height);
+  }
+}
 
 /* Dark mode is applied by `data-theme="dark"` on <html> (see index.html).
  * The palette is dark-only by decision (design-tokens.md §2 — a light theme
