@@ -78,9 +78,12 @@ class NodeMcuConnector {
   }
 
   private static async getLocalFiles() {
-    let dirName = __dirname + "/../../esp8266" // path in release package
+    // NOTE: one ../ deeper than before because this file moved from
+    // src/flasher/ to src/server/flasher/ in the server/client/shared split.
+    // Both targets are unchanged: <hub>/esp8266 and <repo>/tally/out.
+    let dirName = __dirname + "/../../../esp8266" // path in release package
     const files = await fs.readdir(dirName).catch(e => {
-      dirName = __dirname + "/../../../tally/out" // path during development
+      dirName = __dirname + "/../../../../tally/out" // path during development
       return fs.readdir(dirName)
     })
 

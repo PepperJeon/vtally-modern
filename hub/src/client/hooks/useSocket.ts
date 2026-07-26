@@ -10,7 +10,13 @@ const socketEventEmitter = new Emitter()
 // Vitest sets MODE to 'test'; vite dev/build set 'development'/'production'.
 // (was process.env.JEST_WORKER_ID under CRA — process is not defined in a
 // Vite browser bundle.)
-const isTestEnvironment = import.meta.env.MODE === 'test'
+//
+// The `?.` is load-bearing, not defensive noise: Cypress bundles specs that
+// import this module with webpack, which leaves import.meta.env undefined.
+// Without it this throws at import time and every spec that touches the socket
+// fails before its first assertion. undefined !== 'test' is also the correct
+// answer there — Cypress drives the app over a real socket.io connection.
+const isTestEnvironment = import.meta.env?.MODE === 'test'
 
 const socket: ClientSideSocket = isTestEnvironment ? new DisconnectedClientSideSocket() : io()
 
