@@ -49,7 +49,7 @@ export class MixerDriver {
                 needsRefresh = true
             } else if (this.getCurrentMixerSettings && this.currentMixerSettings) {
                 const mixerSettings = this.getCurrentMixerSettings()
-                if (haveValuesChanged(mixerSettings.toJson(), this.currentMixerSettings.toJson()) ){
+                if (haveValuesChanged(mixerSettings.getRestartFingerprint(), this.currentMixerSettings.getRestartFingerprint()) ){
                     console.debug("mixer connection is restarted, because settings were changed")
                     needsRefresh = true
                 }

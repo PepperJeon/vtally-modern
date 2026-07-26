@@ -1,3 +1,4 @@
+import { vi } from "vitest"
 import { MixerDriver } from "./MixerDriver"
 import { AppConfiguration } from "./AppConfiguration"
 import { EventEmitter } from "events"
@@ -52,5 +53,55 @@ describe('getAllowedMixers', () => {
         expect(mixersProd.length).toBeGreaterThan(2)
         expect(mixersProd).toContain("null")
         expect(mixersProd).not.toContain("test")
+    })
+})
+
+describe('test mixer settings changes', () => {
+    test('never restarts the connector between two real program/preview states', async () => {
+        // TestConfiguration.toJson() carries {programs, previews} because it also
+        // doubles as the wire format for the cypress mixerProgPrev helper. A settings
+        // change here must not look like a settings change to MixerDriver's restart
+        // logic, or every update briefly tears the connector down (-> notifyProgramPreviewChanged(null, null))
+        // before the real values land again.
+        const originalHubWithTest = process.env.HUB_WITH_TEST
+        process.env.HUB_WITH_TEST = "true"
+        try {
+            const emitter = new EventEmitter()
+            const config = new AppConfiguration(emitter)
+
+            const initial = config.getTestConfiguration()
+            initial.setPrograms(["1"])
+            initial.setPreviews(["2"])
+            config.setTestConfiguration(initial)
+            config.setMixerSelection("test")
+
+            const driver = new MixerDriver(config, emitter)
+            await driver.changeMixer("test")
+
+            const calls: Array<[unknown, unknown]> = []
+            vi.spyOn(driver.communicator, "notifyProgramPreviewChanged").mockImplementation((programs, previews) => {
+                calls.push([programs, previews])
+            })
+
+            const updated = config.getTestConfiguration()
+            updated.setPrograms(["3"])
+            updated.setPreviews(["4"])
+            config.setTestConfiguration(updated)
+
+            const hasNullBetweenRealStates = calls.some(([programs], index) => {
+                const before = calls.slice(0, index)
+                const after = calls.slice(index + 1)
+                return programs === null
+                    && before.some(([p]) => p !== null)
+                    && after.some(([p]) => p !== null)
+            })
+            expect(hasNullBetweenRealStates).toBe(false)
+            expect(calls.some(([programs]) => JSON.stringify(programs) === JSON.stringify(["3"]))).toBe(true)
+
+            driver.currentMixerInstance?.disconnect()
+            vi.restoreAllMocks()
+        } finally {
+            process.env.HUB_WITH_TEST = originalHubWithTest
+        }
     })
 })

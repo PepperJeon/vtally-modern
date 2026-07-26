@@ -10,7 +10,7 @@ const mixer = function(config: Cypress.PluginConfigOptions) {
     const config = new TestConfiguration()
     config.previews = previews
     config.programs = programs
-    socket.emit('config.change.test', config.toJson(), "test")
+    socket.emit('config.change.test', config.toJson())
 
     return null
   }

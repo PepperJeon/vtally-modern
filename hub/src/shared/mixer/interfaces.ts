@@ -17,6 +17,17 @@ export abstract class Configuration {
     abstract toJson(): object
     abstract clone(): Configuration
 
+    // What MixerDriver compares to decide whether a config change is worth restarting
+    // the connector over. Defaults to toJson() — for every real mixer that's exactly
+    // right, since everything in toJson() is connection/behaviour settings (a changed
+    // requestInterval, ip, etc. should restart the connector). Override this, not
+    // toJson(), if your config's toJson() also carries state that isn't a restart
+    // reason (see TestConfiguration, where toJson() doubles as the wire format for
+    // live program/preview values pushed in from the cypress plugin).
+    getRestartFingerprint(): object {
+        return this.toJson()
+    }
+
     protected loadIpAddress(fieldName: string, setter: (value:IpAddress) => void, data: object) {
         const value = data[fieldName]
         if (value === undefined || value === null) {

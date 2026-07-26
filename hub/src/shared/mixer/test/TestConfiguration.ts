@@ -44,6 +44,13 @@ class TestConfiguration extends Configuration {
         clone.fromJson(this.toJson())
         return clone
     }
+
+    // programs/previews are live runtime state, not a setting worth restarting the
+    // connector over — toJson() still carries them for the cypress plugin wire format,
+    // but MixerDriver should not treat their change as a restart reason.
+    getRestartFingerprint(): object {
+        return {}
+    }
 }
 
 export default TestConfiguration
