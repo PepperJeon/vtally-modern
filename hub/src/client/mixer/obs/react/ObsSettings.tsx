@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import MixerSettingsWrapper from '../../../components/config/MixerSettingsWrapper'
 import ValidatingInput from '../../../components/config/ValidatingInput'
 import ExternalLink from '../../../components/ExternalLink'
@@ -20,7 +20,7 @@ function ObsSettings() {
     const isLoading = !configuration
     const isValid = ipValid && portValid && liveModeValid
 
-    useMemo(() => {
+    useEffect(() => {
         // when default settings change
         if (configuration) {
             setLiveMode(configuration.getLiveMode())

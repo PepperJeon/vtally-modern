@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Checkbox as CheckboxPrimitive } from 'radix-ui'
 import { Check } from 'lucide-react'
 
@@ -59,7 +59,7 @@ function TallySettings() {
   const [stageColorScheme, setStageColorScheme] = useState<ColorSchemeId>(undefined)
   const [stageShowsPreview, setStageShowsPreview] = useState<boolean>(undefined)
   const [operatorShowsIdle, setOperatorShowsIdle] = useState<boolean>(undefined)
-  useMemo(() => {
+  useEffect(() => {
     // called when setting changed
     setOperatorBrightness(settings?.getOperatorLightBrightness())
     setStageBrightness(settings?.getStageLightBrightness())

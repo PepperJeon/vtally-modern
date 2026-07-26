@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Checkbox } from '@/components/ui/checkbox'
 import Tally from '../../shared/domain/Tally';
 import { useDefaultTallyConfiguration } from '../hooks/useConfiguration';
@@ -68,7 +68,12 @@ function TallySettings({ tally, open, onClose }: TallySettingsProps) {
   // operatorShowIdle
   const [oi, setOi] = useState<boolean>(settings ? settings.getOperatorShowsIdle() : undefined)
   const [isOiDefault, setOiDefault] = useState(settings && settings.getOperatorShowsIdle() === undefined)
-  useMemo(() => {
+  // useEffect, not useMemo. These four blocks across three files were
+  // setState-inside-useMemo — a side effect in a hook React is free to re-run,
+  // skip or discard the result of. It happened to work on React 17; React 19
+  // makes no such promise. Nothing here computes a value, so useEffect is what
+  // they always meant.
+  useEffect(() => {
     // when default settings change
     if (defaultSettings) {
       if (isObDefault) { setOb(defaultSettings.getOperatorLightBrightness()) }
@@ -79,7 +84,7 @@ function TallySettings({ tally, open, onClose }: TallySettingsProps) {
       if (isOiDefault) { setOi(defaultSettings.getOperatorShowsIdle()) }
     }
   }, [defaultSettings, isObDefault, isSbDefault, isOcDefault, isScDefault, isSpDefault, isOiDefault])
-  useMemo(() => {
+  useEffect(() => {
     // when settings are changed
     if (settings) {
       const newIsObDefault = settings.getOperatorLightBrightness() === undefined

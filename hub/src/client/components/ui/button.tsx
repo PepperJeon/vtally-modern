@@ -51,14 +51,7 @@ function Button({
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean
   }) {
-  // `as React.ElementType` is a React-17 patch, not a shadcn deviation.
-  // @types/react@16 (what React 17.0.2 pins here) still types an intrinsic
-  // element's `ref` as LegacyRef, which permits `string`; Radix's Slot.Root
-  // wants Ref<HTMLElement>, which does not. String refs were dropped in
-  // @types/react@18, so this union resolves itself the moment the React 19
-  // upgrade lands (DECISIONS.md, Deferred work) — delete this cast then and
-  // the file is stock shadcn again.
-  const Comp = (asChild ? Slot.Root : "button") as React.ElementType
+  const Comp = asChild ? Slot.Root : "button"
 
   return (
     <Comp
