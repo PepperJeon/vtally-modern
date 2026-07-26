@@ -1,4 +1,6 @@
-import midi from 'midi'
+// ponytail: @julusian/midi has prebuilds for modern Node/arm64 and ships no default export,
+// only named { Input, Output } — the old `midi` package's `midi.Input`/`midi.Output` shape.
+import * as midi from '@julusian/midi'
 import { MixerCommunicator } from '../../lib/MixerCommunicator'
 import { Connector } from '../interfaces'
 import RolandV8HDConfiguration from './RolandV8HDConfiguration'
