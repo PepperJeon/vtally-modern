@@ -39,7 +39,14 @@ if (argv['with-test'] !== undefined) {
 }
 const app = express()
 const server = new Server(app)
-const io = new SocketIoServer(server)
+// v4 relaxed engine.io's heartbeat defaults a long way (pingInterval 25s,
+// pingTimeout 20s) for flaky mobile networks. v2's were tight enough that a
+// browser noticed a dead hub in about a second; at v4's defaults the same
+// outage goes unnoticed for up to 45s, and the operator's "Hub disconnected"
+// banner with it. This is a LAN tool watched from across a control room, so
+// tight is correct: worst-case detection is now ~3s.
+// ponytail: two numbers, not a heartbeat layer -- engine.io already does this.
+const io = new SocketIoServer(server, { pingInterval: 1000, pingTimeout: 2000 })
 
 const myEmitter = new ServerEventEmitter()
 myEmitter.setMaxListeners(99)

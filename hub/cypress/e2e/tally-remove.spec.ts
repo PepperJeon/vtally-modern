@@ -19,6 +19,14 @@ import randomTallyName from '../browserlib/randomTallyName'
 import { socket } from '../../src/client/hooks/useSocket'
 
 describe('Tally remove', () => {
+  afterEach(() => {
+    // afterEach, not a .then() off the assertion chain: if the assertions
+    // above throw, a chained .then() never runs and the mock tally leaks
+    // onto the shared backend for the rest of the run (same class of bug as
+    // dialog-cancel.spec.ts / hub-disconnected-banner.spec.ts).
+    cy.task('tallyCleanup')
+  })
+
   it('removes a disconnected tally, but the menu item stays disabled while still connected', () => {
     const name = randomTallyName()
 
@@ -39,8 +47,6 @@ describe('Tally remove', () => {
 
       cy.getTestId(`tally-${name}-remove`).find('.MuiMenuItem-root').click()
       cy.getTestId(`tally-${name}-menu`).should('not.exist')
-    }).then(() => {
-      cy.task('tallyCleanup')
     })
   })
 

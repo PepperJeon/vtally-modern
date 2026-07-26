@@ -59,6 +59,37 @@ diff to that one file. Current values (from Phase 0): 25/26 unit suites,
 `got > want` → PASS with a note to consider raising the baseline. Nothing
 auto-raises it.
 
+### `cypress_failed` — the failure allowlist
+
+`verify.sh` used to gate only `cypress_passed`, a passing *count*. That let a
+change land brand-new failing tests and still print `RESULT: PASS`, as long
+as it also landed enough new passing tests to raise the ratio — nine new
+tests, two of which passed, raised `cypress_passed` from 54 to 58 while two
+tests were genuinely red. `cypress_failed` in `baseline.json` closes that
+hole: it's an allowlist, not a ratio. `verify.sh` fails the run if the actual
+failing count (`CY_FAIL`) exceeds it — the inverse of `gate_count`'s normal
+"more is better" logic, since for failures fewer is always better. A newly
+introduced failure trips the gate immediately; a previously-red test that
+gets fixed does not (it's still `<=` the allowlist, same as `gate_count`
+treating `got > want` as a pass).
+
+Every test counted in `cypress_failed` must be named here, so the number is
+never a place to quietly hide new red tests:
+
+- **`tally-settings.spec.ts`** (1 test) — racy `cy.task('tallyLastCommand',
+  ...)` read with no retry, racing the browser → socket.io → hub → UDP round
+  trip. A single flaky read, not a real defect; see the FLAKINESS NOTE at the
+  top of `tally-remove.spec.ts` for the full explanation of why this file
+  alone uses a bare task read instead of `cy.getTestId(...).should(...)`.
+
+Tests with a *known, reproducible* failure cause are `.skip`'d in their spec
+file with a comment naming the cause instead of being added here — Cypress
+counts a skipped test as pending, not failing, so it doesn't need an
+allowlist entry. As of this writing that's
+`dialog-cancel.spec.ts`'s `TallySettings` test (MUI's popover doesn't survive
+a second open cycle) and `hub-disconnected-banner.spec.ts`'s second test
+(CDP's `goOffline` doesn't reliably re-interrupt an established WebSocket).
+
 ## Surviving the Phase 1 restructure
 
 Everything that changes under Vite/Vitest lives in one `if [ -f
@@ -107,6 +138,39 @@ loop, gate table, cleanup trap) is generic and shouldn't need to change.
   produced in the first place; if the harness can't reproduce it, the
   harness is lying about the baseline. See `BASELINE.md` section 2 for the
   full root-cause writeup.
+
+## `flake2.sh` / `seqrun.sh` — narrowing down a Cypress failure
+
+Two smaller harnesses, same port-allocation trick as `verify.sh` (OS-assigned
+ports, so they're safe to run alongside anything else including `verify.sh`
+itself). Reach for these instead of re-running the whole suite when a single
+spec looks suspicious:
+
+```
+scripts/flake2.sh <repo-root> <spec-relative-path> <runs>
+scripts/seqrun.sh <repo-root> <spec1> [spec2] [spec3] ...
+```
+
+- **`flake2.sh`** runs ONE spec N times, each against a *fresh* backend and
+  frontend pair. Use it to ask "is this test flaky on its own?" — every run
+  starts from a clean server, so a flip-flopping result points at the spec
+  itself (a race, a missing retry), not at state carried over from another
+  test.
+- **`seqrun.sh`** runs a LIST of specs, in the order given, against ONE
+  shared backend and frontend — mirroring exactly how `verify.sh` runs the
+  full suite (one long-lived server pair, one `cypress run --spec` call per
+  file). Use it to ask "does an earlier spec leave something behind that
+  breaks a later one?" — pass the suspect spec plus whatever ran immediately
+  before it in a real `verify.sh` run, in the same order.
+
+Both print passing/failing per run and restart the backend automatically if
+it dies mid-sequence, matching `verify.sh`'s own crash-and-restart behaviour.
+
+These are exactly the tools that turned two ghost-hunt reports into
+reproducible findings: a `.then()`-chained `cy.task('tallyCleanup')` that
+skips on a thrown assertion (state leaking into the *next* spec — found with
+`seqrun.sh`) and a genuinely racy `cy.task` read with no retry (found with
+`flake2.sh`).
 
 ## Verification protocol
 

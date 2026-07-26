@@ -270,13 +270,30 @@ else
       echo "     log: $CY_LOG"
     fi
     if ! kill -0 "$BACKEND_PID" 2>/dev/null; then
-      echo "  WARNING: backend died after $spec (this is the known NodeMcuConnector /flasher crash if spec is smoke.spec.ts — expected, not a new failure). Restarting."
+      if [ "$spec" = "smoke.spec.ts" ]; then
+        echo "  WARNING: backend died after $spec (this is the known NodeMcuConnector /flasher crash — expected, not a new failure). Restarting."
+      else
+        echo "  WARNING: backend died after $spec. Restarting."
+      fi
       start_backend
       wait_ready "$APP_URL" || echo "  WARNING: app did not come back up"
     fi
   done < <(cd "$HUB" && ls "$CYPRESS_SPEC_DIR" | grep -v '^manual_' | sort)
   CY_TOTAL=$((CY_PASS + CY_FAIL + CY_PEND))
   gate_count "cypress passed" "$CY_PASS" "$(base cypress_passed)"
+  # Inverted gate: fewer failures is better, so "got > want" must FAIL here,
+  # the opposite of gate_count's semantics (where more is always fine). This
+  # is the fix for the gate hole: verify.sh used to compare only passing
+  # counts, so landing new tests that both pass AND fail could still raise
+  # the passing count and print RESULT: PASS. Every failure must now be an
+  # allowlisted, named test (see scripts/README.md) or the run fails.
+  CY_FAIL_BASELINE=$(base cypress_failed)
+  if [ "$CY_FAIL" -gt "$CY_FAIL_BASELINE" ]; then
+    printf "FAIL  %-28s %s  (allowlist: %s — new failing test(s), see scripts/README.md)\n" "cypress failed" "$CY_FAIL" "$CY_FAIL_BASELINE"
+    FAIL=1
+  else
+    printf "PASS  %-28s %s  (allowlist: %s)\n" "cypress failed" "$CY_FAIL" "$CY_FAIL_BASELINE"
+  fi
   echo "        (total: $CY_PASS/$CY_TOTAL, baseline total: $(base cypress_total), server log: $SERVER_LOG)"
 fi
 echo
