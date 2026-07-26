@@ -62,6 +62,20 @@ for port in "$BACKEND_PORT" "$FRONTEND_PORT"; do
   fi
 done
 
+# UDP 7411 (the tally protocol port, hub/src/server/lib/AppConfiguration.ts:51)
+# is hardcoded, unlike BACKEND_PORT/FRONTEND_PORT above which we allocate fresh
+# per run. A second hub already bound to it doesn't crash ours — UdpTallyDriver
+# just logs a bind error and closes its own socket (see
+# hub/src/server/tally/UdpTallyDriver.ts) — so every UDP-tally cypress spec
+# times out waiting for a tally element that will never appear. That reads as
+# a real regression; it's actually just two hubs on one box.
+if lsof -nP -iUDP:7411 >/dev/null 2>&1; then
+  echo "ABORT: UDP port 7411 (tally) is already in use — another hub is running."
+  lsof -nP -iUDP:7411 | tail -n +2 | sed 's/^/  /'
+  echo "  kill it, then re-run. (UDP tally tests would silently time out otherwise.)"
+  exit 2
+fi
+
 base() { node -pe "require('./$BASELINE').$1"; }
 
 # ---------------------------------------------------------------------------
