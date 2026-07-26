@@ -8,6 +8,9 @@
 # Exit code: 0 if every gate is >= baseline, 1 if any gate regressed.
 set -uo pipefail
 cd "$(dirname "$0")/.."   # repo root
+# Captured here because the distribution gate installs the tarball from a temp
+# directory, where $PWD is no longer the repo and a relative path would miss.
+PWD_REPO_ROOT="$PWD"
 HUB=hub
 BASELINE=scripts/baseline.json
 FAIL=0
