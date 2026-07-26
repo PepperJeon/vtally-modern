@@ -27,7 +27,9 @@ function TallySettingsField({label, testId, isDefault, children, className, onCh
   return <div className={className}>
     <div className={classes.labels}>
       <Typography variant="h6" paragraph className={classes.label}>{label}</Typography>
-      <ChipLikeButton data-testid={`${testId}-toggle`} size="small" selected={isDefault} onClick={() => onChange(!isDefault)}>{isDefault ? "default" : "custom"}</ChipLikeButton>
+      {/* `size="small"` dropped with MUI's Button — ChipLikeButton is now a native
+        * <button>, where `size` is a numeric attribute and means nothing here. */}
+      <ChipLikeButton data-testid={`${testId}-toggle`} selected={isDefault} onClick={() => onChange(!isDefault)}>{isDefault ? "default" : "custom"}</ChipLikeButton>
     </div>
     {children}
   </div>

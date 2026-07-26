@@ -1,17 +1,15 @@
-import { CircularProgress, makeStyles } from '@material-ui/core'
 import React from 'react'
 
-const useStyles = makeStyles((theme) => ({
-  root: {
-    display: "block",
-    margin: "0 auto",
-  }
-}))
-
+/** Indeterminate progress. CSS only — `animate-spin` plus a half-transparent
+ *  border is the whole component, so there is no MUI `CircularProgress` and no
+ *  SVG to keep on-palette. */
 function Spinner() {
-  const classes = useStyles()
   return (
-      <CircularProgress classes={{root: classes.root}} color="inherit" />
+    <div
+      role="progressbar"
+      aria-label="Loading"
+      className="mx-auto block size-10 animate-spin rounded-full border-4 border-n-700 border-t-n-100"
+    />
   )
 }
 

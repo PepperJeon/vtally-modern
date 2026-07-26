@@ -1,16 +1,7 @@
-import { darken, FormHelperText, makeStyles, Slider } from '@material-ui/core'
 import React, { useState } from 'react'
+import { Slider as SliderPrimitive } from 'radix-ui'
 
-const useStyle = makeStyles(theme => ({
-  slider: {
-    padding: theme.spacing(2, 0, 0, 0)
-  },
-  sliderDisabled: {
-    "&.MuiSlider-root": {
-      color: darken(theme.palette.common.white, 0.6)
-    }
-  },
-}))
+import { cn } from '@/lib/utils'
 
 type BrightnessSliderProps = {
   value: number|null
@@ -21,44 +12,83 @@ type BrightnessSliderProps = {
   disabled?: boolean
 }
 
-const marks = [
-  {value: 0},
-  {value: 20},
-  {value: 40},
-  {value: 60},
-  {value: 80},
-  {value: 100},
-]
+const marks = [0, 20, 40, 60, 80, 100]
 
-function BrightnessSlider({value, testId, onChange, minValue, minMessage, disabled}: BrightnessSliderProps) {
-  minValue = minValue || 0
-  disabled = disabled || false
-  const [isFocused, setFocused] = useState(false)
-  const classes = useStyle()
-
-  const handleChange = (e, value) => {
-    value = Math.max(value as number, minValue)
-    onChange && onChange(value)
-  }
+/* design-components.md §3.2.
+ *
+ * `data-testid` on `Slider.Root`, matching MUI's placement — the specs reach the
+ * thumb through it as `*[data-testid=x] *[role=slider]` and read `aria-valuenow`
+ * (cypress/browserlib/sliderTestTool.ts). Radix's Thumb is that `role="slider"`
+ * node and Radix's key handling (`event.key`: End / PageDown / ArrowLeft) is the
+ * same shape MUI's was, so the helper needs no change — ui-contract Hazard H2 and
+ * design-components §3.2 both describe that helper as driving *mouse* events,
+ * which it has not done for some time.
+ *
+ * `minValue` clamps in `onValueChange`, not via `min`, so the track still spans
+ * 0–100 and the operator can see there is a floor rather than a broken slider.
+ */
+function BrightnessSlider({value, testId, onChange, minValue = 0, minMessage, disabled = false}: BrightnessSliderProps) {
+  const [dragging, setDragging] = useState(false)
+  const [focused, setFocused] = useState(false)
+  const v = value ?? 0
+  const showBubble = dragging || focused
 
   return (
-    <div className={classes.slider}>
-      <Slider 
+    <div className="pt-6">
+      <SliderPrimitive.Root
         data-testid={testId}
-        value={value} 
-        min={0} 
+        value={[v]}
+        min={0}
         max={100}
-        marks={marks}
+        step={1}
         disabled={disabled}
-        color="primary"
-        valueLabelDisplay="auto" 
-        valueLabelFormat={val => val === 0 ? "off" : `${val}%`} 
-        onChange={handleChange}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        classes={{disabled: classes.sliderDisabled}}
-      />
-      {minMessage && isFocused && value === minValue && (<FormHelperText disabled={true}>{minMessage}</FormHelperText>)}
+        onValueChange={([next]) => onChange(Math.max(next, minValue))}
+        onPointerDown={() => setDragging(true)}
+        onPointerUp={() => setDragging(false)}
+        className="relative flex h-5 w-full touch-none select-none items-center data-[disabled]:opacity-100"
+      >
+        <SliderPrimitive.Track className="relative h-1 w-full rounded-full bg-n-700 data-[disabled]:bg-n-800">
+          <SliderPrimitive.Range className="absolute h-full rounded-full bg-n-100 data-[disabled]:bg-n-600" />
+        </SliderPrimitive.Track>
+
+        {marks.map(m => (
+          <span
+            key={m}
+            aria-hidden
+            style={{left: `${m}%`}}
+            className="pointer-events-none absolute size-1 -translate-x-1/2 rounded-full bg-n-600"
+          />
+        ))}
+
+        <SliderPrimitive.Thumb
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          aria-label="Brightness"
+          aria-valuetext={v === 0 ? "off" : `${v} percent`}
+          className={cn(
+            "relative block size-5 rounded-full bg-white",
+            "focus-visible:shadow-focus focus-visible:outline-none",
+            "data-[disabled]:bg-n-500",
+            "after:absolute after:-inset-3 after:content-['']"
+          )}
+        >
+          <span
+            aria-hidden
+            className={cn(
+              "pointer-events-none absolute bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap",
+              "rounded-sm bg-n-700 px-2 py-0.5 text-xs font-semibold tabular-nums text-text",
+              "transition-opacity duration-[var(--duration-fast)]",
+              showBubble ? "opacity-100" : "opacity-0"
+            )}
+          >
+            {v === 0 ? "off" : `${v}%`}
+          </span>
+        </SliderPrimitive.Thumb>
+      </SliderPrimitive.Root>
+
+      {minMessage && focused && v === minValue && (
+        <p className="mt-1 text-sm text-text-muted">{minMessage}</p>
+      )}
     </div>
   )
 }

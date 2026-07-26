@@ -1,47 +1,37 @@
-import { Container, makeStyles, Paper, Typography } from '@material-ui/core'
 import React from 'react'
 
-
-const useStyles = makeStyles(theme => {
-  return {
-    root: {
-      marginBottom: theme.spacing(2),
-    },
-    header: {
-      display: "flex",
-      justifyContent: "space-between",
-      padding: theme.spacing(1, 2),
-      borderBottom: "1px solid " + theme.palette.background.default,
-    },
-    content: (props: any) => ({
-      padding: theme.spacing(2, props.contentPadding || 2),
-    })
-  }
-})
+import { cn } from '@/lib/utils'
 
 type MiniPageProps = {
   title?: string,
   addHeaderContent?: React.ReactNode
   contentPadding?: string
   testId?: string
+  className?: string
   children: React.ReactNode
 }
 
-function MiniPage({ title, addHeaderContent, contentPadding, testId, children }: MiniPageProps) {
-  const classes = useStyles({
-    contentPadding
-  })
-
-  return(
-    <Container className={classes.root} maxWidth="sm" data-testid={testId}>
-      <Paper>
-        <div className={classes.header}>
-          <Typography variant="h1">{title}</Typography>
-          {addHeaderContent}
-        </div>
-        <div className={classes.content}>{children}</div>
-      </Paper>
-    </Container>
+/** A titled panel. `<h2>`, not `<h1>` — there were three `h1`s on /config
+ *  (design-screens.md §2.1). Callers that need a different measure pass
+ *  `className`; the default keeps the old centred narrow column so the pages
+ *  that have not been redesigned yet look unchanged. */
+function MiniPage({ title, addHeaderContent, contentPadding, testId, className, children }: MiniPageProps) {
+  return (
+    <div
+      data-testid={testId}
+      className={cn("mx-auto mb-4 w-full max-w-[600px] rounded-md border border-border bg-surface", className)}
+    >
+      <div className="flex items-center justify-between border-b border-border px-4 py-3">
+        <h2 className="m-0 text-xl font-semibold text-text">{title}</h2>
+        {addHeaderContent}
+      </div>
+      <div
+        className="p-6 max-sm:p-4"
+        style={contentPadding !== undefined ? { padding: contentPadding } : undefined}
+      >
+        {children}
+      </div>
+    </div>
   )
 }
 

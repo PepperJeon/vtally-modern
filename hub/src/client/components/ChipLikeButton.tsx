@@ -1,55 +1,37 @@
-import { Button, ButtonProps, fade, lighten, makeStyles } from '@material-ui/core'
 import React from 'react'
 
-const useStyles = makeStyles(theme => ({
-  root: {
-    padding: theme.spacing(0, 2),
-    height: theme.spacing(4),
-    borderRadius: theme.spacing(4) /2,
-    textTransform: "none",
-    fontWeight: "normal",
-    whiteSpace: "nowrap",
-    textOverflow: "ellipsis",
-    fontSize: "0.8125rem",
-  },
-  contained: {
-    color: theme.palette.common.white,
-    backgroundColor: fade(theme.palette.common.white, 0.25),
-    "&:hover, &:focus, &:active": {
-      backgroundColor: fade(theme.palette.common.white, 0.4),
-    }
-  },
-  containedPrimary: {
-    color: theme.palette.getContrastText(theme.palette.primary.main),
-    backgroundColor: theme.palette.primary.main,
-    "&:hover, &:focus, &:active": {
-      backgroundColor: lighten(theme.palette.primary.main, 0.25),
-    },
-    "&.Mui-disabled": {
-      backgroundColor: fade(theme.palette.primary.main, 0.4),
-    },
-  },
-  containedSecondary: {
-    color: theme.palette.getContrastText(theme.palette.secondary.main),
-    backgroundColor: theme.palette.secondary.main,
-    "&:hover, &:focus, &:active": {
-      backgroundColor: lighten(theme.palette.secondary.main, 0.25),
-    },
-    "&.Mui-disabled": {
-      backgroundColor: fade(theme.palette.secondary.main, 0.4),
-    },
-  }
-}))
+import { cn } from '@/lib/utils'
 
 type ChipLikeButtonProps = {
   selected: boolean
-} & ButtonProps
+} & React.ComponentProps<'button'>
 
-// A button that looks like a [Chip](https://material-ui.com/components/chips/#chip)
-function ChipLikeButton(props: ChipLikeButtonProps) {
-  const classes = useStyles()
-
-  return (<Button data-selected={props.selected} variant="contained" disableElevation={true} color={props.selected ? "primary" : "default" } classes={classes} {...props} />)
+// A pill-shaped toggle button. `data-selected` is a live contract
+// (ui-contract.md §2.7) read by tally-settings.spec.ts and webtally.spec.ts.
+//
+// `type="button"` is load-bearing, not decoration: every instance renders inside
+// a <form> (ColorSchemeSelector sits in the Tally Defaults form), and without it
+// the browser default of `submit` turns "pick a colour scheme" into "save".
+// MUI's Button set it for us.
+function ChipLikeButton({selected, className, disabled, ...rest}: ChipLikeButtonProps) {
+  return (
+    <button
+      type="button"
+      data-selected={selected}
+      disabled={disabled}
+      className={cn(
+        "inline-flex h-11 items-center whitespace-nowrap rounded-full border border-transparent px-4",
+        "font-sans text-sm font-medium transition-colors duration-[var(--duration-fast)]",
+        "focus-visible:shadow-focus focus-visible:outline-none",
+        selected
+          ? "bg-white text-n-950 hover:bg-n-100"
+          : "bg-surface-hover text-text hover:bg-n-700",
+        disabled && "cursor-not-allowed bg-n-600 text-text-disabled hover:bg-n-600",
+        className
+      )}
+      {...rest}
+    />
+  )
 }
 
 export default ChipLikeButton
