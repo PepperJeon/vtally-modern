@@ -1,18 +1,9 @@
-import { makeStyles, NativeSelect, Typography } from '@material-ui/core'
 import React, { useState } from 'react'
 import { useAllowedMixersConfiguration, useMixerNameConfiguration } from '../../hooks/useConfiguration'
 import { MIXERS } from '../../mixer/registry'
+import { NativeSelect } from '../ui/native-select'
 import Spinner from '../layout/Spinner'
 import MiniPage from '../layout/MiniPage'
-
-const useStyles = makeStyles(theme => ({
-    text: {
-        color: theme.palette.grey[600]
-    },
-    select: {
-        marginBottom: theme.spacing(2),
-    },
-}))
 
 function MixerSelection() {
     const mixerName = useMixerNameConfiguration()
@@ -20,7 +11,6 @@ function MixerSelection() {
 
     const [oldMixerName, setOldMixerName] = useState(mixerName)
     const [mixerId, setMixerId] = useState(mixerName)
-    const classes = useStyles()
 
     const isLoading = mixerName === undefined || allowedMixers === undefined
     // Adjusting state during render is the documented React way to reset local
@@ -39,17 +29,16 @@ function MixerSelection() {
     const currentMixer = availableMixers.find(mixer => mixer.id === mixerId)
 
     return (
-        <MiniPage title="Video Mixer">
-            <Typography paragraph className={classes.text}>Select a Video Mixer to use.</Typography>
+        <MiniPage title="Video Mixer" className="max-w-[560px]">
+            <p className="m-0 mb-4 text-sm text-text-muted">Select a Video Mixer to use.</p>
             {isLoading ? <Spinner /> : (<>
-                <div className={classes.select}>
-                    <NativeSelect data-testid="mixer-select" value={mixerId} onChange={e => setMixerId(e.target.value)}>
-                        {availableMixers.map(mixer => (
-                            <option key={mixer.id} value={mixer.id}>{mixer.label}</option>
-                        ))}
-                    </NativeSelect>
-                </div>
-                {currentMixer && <currentMixer.Settings />}
+                <NativeSelect data-testid="mixer-select" aria-label="Video Mixer" value={mixerId} onChange={e => setMixerId(e.target.value)}>
+                    {availableMixers.map(mixer => (
+                        <option key={mixer.id} value={mixer.id}>{mixer.label}</option>
+                    ))}
+                </NativeSelect>
+                {/* the selector changes what is below it, so make that visible */}
+                {currentMixer && <div className="mt-4 border-t border-border pt-4"><currentMixer.Settings /></div>}
             </>)}
         </MiniPage>
     )

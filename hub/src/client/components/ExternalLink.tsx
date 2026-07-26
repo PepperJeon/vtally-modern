@@ -1,13 +1,14 @@
 import React from 'react'
-import { Link } from "@material-ui/core"
 
-function ExternalLink(props: any) {
-    const myProps = {...props, ...{
-        target: "_blank",
-        rel: "noreferrer noopener",
-    }}
-
-    return (<Link {...myProps} />)
+function ExternalLink({className, ...rest}: React.ComponentProps<'a'>) {
+    return (
+        <a
+            target="_blank"
+            rel="noreferrer noopener"
+            className={"text-text underline underline-offset-2 hover:text-white focus-visible:shadow-focus focus-visible:outline-none " + (className || "")}
+            {...rest}
+        />
+    )
 }
 
 export default ExternalLink

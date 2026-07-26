@@ -42,12 +42,12 @@ describe('Check vMix Configuration', () => {
   it('shows a warning when Web UI Port is set', () => {
     cy.getTestId("vmix-port").type("{selectall}8099")
     cy.getTestId("vmix-submit").should('be.enabled')
-    cy.getTestId("vmix-port").not('p.MuiFormHelperText-root')
+    cy.getTestId("vmix-port-warning").should('not.exist')
 
     // port
     cy.getTestId("vmix-port").type("{selectall}8088")
     cy.getTestId("vmix-submit").should('be.enabled')
-    cy.getTestId("vmix-port").contains('p.MuiFormHelperText-root', "This will probably not work.")
+    cy.getTestId("vmix-port-warning").should('contain.text', "This will probably not work.")
   })
 
   it('can save', () => {
