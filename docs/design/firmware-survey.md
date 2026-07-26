@@ -77,6 +77,15 @@ and only merged together at release-packaging time.
 
 ## 2. Wire protocol — hub and tally agree, verified line-by-line
 
+> **Full reference:** the detailed byte-exact protocol document now lives at
+> `documentation/docs/protocol.md` — transport (ports, timing, keep-alive,
+> liveness thresholds), every message type with worked examples, state/color
+> semantics, the config/settings split, a versioning trace (no handshake
+> exists; the only break was v0.4.0) plus a proposed lightweight handshake,
+> and a compatibility matrix pulled from `Changelog.md`. This section stays
+> as the summary; that document is the one to hand someone debugging a dark
+> tally at 2am.
+
 Directly compared `hub/src/tally/CommandCreator.ts` + `CommandParser.ts` (hub side, read-only)
 against `tally/src/my-tally.lua` (device side). Both directions match exactly, in every
 literal detail — marker characters, field widths, zero-padding, terminator.
