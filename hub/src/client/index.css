@@ -263,3 +263,42 @@
   --color-input:               var(--input);
   --color-ring:                var(--ring);
 }
+
+/* =========================================================================
+ * WebTallyPage locate strobe — design-screens.md §4.4.
+ *
+ * 4Hz `step-start`, not the tally card's 1Hz: the card is one of twelve on a
+ * monitor being scanned, the phone is a single light someone is sweeping a
+ * room for. A hard step, not a fade — a fade spends half its cycle at
+ * intermediate greys that read as neither.
+ *
+ * The colours are literal because both are absolute: white and black, with the
+ * text at contrastText() of each, faded to the same 70% the rest of the page
+ * chrome uses. Brightness deliberately does NOT apply (§4.3 note 4) — dimming
+ * a locate signal defeats the request.
+ *
+ * `webtally-visible-effect.spec.ts` samples getComputedStyle().backgroundColor
+ * over ~600ms and requires it to actually change. Deleting these keyframes
+ * leaves data-color="highlight" perfectly correct and the locate function dead,
+ * which is exactly the failure that spec exists to catch.
+ * ========================================================================= */
+@theme static {
+  --animate-webtally-highlight: webtally-highlight 0.25s step-start infinite;
+
+  @keyframes webtally-highlight {
+    from { background-color: #FFFFFF; color: rgba(11, 14, 17, 0.7); }
+    50%  { background-color: #000000; color: rgba(255, 255, 255, 0.7); }
+    to   { background-color: #FFFFFF; color: rgba(11, 14, 17, 0.7); }
+  }
+}
+
+/* Reduced motion gets a static WHITE fill, not black: a static white phone in
+ * a dark studio is still findable, a static black one is not (tokens §2.8).
+ * `!important` because the page writes its own fill as an inline style. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-webtally-highlight {
+    animation: none;
+    background-color: #FFFFFF !important;
+    color: rgba(11, 14, 17, 0.7) !important;
+  }
+}

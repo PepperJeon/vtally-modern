@@ -36,16 +36,16 @@ describe('Tally remove', () => {
       cy.getTestId(`tally-${name}-menu`).find('button').click()
 
       // still connected: remove must be disabled (TallyMenu.tsx: allowRemove = !tally.isConnected())
-      cy.getTestId(`tally-${name}-remove`).find('.MuiMenuItem-root').should('have.class', 'Mui-disabled')
+      cy.getTestId(`tally-${name}-remove`).should('have.attr', 'aria-disabled', 'true')
 
       // close the menu before disconnecting, then disconnect the mock tally
       cy.get('body').type('{esc}')
       cy.task('tallyDisconnect', name)
 
       cy.getTestId(`tally-${name}-menu`).find('button').click()
-      cy.getTestId(`tally-${name}-remove`).find('.MuiMenuItem-root').should('not.have.class', 'Mui-disabled')
+      cy.getTestId(`tally-${name}-remove`).should('not.have.attr', 'aria-disabled', 'true')
 
-      cy.getTestId(`tally-${name}-remove`).find('.MuiMenuItem-root').click()
+      cy.getTestId(`tally-${name}-remove`).click()
       cy.getTestId(`tally-${name}-menu`).should('not.exist')
     })
   })
@@ -58,8 +58,8 @@ describe('Tally remove', () => {
     cy.visit('/')
     cy.getTestId('page-index')
     cy.getTestId(`tally-${name}-menu`).find('button').click()
-    cy.getTestId(`tally-${name}-remove`).find('.MuiMenuItem-root').should('not.have.class', 'Mui-disabled')
-    cy.getTestId(`tally-${name}-remove`).find('.MuiMenuItem-root').click()
+    cy.getTestId(`tally-${name}-remove`).should('not.have.attr', 'aria-disabled', 'true')
+    cy.getTestId(`tally-${name}-remove`).click()
 
     cy.getTestId(`tally-${name}-menu`).should('not.exist')
   })

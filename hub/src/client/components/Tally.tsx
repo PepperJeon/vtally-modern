@@ -4,131 +4,109 @@ import { Tally as TallyType } from '../../shared/domain/Tally'
 import useChannels from '../hooks/useChannels'
 import useProgramPreview from '../hooks/useProgramPreview'
 import { socket } from '../hooks/useSocket'
-import { Paper } from '@material-ui/core'
-import { makeStyles } from '@material-ui/core'
 import TallyMenu from './TallyMenu'
-
-
-const useStyles = makeStyles(theme => {
-    return {
-        tally: {
-            border: "solid 1px " + theme.palette.grey[800],
-            width: "250px",
-            margin: theme.spacing(1),
-            backgroundColor: theme.palette.grey[700],
-            overflow: "hidden",
-        },
-        borderInPreview: {
-            borderColor: theme.palette.success.main,
-        },
-        borderInProgram: {
-            borderColor: theme.palette.error.main,
-        },
-        borderUnpatched: {
-            borderColor: theme.palette.grey[500],
-        },
-        bgInPreview: {
-            backgroundColor: theme.palette.success.main,
-        },
-        bgInProgram: {
-            backgroundColor: theme.palette.error.main,
-        },
-        bgUnpatched: {
-            backgroundColor: theme.palette.grey[500],
-        },
-        tallyHead: {
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            padding: theme.spacing(1, 1, 1, 2),
-            borderBottom: "1px solid " + theme.palette.grey[800],
-        },
-        tallyHeadTitle:  {
-
-        },
-        tallyHeadIcon: {
-
-        },
-        tallyBody: {
-            padding: theme.spacing(2)
-        },
-        tallyFoot: {
-            padding: theme.spacing(1, 2),
-            borderTop: "1px solid " + theme.palette.grey[800],
-            fontSize: "0.75rem",
-            display: "flex",
-            justifyContent: "space-between",
-            width: "100%",
-            textTransform: "uppercase",
-            fontWeight: "bold",
-        },
-        tallyFootMissing: {
-            backgroundColor: theme.palette.warning.main,
-            color: theme.palette.getContrastText(theme.palette.warning.main)
-        },
-        tallyFootItem: {
-            textAlign: "center",
-            flexGrow: 1,
-        },
-    }
-})
+import { cn } from '@/lib/utils'
 
 type TallyProps = {
     tally: TallyType
     className?: string
 }
 
+type DataColor = "unpatched" | "program" | "preview" | "idle"
+type Health = "connected" | "missing" | "disconnected"
+
+const stateWord: Record<DataColor, string> = {
+    program: "on air",
+    preview: "preview",
+    idle: "idle",
+    unpatched: "unpatched",
+}
+
+/**
+ * The tally card — design-components.md §1.
+ *
+ * Two axes that never overwrite each other (§1.0): program state (`data-color`)
+ * and transport health (`data-health`). A card can be `program` AND
+ * `disconnected` — the product's worst case — and it must show both at once:
+ * solid red fill from the state axis, dashed grey outline plus a struck-through
+ * "ON AIR" from the health axis. Health is drawn with `outline`, not `border`,
+ * precisely so the two axes cannot fight over one property (§1.3).
+ *
+ * DOM contract: `data-testid`, `data-color` and `data-isactive` all sit on the
+ * one root node (ui-contract §1.5/§2.1/§2.2), exactly where MUI's `Paper` put
+ * them. `data-health` is new and carries no spec obligation; it exists so the
+ * health styling is attribute-driven like the rest instead of a fourth
+ * className branch.
+ *
+ * DEVIATION from §1.3's copy: the health words stay `connected` / `missing` /
+ * `disconnected` rather than becoming CONNECTED / NOT REPORTING / NO SIGNAL.
+ * `tally.spec.ts:41` asserts `cy.getTestId('tally-x').contains("missing")` and
+ * that spec edit is not authorised. The uppercasing is done in CSS, so the card
+ * reads the way the design intends while the DOM text is unchanged.
+ */
 function Tally({ tally, className }: TallyProps) {
     const channels = useChannels()
     const [programs, previews] = useProgramPreview()
-    const classes = useStyles()
 
     const patchTally = function (tally, channel) {
         socket.emit('tally.patch', tally.name, tally.type, channel)
     }
 
-    const classRoot: string[] = []
-    className && classRoot.push(className)
-    classRoot.push(classes.tally)
-    const classHead = [classes.tallyHead]
-    let dataColor = "idle"
-    let isActive = false
+    let dataColor: DataColor = "idle"
     if (!tally.isPatched()) {
-        classRoot.push(classes.borderUnpatched)
         dataColor = "unpatched"
     } else if (programs && tally.isIn(programs)) {
-        classRoot.push(classes.borderInProgram)
         dataColor = "program"
     } else if (previews && tally.isIn(previews)) {
-        classRoot.push(classes.borderInPreview)
         dataColor = "preview"
     }
-    if (tally.isActive()) {
-        isActive = true
-        if (!tally.isPatched()) {
-            classHead.push(classes.bgUnpatched)
-        } else if (programs && tally.isIn(programs)) {
-            classHead.push(classes.bgInProgram)
-        } else if (previews && tally.isIn(previews)) {
-            classHead.push(classes.bgInPreview)
-        }
-    }
+    const isActive = tally.isActive()
+    const health: Health = !isActive ? "disconnected" : (tally.isMissing() ? "missing" : "connected")
 
-    return (<>
-        <Paper data-color={dataColor} data-isactive={isActive} className={classRoot.join(" ")} data-testid={`tally-${tally.name}`}>
-            <div className={classHead.join(" ")}><>
-                <div className={classes.tallyHeadTitle}>{tally.name}</div>
-                <TallyMenu className={classes.tallyHeadIcon} tally={tally} />
-            </></div>
-            <div className={classes.tallyBody}>
+    return (
+        <article
+            data-testid={`tally-${tally.name}`}
+            data-color={dataColor}
+            data-isactive={isActive}
+            data-health={health}
+            role="group"
+            aria-label={`${tally.name}, ${stateWord[dataColor]}, ${health}`}
+            className={cn(
+                "group box-border w-[250px] overflow-hidden rounded-md border border-border bg-surface-raised text-text transition-none",
+                // state axis — fill and border only
+                "data-[color=idle]:border-idle",
+                "data-[color=preview]:border-[3px] data-[color=preview]:border-preview",
+                "data-[color=unpatched]:border-2 data-[color=unpatched]:border-dashed data-[color=unpatched]:border-unpatched",
+                "data-[color=program]:border-live data-[color=program]:bg-live data-[color=program]:text-on-fill",
+                // health axis — outline only, so it can never erase the fill
+                "data-[health=disconnected]:outline-2 data-[health=disconnected]:outline-dashed data-[health=disconnected]:outline-offset-2 data-[health=disconnected]:outline-disconnected",
+                className
+            )}
+        >
+            <div className="flex items-center justify-between gap-2 border-b border-border py-2 pl-4 pr-3">
+                <div className="truncate text-2xl font-semibold tracking-tight">{tally.name}</div>
+                <TallyMenu tally={tally} />
+            </div>
+            <div className="p-4">
                 <ChannelSelector value={tally.channelId} channels={channels} onChange={value => patchTally(tally, value)} />
             </div>
-            <div className={classes.tallyFoot + (tally.isActive() && tally.isMissing() ? " " + classes.tallyFootMissing : "")}>
-                <div className={classes.tallyFootItem}>{ tally.isActive() ? (tally.isMissing() ? "missing": "connected") : "disconnected" }</div>
-                {tally.isUdpTally() && tally.address && tally.port && (<div className={classes.tallyFootItem}>{tally.address}:{tally.port}</div>)}
+            <div className="border-t border-border px-4 py-2 text-xs font-semibold uppercase tracking-wide group-data-[health=missing]:bg-missing group-data-[health=missing]:text-on-fill">
+                {/* §1.4: both words, never one replacing the other. The mixer says
+                  * this camera is live; the lamp is not answering. A plain red card
+                  * would tell the operator the lamp is lit. */}
+                <div className="flex justify-between gap-2">
+                    <span className={cn(health === "disconnected" && "line-through")}>{stateWord[dataColor]}</span>
+                    {/* grey only where it reads as grey — on a red program fill
+                      * --color-disconnected has no contrast, so the on-fill colour
+                      * is kept there instead */}
+                    <span className={cn(health === "disconnected" && dataColor !== "program" && "text-disconnected")}>{health}</span>
+                </div>
+                {tally.isUdpTally() && tally.address && tally.port && (
+                    <div className="pt-0.5 text-right font-mono text-2xs font-normal normal-case tabular-nums opacity-80">{tally.address}:{tally.port}</div>
+                )}
             </div>
-        </Paper>
-    </>)
+        </article>
+    )
 }
 
 

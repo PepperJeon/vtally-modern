@@ -1,17 +1,6 @@
-import { makeStyles, Select } from "@material-ui/core";
 import React from "react";
 import Channel from '../../shared/domain/Channel'
-
-const useStyles = makeStyles(theme => ({
-    root: {
-        display: "block",
-        overflow: "hidden",
-        marginBottom: theme.spacing(2),
-    },
-    select: {
-        paddingTop: theme.spacing(1),
-    },
-}))
+import { NativeSelect } from '@/components/ui/native-select'
 
 type ChannelSelectorProps = {
     channels?: Channel[]
@@ -19,12 +8,17 @@ type ChannelSelectorProps = {
     onChange?: (value: string|null) => void
 }
 
+/* `data-testid="channel-selector"` lands on the NativeSelect WRAPPER, which is
+ * where MUI's `Select` put it too. Every spec reaches this through a descendant
+ * selector — `*[data-testid=tally-x] *[data-testid=channel-selector] select` and
+ * `… :selected` (tally.spec.ts, webtally.spec.ts) — so moving it onto the
+ * <select> would make all of them resolve to nothing (design-components.md
+ * §2.0 Rule A, the "both selector shapes are live" case). */
 const ChannelSelector = ({channels, value = null, onChange} : ChannelSelectorProps) => {
     channels = channels || []
-    const classes = useStyles()
 
-    const handleValueChange = (e) => {
-        let val = e.target.value.toString()
+    const handleValueChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        let val: string|null = e.target.value.toString()
         if (val === "") { val = null }
 
         if (onChange) {
@@ -34,7 +28,7 @@ const ChannelSelector = ({channels, value = null, onChange} : ChannelSelectorPro
 
     let optionFound = value === null
 
-    return (<Select data-testid="channel-selector" native autoWidth={true} className={classes.root} classes={{ select: classes.select }} value={value || ""} onChange={handleValueChange}>
+    return (<NativeSelect data-testid="channel-selector" value={value || ""} onChange={handleValueChange}>
         <option value="" key={null}>(unpatched)</option>
         {channels.map(c => {
             if (c.id === value) {
@@ -43,7 +37,7 @@ const ChannelSelector = ({channels, value = null, onChange} : ChannelSelectorPro
             return <option key={c.id} value={c.id}>{c.name || `Channel ${c.id}`}</option>
         })}
         { !optionFound && value !== undefined ? (<option key={value} value={value}>Channel {value}</option>) : "" }
-    </Select>)
+    </NativeSelect>)
 }
 
 export default ChannelSelector;
