@@ -8,6 +8,7 @@ import NullConfiguration from "../../shared/mixer/null/NullConfiguration";
 import ObsConfiguration from "../../shared/mixer/obs/ObsConfiguration";
 import RolandV8HDConfiguration from "../../shared/mixer/rolandV8HD/RolandV8HDConfiguration"
 import RolandV60HDConfiguration from "../../shared/mixer/rolandV60HD/RolandV60HDConfiguration"
+import FeelworldConfiguration from "../../shared/mixer/feelworld/FeelworldConfiguration"
 import TestConfiguration from "../../shared/mixer/test/TestConfiguration";
 import VmixConfiguration from "../../shared/mixer/vmix/VmixConfiguration";
 import { DefaultTallyConfiguration } from "../../shared/tally/TallyConfiguration";
@@ -24,6 +25,7 @@ export interface EventHandlersDataMap {
     'config.changed.obs': (obsConfiguration: ObsConfiguration) => void
     'config.changed.rolandV8HD': (rolandV8HDConfiguration: RolandV8HDConfiguration) => void
     'config.changed.rolandV60HD': (rolandV60HDConfiguration: RolandV60HDConfiguration) => void
+    'config.changed.feelworld': (feelworldConfiguration: FeelworldConfiguration) => void
     'config.changed.test': (testConfiguration: TestConfiguration) => void
     'config.changed.vmix': (vmixConfiguration: VmixConfiguration) => void
     'config.changed.tallyconfig': (tallyConfiguration: DefaultTallyConfiguration) => void

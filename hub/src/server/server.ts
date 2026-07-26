@@ -19,6 +19,7 @@ import VmixConfiguration from '../shared/mixer/vmix/VmixConfiguration'
 import ObsConfiguration from '../shared/mixer/obs/ObsConfiguration'
 import RolandV8HDConfiguration from '../shared/mixer/rolandV8HD/RolandV8HDConfiguration'
 import RolandV60HDConfiguration from '../shared/mixer/rolandV60HD/RolandV60HDConfiguration'
+import FeelworldConfiguration from '../shared/mixer/feelworld/FeelworldConfiguration'
 import MockConfiguration from '../shared/mixer/mock/MockConfiguration'
 import TestConnector from './mixer/test/TestConnector'
 import TestConfiguration from '../shared/mixer/test/TestConfiguration'
@@ -150,6 +151,7 @@ io.on('connection', (socket: ServerSideSocket) => {
     socket.emit('config.state.obs', myConfiguration.getObsConfiguration().toJson())
     socket.emit('config.state.rolandV8HD', myConfiguration.getRolandV8HDConfiguration().toJson())
     socket.emit('config.state.rolandV60HD', myConfiguration.getRolandV60HDConfiguration().toJson())
+    socket.emit('config.state.feelworld', myConfiguration.getFeelworldConfiguration().toJson())
     socket.emit('config.state.vmix', myConfiguration.getVmixConfiguration().toJson())
     socket.emit('config.state.tallyconfig', myConfiguration.getTallyConfiguration().toJson())
   })
@@ -279,6 +281,15 @@ io.on('connection', (socket: ServerSideSocket) => {
     const rolandV60HD = new RolandV60HDConfiguration()
     rolandV60HD.fromJson(newRolandV60HDConfiguration)
     myConfiguration.setRolandV60HDConfiguration(rolandV60HD)
+
+    if (newMixerName) {
+      myConfiguration.setMixerSelection(newMixerName)
+    }
+  })
+  socket.on('config.change.feelworld', (newFeelworldConfiguration, newMixerName) => {
+    const feelworld = new FeelworldConfiguration()
+    feelworld.fromJson(newFeelworldConfiguration)
+    myConfiguration.setFeelworldConfiguration(feelworld)
 
     if (newMixerName) {
       myConfiguration.setMixerSelection(newMixerName)
