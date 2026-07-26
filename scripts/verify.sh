@@ -15,12 +15,28 @@ PIDS=()
 
 cleanup() {
   for p in "${PIDS[@]:-}"; do kill "$p" 2>/dev/null; done
-  # backstop in case npm/ts-node forked children the PID kill above missed
+  # backstop in case npm/ts-node forked children the PID kill above missed.
+  # Match the REAL command lines: `npm run start:frontend` execs
+  # `node .../react-scripts/scripts/start.js`, so a "react-scripts start"
+  # pattern never matches and the CRA dev server survives every run.
   pkill -f "ts-node.*server\.ts.*--with-test" 2>/dev/null
-  pkill -f "react-scripts start" 2>/dev/null
-  pkill -f "vite " 2>/dev/null
+  pkill -f "react-scripts/scripts/start.js" 2>/dev/null
+  pkill -f "vite/bin/vite" 2>/dev/null
 }
 trap cleanup EXIT INT TERM
+
+# A server left over from an earlier run makes this harness lie: our own backend
+# fails to bind, wait_ready succeeds against the STRANGER, and cypress then runs
+# against a server started without --with-test (no TestConnector) — dozens of
+# spurious failures with no visible cause. Refuse to run instead.
+for port in 3000 3001; do
+  if lsof -nP -iTCP:$port -sTCP:LISTEN >/dev/null 2>&1; then
+    echo "ABORT: port $port is already in use — a previous run's server is still alive."
+    lsof -nP -iTCP:$port -sTCP:LISTEN | tail -n +2 | sed 's/^/  /'
+    echo "  kill it, then re-run. (Results would be measured against the wrong server.)"
+    exit 2
+  fi
+done
 
 base() { node -pe "require('./$BASELINE').$1"; }
 
@@ -58,13 +74,15 @@ gate_exit() { # gate_exit <label> <exit-status>
 
 gate_count() { # gate_count <label> <got> <want>
   local got=$2 want=$3
+  # "$got / $want" reads as "got of total" and it is not — $want is the
+  # baseline. Spell it out; the run's own totals are printed separately.
   if [ "$got" -lt "$want" ]; then
-    printf "FAIL  %-28s %s / %s  (baseline: %s)\n" "$1" "$got" "$3" "$want"
+    printf "FAIL  %-28s %s  (baseline: %s)\n" "$1" "$got" "$want"
     FAIL=1
   elif [ "$got" -gt "$want" ]; then
-    printf "PASS  %-28s %s / %s  (better than baseline — consider raising %s)\n" "$1" "$got" "$3" "$BASELINE"
+    printf "PASS  %-28s %s  (baseline: %s — better, raise it in %s)\n" "$1" "$got" "$want" "$BASELINE"
   else
-    printf "PASS  %-28s %s / %s\n" "$1" "$got" "$3"
+    printf "PASS  %-28s %s  (baseline: %s)\n" "$1" "$got" "$want"
   fi
 }
 
@@ -110,11 +128,19 @@ echo
 echo "== bundle leak check (server-only deps must not reach the client bundle) =="
 if [ $BUILD_STATUS -eq 0 ] && [ -d "$BUNDLE_DIR" ]; then
   LEAKS=$(grep -rl "obs-websocket\|nodemcu\|atem-connection\|@julusian" "$BUNDLE_DIR" 2>/dev/null | wc -l | tr -d ' ')
-  if [ "$LEAKS" -ne 0 ]; then
-    printf "FAIL  %-28s %s file(s) leak a server-only dep — MUST be 0\n" "bundle leak check" "$LEAKS"
+  WANT_LEAKS=$(base bundle_leaks)
+  # Pre-Phase-1 this is EXPECTED to be non-zero: ObsSettings.tsx imports
+  # ObsConnector just for ObsConnector.ID and drags obs-websocket-js into the
+  # client bundle (plan §0.1). Gate on "no worse than baseline", not on 0 —
+  # hard-coding 0 made the harness fail at the known-good state.
+  # Phase 1 drives this to 0; lower the baseline in the same commit.
+  if [ "$LEAKS" -gt "$WANT_LEAKS" ]; then
+    printf "FAIL  %-28s %s file(s) leak a server-only dep (baseline: %s)\n" "bundle leak check" "$LEAKS" "$WANT_LEAKS"
     FAIL=1
+  elif [ "$LEAKS" -lt "$WANT_LEAKS" ]; then
+    printf "PASS  %-28s %s leaked (baseline: %s — better, lower it in %s)\n" "bundle leak check" "$LEAKS" "$WANT_LEAKS" "$BASELINE"
   else
-    printf "PASS  %-28s 0 leaked files\n" "bundle leak check"
+    printf "PASS  %-28s %s leaked (baseline: %s)\n" "bundle leak check" "$LEAKS" "$WANT_LEAKS"
   fi
 else
   printf "FAIL  %-28s (build failed or bundle dir missing: %s)\n" "bundle leak check" "$BUNDLE_DIR"
