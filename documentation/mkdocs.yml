@@ -1,0 +1,36 @@
+site_name: vTally – Open Source Tally Light
+site_url: https://wifi-tally.github.io/
+repo_url: https://github.com/wifi-tally/wifi-tally
+edit_uri: edit/master/documentation/docs/
+site_description: A low-cost, high-reliable Open Source WiFi Tally Light
+#nav:
+#  - Home: index.md
+#  - Getting Started: getting-started.md
+#  - Download: download.md
+#  - About: about.md
+strict: true
+# works better when opening the documentation locally in a release
+use_directory_urls: false
+extra:
+  social:
+    - icon: fontawesome/brands/github-alt
+      link: https://github.com/wifi-tally
+  github_link: https://github.com/wifi-tally/wifi-tally
+  latest_version: 0.5.2
+  hub_default_port: 3000
+  hub_nodejs_version: 14
+  tally_default_port: 7411
+theme:
+  name: material
+  font: false
+  logo: images/logo.png
+  favicon: images/favicon.png
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.mark
+plugins:
+  - search
+  - macros
