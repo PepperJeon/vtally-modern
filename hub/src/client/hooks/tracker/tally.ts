@@ -1,11 +1,11 @@
-import {EventEmitter} from 'events'
+import Emitter from '../../lib/Emitter'
 import Tally from '../../../shared/domain/Tally'
 import { ClientSideSocket } from '../../../shared/lib/SocketEvents'
 
-class TallyTracker extends EventEmitter{
+class TallyTracker extends Emitter{
     tallies: Tally[] | null
     
-    constructor(socket: ClientSideSocket, socketEventEmitter: EventEmitter) {
+    constructor(socket: ClientSideSocket, socketEventEmitter: Emitter) {
         super()
         this.tallies = null
 

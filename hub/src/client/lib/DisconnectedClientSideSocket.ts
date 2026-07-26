@@ -1,16 +1,16 @@
-import { EventEmitter } from "events";
+import Emitter from "./Emitter";
 import { ClientSideSocket } from "../../shared/lib/SocketEvents";
 
 // used for tests only
 class DisconnectedClientSideSocket implements ClientSideSocket {
     connected: boolean
-    clientEventEmitter: EventEmitter
-    serverEventEmitter: EventEmitter
+    clientEventEmitter: Emitter
+    serverEventEmitter: Emitter
 
     constructor() {
         this.connected = false
-        this.clientEventEmitter = new EventEmitter()
-        this.serverEventEmitter = new EventEmitter()
+        this.clientEventEmitter = new Emitter()
+        this.serverEventEmitter = new Emitter()
     }
 
     on(event: string|symbol, listener: (...args: any[]) => void) {

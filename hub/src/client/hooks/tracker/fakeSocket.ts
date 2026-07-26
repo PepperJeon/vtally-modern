@@ -1,4 +1,4 @@
-import { EventEmitter } from 'events'
+import Emitter from '../../lib/Emitter'
 import DisconnectedClientSideSocket from '../../lib/DisconnectedClientSideSocket'
 
 // ponytail: DisconnectedClientSideSocket already implements ClientSideSocket and its own
@@ -25,7 +25,7 @@ export class FakeSocket extends DisconnectedClientSideSocket {
 
 export function createHarness() {
     const socket = new FakeSocket()
-    const socketEventEmitter = new EventEmitter()
+    const socketEventEmitter = new Emitter()
     return {
         socket,
         socketEventEmitter,
@@ -38,7 +38,7 @@ export function createHarness() {
  * Records every emission of `eventName`. `count` is the fail-if-never-called guard —
  * assert it before reading `last`, so a listener that never ran can't pass silently.
  */
-export function record(tracker: EventEmitter, eventName: string) {
+export function record(tracker: Emitter, eventName: string) {
     const calls: any[][] = []
     const listener = (...args: any[]) => { calls.push(args) }
     tracker.on(eventName, listener)

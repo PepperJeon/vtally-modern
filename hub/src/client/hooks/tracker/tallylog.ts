@@ -1,11 +1,11 @@
-import {EventEmitter} from 'events'
+import Emitter from '../../lib/Emitter'
 import Log from '../../../shared/domain/Log'
 import { ClientSideSocket } from '../../../shared/lib/SocketEvents'
 
-class TallyLogTracker extends EventEmitter{
+class TallyLogTracker extends Emitter{
     logs: Map<string, Log[]> | null
     
-    constructor(socket: ClientSideSocket, socketEventEmitter: EventEmitter) {
+    constructor(socket: ClientSideSocket, socketEventEmitter: Emitter) {
         super()
         this.logs = null
 

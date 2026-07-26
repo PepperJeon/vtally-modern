@@ -1,11 +1,11 @@
 import { useEffect } from 'react'
 import io from 'socket.io-client'
-import {EventEmitter} from 'events'
+import Emitter from '../lib/Emitter'
 import { ClientSentEvents, ClientSideSocket } from '../../shared/lib/SocketEvents'
 import DisconnectedClientSideSocket from '../lib/DisconnectedClientSideSocket'
 
 // @TODO: remove socket event emitter. It does not have any purpose apart from announcing connection and disconnection
-const socketEventEmitter = new EventEmitter()
+const socketEventEmitter = new Emitter()
 
 const isTestEnvironment = process.env.JEST_WORKER_ID !== undefined
 

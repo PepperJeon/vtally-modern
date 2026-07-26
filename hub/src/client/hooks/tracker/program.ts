@@ -1,12 +1,12 @@
-import {EventEmitter} from 'events'
+import Emitter from '../../lib/Emitter'
 import type { ChannelList } from '../../../shared/domain/Channel'
 import { ClientSideSocket } from '../../../shared/lib/SocketEvents'
 
-class ProgramTracker extends EventEmitter{
+class ProgramTracker extends Emitter{
     programs: ChannelList
     previews: ChannelList
     
-    constructor(socket: ClientSideSocket, socketEventEmitter: EventEmitter) {
+    constructor(socket: ClientSideSocket, socketEventEmitter: Emitter) {
         super()
         this.programs = null
         this.previews = null

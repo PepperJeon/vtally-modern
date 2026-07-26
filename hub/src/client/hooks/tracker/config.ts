@@ -1,4 +1,4 @@
-import {EventEmitter} from 'events'
+import Emitter from '../../lib/Emitter'
 import { ClientSideSocket } from '../../../shared/lib/SocketEvents'
 import AtemConfiguration from '../../../shared/mixer/atem/AtemConfiguration'
 import MockConfiguration from '../../../shared/mixer/mock/MockConfiguration'
@@ -8,7 +8,7 @@ import RolandV60HDConfiguration from '../../../shared/mixer/rolandV60HD/RolandV6
 import VmixConfiguration from '../../../shared/mixer/vmix/VmixConfiguration'
 import { DefaultTallyConfiguration } from '../../../shared/tally/TallyConfiguration'
 
-class ConfigTracker extends EventEmitter{
+class ConfigTracker extends Emitter{
     allowedMixers?: string[]
     mixerName?: string
     // @TODO: this should be more easily extensible

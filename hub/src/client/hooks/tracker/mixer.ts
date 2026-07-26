@@ -1,7 +1,7 @@
-import {EventEmitter} from 'events'
+import Emitter from '../../lib/Emitter'
 import { ClientSideSocket } from '../../../shared/lib/SocketEvents'
 
-class MixerTracker extends EventEmitter{
+class MixerTracker extends Emitter{
     connectionState: boolean | null
 
     constructor(socket: ClientSideSocket) {
