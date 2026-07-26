@@ -5,6 +5,7 @@ import VmixConfiguration from '../../shared/mixer/vmix/VmixConfiguration';
 import ObsConfiguration from '../../shared/mixer/obs/ObsConfiguration';
 import RolandV8HDConfiguration from '../../shared/mixer/rolandV8HD/RolandV8HDConfiguration';
 import RolandV60HDConfiguration from '../../shared/mixer/rolandV60HD/RolandV60HDConfiguration';
+import FeelworldConfiguration from '../../shared/mixer/feelworld/FeelworldConfiguration';
 import MockConfiguration from '../../shared/mixer/mock/MockConfiguration';
 import AtemConfiguration from '../../shared/mixer/atem/AtemConfiguration';
 import { DefaultTallyConfiguration } from '../../shared/tally/TallyConfiguration';
@@ -139,6 +140,25 @@ export function useRolandV60HDConfiguration() {
   }, [])
 
   return rolandV60HDConfiguration
+}
+
+export function useFeelworldConfiguration() {
+  const [feelworldConfiguration, setFeelworldConfiguration] = useState<FeelworldConfiguration|undefined>(undefined)
+
+  const onChange = newConf => {
+    setFeelworldConfiguration(newConf)
+  }
+
+  useEffect(() => {
+    configTracker.on("feelworld", onChange)
+    setFeelworldConfiguration(configTracker.feelworldConfiguration)
+    return () => {
+      // cleanup
+      configTracker.off("feelworld", onChange)
+    }
+  }, [])
+
+  return feelworldConfiguration
 }
 
 export function useVmixConfiguration() {

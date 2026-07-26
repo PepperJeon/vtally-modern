@@ -5,6 +5,7 @@ import NullConnector from '../mixer/null/NullConnector'
 import ObsConnector from '../mixer/obs/ObsConnector'
 import RolandV8HDConnector from '../mixer/rolandV8HD/RolandV8HDConnector'
 import RolandV60HDConnector from '../mixer/rolandV60HD/RolandV60HDConnector'
+import FeelworldConnector from '../mixer/feelworld/FeelworldConnector'
 import { MixerCommunicator } from './MixerCommunicator'
 import Channel from '../../shared/domain/Channel'
 import type { AppConfiguration } from './AppConfiguration'
@@ -105,6 +106,9 @@ export class MixerDriver {
             } else if(newMixerId === TestConnector.ID) {
                 MixerClass = TestConnector
                 this.getCurrentMixerSettings = this.configuration.getTestConfiguration.bind(this.configuration)
+            } else if(newMixerId === FeelworldConnector.ID) {
+                MixerClass = FeelworldConnector
+                this.getCurrentMixerSettings = this.configuration.getFeelworldConfiguration.bind(this.configuration)
             } else {
                 console.error(`Someone(TM) forgot to implement the ${newMixerId} mixer in MixerDriver.js.`)
                 return
@@ -136,6 +140,7 @@ export class MixerDriver {
             MockConnector.ID,
             TestConnector.ID,
             NullConnector.ID,
+            FeelworldConnector.ID,
             // --- order of the first items is important as they act as defaults ---
             AtemConnector.ID,
             ObsConnector.ID,
@@ -145,7 +150,10 @@ export class MixerDriver {
         ]
 
         if (!isDev) {
-            mixers = mixers.filter(id => id !== MockConnector.ID)
+            // Feelworld is unverified against real hardware, see
+            // docs/design/feelworld-connector.md §5 — gate it the same way
+            // MockConnector is gated until that's done.
+            mixers = mixers.filter(id => id !== MockConnector.ID && id !== FeelworldConnector.ID)
         }
         if (!isTest) {
             mixers = mixers.filter(id => id !== TestConnector.ID)

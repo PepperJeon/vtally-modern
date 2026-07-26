@@ -4,6 +4,7 @@
 // server can never drift apart on what a mixer is called over the wire.
 
 export const ATEM_ID = "atem" as const
+export const FEELWORLD_ID = "feelworld" as const
 export const MOCK_ID = "mock" as const
 export const NULL_ID = "null" as const
 export const OBS_ID = "obs" as const
@@ -14,6 +15,7 @@ export const VMIX_ID = "vmix" as const
 
 export type MixerId =
   | typeof ATEM_ID
+  | typeof FEELWORLD_ID
   | typeof MOCK_ID
   | typeof NULL_ID
   | typeof OBS_ID

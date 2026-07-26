@@ -5,6 +5,7 @@ import MockConfiguration from '../../../shared/mixer/mock/MockConfiguration'
 import ObsConfiguration from '../../../shared/mixer/obs/ObsConfiguration'
 import RolandV8HDConfiguration from '../../../shared/mixer/rolandV8HD/RolandV8HDConfiguration'
 import RolandV60HDConfiguration from '../../../shared/mixer/rolandV60HD/RolandV60HDConfiguration'
+import FeelworldConfiguration from '../../../shared/mixer/feelworld/FeelworldConfiguration'
 import VmixConfiguration from '../../../shared/mixer/vmix/VmixConfiguration'
 import { DefaultTallyConfiguration } from '../../../shared/tally/TallyConfiguration'
 
@@ -18,6 +19,7 @@ class ConfigTracker extends Emitter{
     obsConfiguration?: ObsConfiguration
     rolandV8HDConfiguration?: RolandV8HDConfiguration
     rolandV60HDConfiguration?: RolandV60HDConfiguration
+    feelworldConfiguration?: FeelworldConfiguration
     vmixConfiguration?: VmixConfiguration
     defaultTallyConfiguration?: DefaultTallyConfiguration
 
@@ -54,6 +56,11 @@ class ConfigTracker extends Emitter{
             this.rolandV60HDConfiguration = new RolandV60HDConfiguration()
             this.rolandV60HDConfiguration.fromJson(rolandV60HD)
             this.emit('rolandV60HD', this.rolandV60HDConfiguration)
+        })
+        socket.on('config.state.feelworld', (feelworld) => {
+            this.feelworldConfiguration = new FeelworldConfiguration()
+            this.feelworldConfiguration.fromJson(feelworld)
+            this.emit('feelworld', this.feelworldConfiguration)
         })
         socket.on('config.state.vmix', (vmix) => {
             this.vmixConfiguration = new VmixConfiguration()

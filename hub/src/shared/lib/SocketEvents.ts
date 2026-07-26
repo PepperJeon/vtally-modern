@@ -6,6 +6,7 @@ import type { MockConfigurationSaveType } from "../mixer/mock/MockConfiguration"
 import type { ObsConfigurationSaveType } from "../mixer/obs/ObsConfiguration";
 import type { RolandV8HDConfigurationSaveType } from "../mixer/rolandV8HD/RolandV8HDConfiguration";
 import type { RolandV60HDConfigurationSaveType } from "../mixer/rolandV60HD/RolandV60HDConfiguration";
+import type { FeelworldConfigurationSaveType } from "../mixer/feelworld/FeelworldConfiguration";
 import type { VmixConfigurationSaveType } from "../mixer/vmix/VmixConfiguration";
 import type { TallyObjectType, TallyType, WebTallyObjectType } from "../domain/Tally";
 import type { ChannelList, ChannelSaveObject } from "../domain/Channel";
@@ -32,6 +33,7 @@ export interface ServerSentEvents {
     'config.state.obs': (obsConfiguration: ObsConfigurationSaveType) => void
     'config.state.rolandV8HD': (rolandV8HDConfiguration: RolandV8HDConfigurationSaveType) => void
     'config.state.rolandV60HD': (rolandV60HDConfiguration: RolandV60HDConfigurationSaveType) => void
+    'config.state.feelworld': (feelworldConfiguration: FeelworldConfigurationSaveType) => void
     'config.state.vmix': (vmixConfiguration: VmixConfigurationSaveType) => void
     'config.state.tallyconfig': (defaultTallyConfiguration: TallyConfigurationObjectType) => void
     'config.state.mixer': (data: {mixerName: string, allowedMixers: string[]}) => void
@@ -73,6 +75,7 @@ export interface ClientSentEvents {
     'config.change.obs': (obsConfiguration: ObsConfigurationSaveType, newMixer?: "obs") => void
     'config.change.rolandV8HD': (rolandV8HDConfiguration: RolandV8HDConfigurationSaveType, newMixer?: "rolandV8HD") => void
     'config.change.rolandV60HD': (rolandV60HDConfiguration: RolandV60HDConfigurationSaveType, newMixer?: "rolandV60HD") => void
+    'config.change.feelworld': (feelworldConfiguration: FeelworldConfigurationSaveType, newMixer?: "feelworld") => void
     'config.change.vmix': (vmixConfiguration: VmixConfigurationSaveType, newMixer?: "vmix") => void
     'config.change.tallyconfig': (configuration: TallyConfigurationObjectType) => void
 
