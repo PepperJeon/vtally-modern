@@ -1,4 +1,5 @@
 import http from 'http'
+import { ROLAND_V60HD_ID } from '../../shared/mixer/ids'
 import { MixerCommunicator } from '../../lib/MixerCommunicator'
 import { Connector } from '../interfaces'
 import RolandV60HDConfiguration from './RolandV60HDConfiguration'
@@ -112,7 +113,7 @@ class RolandV60HDConnector implements Connector {
         return this.connected
     }
 
-    static readonly ID: "rolandV60HD" = "rolandV60HD"
+    static readonly ID = ROLAND_V60HD_ID
 }
 
 export default RolandV60HDConnector

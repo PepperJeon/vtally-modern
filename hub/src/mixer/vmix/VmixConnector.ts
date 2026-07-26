@@ -1,4 +1,5 @@
 import net from 'net'
+import { VMIX_ID } from '../../shared/mixer/ids'
 import xml2js from 'xml2js'
 import { MixerCommunicator } from '../../lib/MixerCommunicator'
 import { Connector } from '../interfaces'
@@ -212,7 +213,7 @@ class VmixConnector implements Connector {
         return this.client !== undefined && !this.client.destroyed && this.wasHelloReceived && this.wasSubcribeOkReceived
     }
     
-    static readonly ID: "vmix" = "vmix"
+    static readonly ID = VMIX_ID
 }
 
 export default VmixConnector

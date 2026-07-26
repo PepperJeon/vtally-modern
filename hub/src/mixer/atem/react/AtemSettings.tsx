@@ -3,9 +3,10 @@ import MixerSettingsWrapper from '../../../components/config/MixerSettingsWrappe
 import ValidatingInput from '../../../components/config/ValidatingInput'
 import { useAtemConfiguration } from '../../../hooks/useConfiguration'
 import { socket } from '../../../hooks/useSocket'
+import { ATEM_ID } from '../../../shared/mixer/ids'
 
 type AtemSettingsProps = {
-    id: "atem", // @TODO: use the constant. But for now it makes the frontend build crash with ("Module not found: Can't resolve 'child_process'" - and no stack trace). WTF?
+    id: typeof ATEM_ID,
     label: string,
 }
 
@@ -21,7 +22,7 @@ function AtemSettings(props: AtemSettingsProps) {
     const handleSave = () => {
         if (configuration === undefined) {
             console.error("Not saving, because there is an invalid value in the form.")
-        } else if (props.id !== "atem") {
+        } else if (props.id !== ATEM_ID) {
             console.warn(`Changing id prop of AtemSettings is not supported. But got ${props.id}.`)
         } else {
             const config = configuration.clone()
@@ -51,7 +52,7 @@ function AtemSettings(props: AtemSettingsProps) {
 }
 
 AtemSettings.defaultProps = {
-    id: "atem",
+    id: ATEM_ID,
     label: "ATEM by Blackmagic Design",
 }
 

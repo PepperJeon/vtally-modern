@@ -1,3 +1,4 @@
+import { MOCK_ID } from '../../shared/mixer/ids'
 // a mock connector that generates random programs and previews
 
 import { MixerCommunicator } from "../../lib/MixerCommunicator"
@@ -42,7 +43,7 @@ class MockConnector implements Connector {
         return this.isActive
     }
 
-    static readonly ID: "mock" = "mock"
+    static readonly ID = MOCK_ID
 }
 
 export default MockConnector

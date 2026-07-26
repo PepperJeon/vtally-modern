@@ -1,4 +1,5 @@
 import OBSWebSocket from 'obs-websocket-js'
+import { OBS_ID } from '../../shared/mixer/ids'
 import Channel from '../../domain/Channel'
 import { MixerCommunicator } from '../../lib/MixerCommunicator'
 import { Connector } from '../interfaces'
@@ -242,7 +243,7 @@ class ObsConnector implements Connector{
     isConnected() {
         return this.obs !== undefined && this.connected
     }
-    static readonly ID: "obs" = "obs"
+    static readonly ID = OBS_ID
 }
 
 export default ObsConnector

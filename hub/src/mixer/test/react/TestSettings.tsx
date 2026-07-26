@@ -3,15 +3,16 @@ import MixerSettingsWrapper from '../../../components/config/MixerSettingsWrappe
 import { socket } from '../../../hooks/useSocket'
 import { SettingsProps } from '../../interfaces'
 import TestConfiguration from '../TestConfiguration'
+import { TEST_ID } from '../../../shared/mixer/ids'
 
 type TestSettingsProps = SettingsProps & {}
 
 function TestSettings(props: TestSettingsProps) {
     const handleSave = () => {
-        if (props.id !== "test") {
+        if (props.id !== TEST_ID) {
             console.warn(`Changing id prop of TestSettings is not supported. But got ${props.id}.`)
         } else {
-            socket.emit('config.change.test', new TestConfiguration(), "test")
+            socket.emit('config.change.test', new TestConfiguration(), TEST_ID)
         }
     }
 
@@ -24,7 +25,7 @@ function TestSettings(props: TestSettingsProps) {
 }
 
 TestSettings.defaultProps = {
-    id: "test",
+    id: TEST_ID,
     label: "Test Mixer"
 }
 

@@ -1,4 +1,5 @@
 import { MixerCommunicator } from "../../lib/MixerCommunicator"
+import { TEST_ID } from '../../shared/mixer/ids'
 import { Connector } from "../interfaces"
 import TestConfiguration from "./TestConfiguration"
 
@@ -24,7 +25,7 @@ class TestConnector implements Connector {
     isConnected() {
         return this.connected
     }
-    static readonly ID: "test" = "test"
+    static readonly ID = TEST_ID
 }
 
 export default TestConnector

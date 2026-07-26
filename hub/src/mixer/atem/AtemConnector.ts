@@ -1,4 +1,5 @@
 import { MixerCommunicator } from '../../lib/MixerCommunicator'
+import { ATEM_ID } from '../../shared/mixer/ids'
 import {Connector} from '../interfaces'
 // atem-connection v2.0.0 is needed to monitor status of the connection
 import { Atem } from 'atem-connection'
@@ -79,7 +80,7 @@ class AtemConnector implements Connector {
         return this.isAtemConnected
     }
 
-    static readonly ID: "atem" = "atem"
+    static readonly ID = ATEM_ID
 }
 
 export default AtemConnector

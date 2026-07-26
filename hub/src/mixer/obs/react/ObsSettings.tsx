@@ -5,11 +5,11 @@ import ExternalLink from '../../../components/ExternalLink'
 import { useObsConfiguration } from '../../../hooks/useConfiguration'
 import { socket } from '../../../hooks/useSocket'
 import { ObsConfigurationLiveMode } from '../ObsConfiguration'
-import ObsConnector from '../ObsConnector'
+import { OBS_ID } from '../../../shared/mixer/ids'
 import ObsLiveModeSelect from './ObsLiveModeSelect'
 
 type ObsSettingsProps = {
-    id: typeof ObsConnector.ID,
+    id: typeof OBS_ID,
     label: string,
 }
 
@@ -34,7 +34,7 @@ function ObsSettings(props: ObsSettingsProps) {
     const handleSave = () => {
         if (configuration === undefined) {
             console.error("Not saving, because there is an invalid value in the form.")
-        } else if (props.id !== ObsConnector.ID) {
+        } else if (props.id !== OBS_ID) {
             console.warn(`Changing id prop of ObsSettings is not supported. But got ${props.id}.`)
         } else {
             const config = configuration.clone()
@@ -65,7 +65,7 @@ function ObsSettings(props: ObsSettingsProps) {
 }
 
 ObsSettings.defaultProps = {
-    id: ObsConnector.ID,
+    id: OBS_ID,
     label: "OBS Studio",
 }
 

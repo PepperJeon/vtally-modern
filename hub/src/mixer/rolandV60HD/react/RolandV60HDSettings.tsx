@@ -3,9 +3,10 @@ import MixerSettingsWrapper from '../../../components/config/MixerSettingsWrappe
 import ValidatingInput from '../../../components/config/ValidatingInput'
 import { socket } from '../../../hooks/useSocket'
 import { useRolandV60HDConfiguration } from '../../../hooks/useConfiguration'
+import { ROLAND_V60HD_ID } from '../../../shared/mixer/ids'
 
 type RolandV60HDSettingsProps = {
-    id: "rolandV60HD",
+    id: typeof ROLAND_V60HD_ID,
     label: string,
 }
 
@@ -23,7 +24,7 @@ function RolandV60HDSettings(props: RolandV60HDSettingsProps) {
     const handleSave = () => {
         if (configuration === undefined) {
             console.error("Not saving, because there is an invalid value in the form.")
-        } else if (props.id !== "rolandV60HD") {
+        } else if (props.id !== ROLAND_V60HD_ID) {
             console.warn(`Changing id prop of RolandV60HDSettings is not supported. But got ${props.id}.`)
         } else {
             const config = configuration.clone()
@@ -54,7 +55,7 @@ function RolandV60HDSettings(props: RolandV60HDSettingsProps) {
 }
 
 RolandV60HDSettings.defaultProps = {
-    id: "rolandV60HD",
+    id: ROLAND_V60HD_ID,
     label: "Roland V-60HD",
 }
 

@@ -4,9 +4,10 @@ import ValidatingInput from '../../../components/config/ValidatingInput'
 import ExternalLink from '../../../components/ExternalLink'
 import { useVmixConfiguration } from '../../../hooks/useConfiguration'
 import { socket } from '../../../hooks/useSocket'
+import { VMIX_ID } from '../../../shared/mixer/ids'
 
 type VmixSettingsProps = {
-    id: "vmix", // @TODO use Vmix.ID
+    id: typeof VMIX_ID,
     label: string,
 }
 
@@ -24,7 +25,7 @@ function VmixSettings(props: VmixSettingsProps) {
     const handleSave = () => {
         if (configuration === undefined) {
             console.error("Not saving, because there is an invalid value in the form.")
-        } else if (props.id !== "vmix") {
+        } else if (props.id !== VMIX_ID) {
             console.warn(`Changing id prop of VmixSettings is not supported. But got ${props.id}.`)
         } else {
             const config = configuration.clone()
@@ -61,7 +62,7 @@ function VmixSettings(props: VmixSettingsProps) {
 }
 
 VmixSettings.defaultProps = {
-    id: "vmix",
+    id: VMIX_ID,
     label: "vMix",
 }
 

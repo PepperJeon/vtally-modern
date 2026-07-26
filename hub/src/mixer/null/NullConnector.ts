@@ -1,3 +1,4 @@
+import { NULL_ID } from '../../shared/mixer/ids'
 // a connector that does not do anything
 
 import { MixerCommunicator } from "../../lib/MixerCommunicator"
@@ -19,7 +20,7 @@ class NullConnector implements Connector {
         // it is never supposed to be connected
         return false
     }
-    static readonly ID: "null" = "null"
+    static readonly ID = NULL_ID
 }
 
 export default NullConnector

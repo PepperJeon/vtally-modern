@@ -3,9 +3,10 @@ import MixerSettingsWrapper from '../../../components/config/MixerSettingsWrappe
 import ValidatingInput from '../../../components/config/ValidatingInput'
 import { socket } from '../../../hooks/useSocket'
 import { useRolandV8HDConfiguration } from '../../../hooks/useConfiguration'
+import { ROLAND_V8HD_ID } from '../../../shared/mixer/ids'
 
 type RolandV8HDSettingsProps = {
-    id: "rolandV8HD",
+    id: typeof ROLAND_V8HD_ID,
     label: string,
 }
 
@@ -19,7 +20,7 @@ function RolandV8HDSettings(props: RolandV8HDSettingsProps) {
     const handleSave = () => {
         if (configuration === undefined) {
             console.error("Not saving, because there is an invalid value in the form.")
-        } else if (props.id !== "rolandV8HD") {
+        } else if (props.id !== ROLAND_V8HD_ID) {
             console.warn(`Changing id prop of RolandV8HDSettings is not supported. But got ${props.id}.`)
         } else {
             const config = configuration.clone()
@@ -45,7 +46,7 @@ function RolandV8HDSettings(props: RolandV8HDSettingsProps) {
 }
 
 RolandV8HDSettings.defaultProps = {
-    id: "rolandV8HD",
+    id: ROLAND_V8HD_ID,
     label: "Roland V-8HD",
 }
 

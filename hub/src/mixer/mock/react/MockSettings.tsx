@@ -3,10 +3,10 @@ import MixerSettingsWrapper from '../../../components/config/MixerSettingsWrappe
 import ValidatingInput from '../../../components/config/ValidatingInput'
 import { useMockConfiguration } from '../../../hooks/useConfiguration'
 import { socket } from '../../../hooks/useSocket'
-import MockConnector from '../MockConnector'
+import { MOCK_ID } from '../../../shared/mixer/ids'
 
 type MockSettingsProps = {
-    id: typeof MockConnector.ID,
+    id: typeof MOCK_ID,
     label: string,
 }
 
@@ -24,7 +24,7 @@ function MockSettings(props: MockSettingsProps) {
     const handleSave = () => {
         if (configuration === undefined) {
             console.error("Not saving, because there is an invalid value in the form.")
-        } else if (props.id !== MockConnector.ID) {
+        } else if (props.id !== MOCK_ID) {
             console.warn(`Changing id prop of MockSettings is not supported. But got ${props.id}.`)
         } else {
             const config = configuration.clone()
@@ -32,7 +32,7 @@ function MockSettings(props: MockSettingsProps) {
             config.setChannelCount(channelCount)
             config.setChannelNames(channelNames)
 
-            socket.emit('config.change.mock', config.toJson(), MockConnector.ID)
+            socket.emit('config.change.mock', config.toJson(), MOCK_ID)
         }
     }
 
@@ -56,7 +56,7 @@ function MockSettings(props: MockSettingsProps) {
 }
 
 MockSettings.defaultProps = {
-    id: MockConnector.ID,
+    id: MOCK_ID,
     label: "Built-In Mock for testing",
 }
 

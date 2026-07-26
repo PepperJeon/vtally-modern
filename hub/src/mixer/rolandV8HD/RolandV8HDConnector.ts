@@ -1,3 +1,4 @@
+import { ROLAND_V8HD_ID } from '../../shared/mixer/ids'
 // ponytail: @julusian/midi has prebuilds for modern Node/arm64 and ships no default export,
 // only named { Input, Output } — the old `midi` package's `midi.Input`/`midi.Output` shape.
 import * as midi from '@julusian/midi'
@@ -129,7 +130,7 @@ class RolandV8HDConnector implements Connector {
         return this.connected
     }
 
-    static readonly ID: "rolandV8HD" = "rolandV8HD"
+    static readonly ID = ROLAND_V8HD_ID
 }
 
 export default RolandV8HDConnector
