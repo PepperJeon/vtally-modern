@@ -14,6 +14,25 @@ bundle leak check (`grep -rl "obs-websocket|nodemcu|atem-connection|@julusian"`
 over the client bundle output — MUST be 0 hits, these are server-only deps)
 → Cypress (13 non-manual specs, passed count vs baseline).
 
+## Concurrent runs are safe
+
+`verify.sh` allocates its own backend/frontend port pair at startup instead
+of hardcoding 3000/3001 (bind port 0, read back what the OS assigned —
+race-tolerant even when two runs start in the same second). It plumbs the
+chosen ports through `PORT`/`DEV_PROXY_PORT` (backend) and
+`PORT`/`BACKEND_PORT`/`FRONTEND_PORT` (frontend, read by
+`hub/vite.config.ts`), and through `CYPRESS_BASE_URL` for Cypress. Multiple
+worktrees can each run `scripts/verify.sh` at the same time without
+stomping each other's servers. The chosen ports are printed at the top of
+the output (`ports: backend=... frontend=...`) so a failed run can be
+traced back to its processes.
+
+Cleanup kills only what this run started: tracked PIDs first, then anything
+still listening on this run's own two ports (`lsof` by port, not `pkill -f`
+by command line — a command-line pattern can't distinguish "my server" from
+"a sibling worktree's server", since concurrent runs' command lines are
+identical).
+
 ## Baseline numbers
 
 Live only in `scripts/baseline.json` — never edit a number inside a sentence
@@ -52,10 +71,11 @@ loop, gate table, cleanup trap) is generic and shouldn't need to change.
 - `NODE_OPTIONS=--openssl-legacy-provider` is required for `test:ci`,
   `build:frontend`, and `start:frontend` while react-scripts 4 / webpack 4
   are in use — modern OpenSSL rejects webpack's md4 hashing otherwise.
-- Cypress needs **both** servers up: `npm run cypress:backend` (express on
-  :3000, `--with-test` flag, proxies to the frontend) and `npm run
-  start:frontend` (dev server on :3001). "Ready" means HTTP 200 from
-  `:3000` **and** `<div id="root"` present in the body — an open TCP socket
+- Cypress needs **both** servers up: `npm run cypress:backend` (express,
+  `--with-test` flag, proxies to the frontend) and `npm run start:frontend`
+  (dev server) — each on its own port allocated per run, see above.
+  "Ready" means HTTP 200 from the app's entry point **and** `<div id="root"`
+  present in the body — an open TCP socket
   or a bare 200 from the proxy before the frontend bundle is served is not
   ready and will cause spurious failures.
 - `manual_atem.spec.ts` and `manual_flasher.spec.ts` must never run in this

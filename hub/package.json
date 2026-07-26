@@ -2,6 +2,7 @@
   "name": "vtally",
   "version": "0.5.2",
   "private": true,
+  "license": "MIT",
   "dependencies": {
     "@julusian/midi": "^3.7.2",
     "atem-connection": "^3.0.0-nightly-latest-20211125-222857-2b30eea.0",

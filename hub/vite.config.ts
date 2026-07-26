@@ -6,11 +6,17 @@ import react from '@vitejs/plugin-react'
 // nothing under src/client/ or src/shared/ imports it. That is what keeps
 // obs-websocket-js, nodemcu-tool, atem-connection and @julusian/midi out of
 // dist/client/assets/ — a structural guarantee, not a bundler setting.
+// verify.sh runs several worktrees in parallel and allocates a fresh port
+// pair per run — these env vars are how it tells this process which ones.
+// Defaults keep plain `npm run start:frontend` working for local dev.
+const frontendPort = Number(process.env.FRONTEND_PORT) || 3001
+const backendPort = Number(process.env.BACKEND_PORT) || 3000
+
 export default defineConfig({
   plugins: [react()],
   publicDir: 'public',
   server: {
-    port: 3001,
+    port: frontendPort,
     proxy: {
       // Dev-proxy direction is inverted from the CRA setup. Previously express
       // on :3000 was the entry point and proxied to CRA on :3001. Now Vite is
@@ -18,7 +24,7 @@ export default defineConfig({
       // Vite's own HMR websocket through http-proxy-middleware is a known
       // failure mode, so the arrow had to turn round.
       '/socket.io': {
-        target: 'http://localhost:3000',
+        target: `http://localhost:${backendPort}`,
         ws: true,
       },
     },
