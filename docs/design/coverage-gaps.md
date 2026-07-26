@@ -40,7 +40,7 @@ against every spec, including `manual_*`.
 - `flasher.settingsIni` (`:77`), `flasher.program` (`:78`) — only exercised by `manual_flasher.spec.ts`, hardware-gated, never runs in CI.
 
 **Likely dead code, not a rewrite risk but worth flagging:**
-- The `*.unsubscribe` half of every subscribe pair (`events.mixer.unsubscribe`, `.program.unsubscribe`, `.config.unsubscribe`, `.tally.unsubscribe`, `.channel.unsubscribe`, `.tallyLog.unsubscribe` — 6 events total) has no client-side emit call anywhere in `src/hooks/tracker/*.ts`. Untested because apparently unused, not because of a spec gap. Worth a one-line confirmation from whoever owns this before Phase 3 (don't spend a spec on it; don't assume it's safe to drop either).
+- ~~The `*.unsubscribe` half of every subscribe pair (`events.mixer.unsubscribe`, `.program.unsubscribe`, `.config.unsubscribe`, `.tally.unsubscribe`, `.channel.unsubscribe`, `.tallyLog.unsubscribe` — 6 events total) has no client-side emit call anywhere in `src/hooks/tracker/*.ts`.~~ **RESOLVED in unit 2b — confirmed dead and removed**, from both `ClientSentEvents` and their `server.ts` handlers. The grep was re-run repo-wide (the path above is pre-restructure; it's `src/client/hooks/tracker/` now) across `src/client/**` and `cypress/**`: no emit site for any of the six. Safe to drop rather than merely unused, because `SocketAwareEvent.register()` attaches its own `"disconnect"` listener — the pipes tear themselves down when the socket goes away, so the explicit unsubscribe was never what prevented dangling listeners. `events.webTally.unsubscribe` is live (`WebTallyPage.tsx`) and stays. *(DECISIONS.md → Architecture)*
 
 Everything else (24 of 31 events) is covered, at least indirectly, by an
 existing spec.
@@ -121,5 +121,5 @@ is live, in front of a studio). Five specs, not thirty:
 - `MockSettings`/`config.change.mock` — dev/test-only mixer type, not a live-show path.
 - Flasher active states (`flasher.settingsIni`/`flasher.program`) — real risk exists but is hardware-adjacent and lower-frequency than the on-air paths above; `manual_flasher.spec.ts` already documents intended behavior for whoever eventually wires CI hardware.
 - Save-failure handling — real gap, but no evidence any save has ever failed in production; lower priority than the four above.
-- The dead `*.unsubscribe` events — confirm-not-fix, no spec needed.
+- ~~The dead `*.unsubscribe` events — confirm-not-fix, no spec needed.~~ **Done in 2b: confirmed dead, then deleted** (see the RESOLVED entry above). No spec was needed or added.
 - Submit-disabled tooltip text, fullscreen toggle, wake-lock, operator-color-scheme override, default-brightness live-update — genuinely acceptable risk for Phase 3; each is real but lower-frequency/lower-blast-radius than the top five, and adding specs for all of them is exactly the "thirty specs" outcome to avoid.
