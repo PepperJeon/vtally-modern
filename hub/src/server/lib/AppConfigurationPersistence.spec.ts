@@ -4,6 +4,8 @@ import fs from 'fs'
 import { AppConfiguration } from './AppConfiguration'
 import { EventEmitter } from 'events'
 import AppConfigurationPersistence from './AppConfigurationPersistence'
+import Channel from '../../shared/domain/Channel'
+import { MixerDriver } from './MixerDriver'
 
 tmp.setGracefulCleanup()
 
@@ -134,6 +136,79 @@ describe('it can load configuration files from previous versions', () => {
         expect(config.getChannels()).toHaveLength(4)
         expect(config.getChannels()[0].id).toEqual("1")
         expect(config.getChannels()[0].name).toEqual("Dave's Cam")
+    })
+})
+
+describe('channelsByMixer migration', () => {
+    // all three legacy fixtures carry a flat top-level `channels` array and a `mixer`
+    // field; the channels must land under that mixer's key, not in a global bucket.
+    const legacy = [
+        { version: 'v0.2.1', mixer: 'obs', length: 8 },
+        { version: 'v0.3.0', mixer: 'atem', length: 4 },
+        { version: 'v0.4.0', mixer: 'vmix', length: 4 },
+    ]
+    legacy.forEach(({version, mixer, length}) => {
+        it(`assigns the flat channel list of ${version} to "${mixer}"`, () => {
+            const emitter = new EventEmitter()
+            const config = new AppConfiguration(emitter)
+            new AppConfigurationPersistence(config, emitter, `${__dirname}/../../../fixtures/settings-${version}.json`)
+
+            expect(config.getMixerSelection()).toEqual(mixer)
+            expect(config.channelsByMixer.get(mixer)).toHaveLength(length)
+            expect(config.channelsByMixer.get(mixer)[0].name).toEqual("Dave's Cam")
+            // no other mixer inherited them
+            expect(Array.from(config.channelsByMixer.keys())).toEqual([mixer])
+
+            // switching away shows the defaults, switching back restores them
+            config.setMixerSelection("mock")
+            expect(config.getChannels().map(c => c.name)).not.toContain("Dave's Cam")
+            config.setMixerSelection(mixer)
+            expect(config.getChannels()[0].name).toEqual("Dave's Cam")
+        })
+    })
+    it('uses defaults when a legacy file has no channels at all', async () => {
+        const { path, fd } = await tmpFile()
+        fs.writeSync(fd, JSON.stringify({mixer: "obs"}))
+
+        const emitter = new EventEmitter()
+        const config = new AppConfiguration(emitter)
+        new AppConfigurationPersistence(config, emitter, path)
+
+        expect(config.getMixerSelection()).toEqual("obs")
+        expect(config.channelsByMixer.size).toEqual(0)
+        expect(config.getChannels()).toEqual(MixerDriver.defaultChannels)
+    })
+    it('loads the new channelsByMixer format', () => {
+        const emitter = new EventEmitter()
+        const config = new AppConfiguration(emitter)
+        new AppConfigurationPersistence(config, emitter, `${__dirname}/../../../fixtures/settings-channelsByMixer.json`)
+
+        expect(config.getMixerSelection()).toEqual("obs")
+        expect(config.getChannels().map(c => c.name)).toEqual(["Scene 1", "Scene 2", "Scene 3"])
+
+        config.setMixerSelection("mock")
+        expect(config.getChannels().map(c => c.name)).toEqual(["Dave's Cam", "Judy's Cam"])
+    })
+    it('round trips both mixers through a file', async () => {
+        const { path } = await tmpFile()
+
+        const emitter = new EventEmitter()
+        const config = new AppConfiguration(emitter)
+        const persistence = new AppConfigurationPersistence(config, emitter, path)
+        config.setMixerSelection("mock")
+        config.setChannels([new Channel("1", "Dave's Cam")])
+        config.setMixerSelection("obs")
+        config.setChannels([new Channel("Scene 1", "Scene 1")])
+        config.setMixerSelection("mock")
+        await persistence.save()
+
+        const otherEmitter = new EventEmitter()
+        const otherConfig = new AppConfiguration(otherEmitter)
+        new AppConfigurationPersistence(otherConfig, otherEmitter, path)
+
+        expect(otherConfig.getChannels().map(c => c.name)).toEqual(["Dave's Cam"])
+        otherConfig.setMixerSelection("obs")
+        expect(otherConfig.getChannels().map(c => c.name)).toEqual(["Scene 1"])
     })
 })
 

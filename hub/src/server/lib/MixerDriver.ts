@@ -72,7 +72,8 @@ export class MixerDriver {
             if(this.currentMixerInstance) {
                 const ret = this.currentMixerInstance.disconnect()
                 this.communicator.notifyProgramPreviewChanged(null, null)
-                this.communicator.notifyChannels(MixerDriver.defaultChannels)
+                // NO channel reset here: channels are per-mixer now (AppConfiguration.channelsByMixer)
+                // and this line used to wipe the outgoing mixer's channel names on every swap.
                 await Promise.resolve(ret)
             }
 
