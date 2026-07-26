@@ -43,18 +43,20 @@ export interface ServerSentEvents {
 
 // events the client sends to the server
 export interface ClientSentEvents {
+    // NOTE: there is deliberately no `events.{mixer,program,config,tally,
+    // channel,tallyLog}.unsubscribe` counterpart. Those six existed since the
+    // fork and were never emitted by any client (verified by grep across
+    // src/client/** and cypress/**); their handlers were marked "@TODO: not
+    // used yet" server-side. SocketAwareEvent.register() already attaches its
+    // own "disconnect" listener, so the pipes tear themselves down when the
+    // socket goes away — the explicit unsubscribe was never load-bearing.
+    // `events.webTally.unsubscribe` below IS live (WebTallyPage.tsx).
     'events.mixer.subscribe': () => void
-    'events.mixer.unsubscribe': () => void
     'events.program.subscribe': () => void
-    'events.program.unsubscribe': () => void
     'events.config.subscribe': () => void
-    'events.config.unsubscribe': () => void
     'events.tally.subscribe': () => void
-    'events.tally.unsubscribe': () => void
     'events.channel.subscribe': () => void
-    'events.channel.unsubscribe': () => void
     'events.tallyLog.subscribe': () => void
-    'events.tallyLog.unsubscribe': () => void
     'events.webTally.subscribe': (tallyName: string) =>  void
     'events.webTally.unsubscribe': (tallyName: string) =>  void
 
@@ -114,12 +116,13 @@ export interface ClientSideSocket {
     on(event: "disconnect", listener: () => void) : any // @TODO: shouldn't this be defined in the parent?
     on(event: "connect", listener: () => void) : any // @TODO: shouldn't this be defined in the parent?
     on(event: "connect_error", listener: () => void) : any // @TODO: shouldn't this be defined in the parent?
-    on(event: "connect_timeout", listener: () => void) : any // @TODO: shouldn't this be defined in the parent?
-    on(event: "disconnected", listener: () => void) : any // @TODO: shouldn't this be defined in the parent?
-    on(event: "reconnect", listener: () => void) : any // @TODO: shouldn't this be defined in the parent?
-    on(event: "reconnecting", listener: () => void) : any // @TODO: shouldn't this be defined in the parent?
-    on(event: "reconnect_error", listener: () => void) : any // @TODO: shouldn't this be defined in the parent?
-    on(event: "reconnect_failed", listener: () => void) : any // @TODO: shouldn't this be defined in the parent?
+    // connect / disconnect / connect_error above are the complete v4 client
+    // lifecycle. socket.io v4 does not emit connect_timeout, reconnecting,
+    // reconnect_failed, reconnect or reconnect_error on the Socket (some moved
+    // to the Manager, socket.io), and "disconnected" was never an event at all
+    // — a typo for "disconnect". All six were declared here and registered in
+    // useSocket.ts; declaring them lets a caller attach a listener that can
+    // never fire, which is exactly how the outage signal got lost.
 
     off<EventName extends keyof ServerSentEvents>(
         event: EventName,
