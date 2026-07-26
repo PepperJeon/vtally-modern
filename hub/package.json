@@ -18,14 +18,14 @@
     "yargs": "^15.4.1"
   },
   "scripts": {
-    "start:frontend": "cross-env PORT=3001 BROWSER=none react-scripts start",
-    "start:backend": "ts-node --project tsconfig.server.json src/server.ts --env=development",
-    "build:frontend": "react-scripts build",
+    "start:frontend": "vite",
+    "start:backend": "ts-node --project tsconfig.server.json src/server/server.ts --env=development",
+    "build:frontend": "vite build",
     "build:backend": "tsc --project tsconfig.server.json",
-    "test": "react-scripts test",
-    "test:ci": "CI=true react-scripts test",
+    "test": "vitest",
+    "test:ci": "vitest run",
     "cypress:open": "cypress open",
-    "cypress:backend": "ts-node --project tsconfig.server.json src/server.ts --env=development --with-test",
+    "cypress:backend": "ts-node --project tsconfig.server.json src/server/server.ts --env=development --with-test",
     "lint": "eslint ."
   },
   "devDependencies": {
@@ -45,10 +45,11 @@
     "@types/socket.io": "^2.1.13",
     "@types/socket.io-client": "^1.4.36",
     "@types/tmp": "^0.2.3",
+    "@vitejs/plugin-react": "^4.7.0",
     "cross-env": "^7.0.3",
-    "cypress": "^6.9.1",
+    "cypress": "^15.19.0",
     "eslint-plugin-cypress": "^2.12.1",
-    "jest-extended": "^0.11.5",
+    "jsdom": "^29.1.1",
     "lato-font": "^3.0.0",
     "nosleep.js": "^0.12.0",
     "react": "^17.0.2",
@@ -56,9 +57,13 @@
     "react-full-screen": "^0.3.2-0",
     "react-router-dom": "^5.3.0",
     "react-scripts": "4.0.1",
+    "tmp": "^0.2.7",
     "ts-node": "^9.0.0",
-    "typescript": "^4.5.4",
-    "web-vitals": "^0.2.4"
+    "typescript": "^5.9.3",
+    "vite": "^5.4.21",
+    "vitest": "^2.1.9",
+    "web-vitals": "^0.2.4",
+    "ws": "^8.21.1"
   },
   "engines": {
     "node": ">=12",

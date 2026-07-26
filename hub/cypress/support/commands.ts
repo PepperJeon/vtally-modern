@@ -27,7 +27,9 @@
 type CypressOptions = Partial<Cypress.Loggable & Cypress.Timeoutable & Cypress.Withinable & Cypress.Shadow>
 
 Cypress.Commands.add("getTestId", { prevSubject: "optional"}, (subject, testId: string, options?: CypressOptions) => {
-  (subject || cy).get(`*[data-testid=${testId}]`, options)
+  // `as any`: Cypress 15 types an optional prevSubject as `unknown`. Runtime
+  // behaviour is deliberately left exactly as it was.
+  ;((subject || cy) as any).get(`*[data-testid=${testId}]`, options)
 })
 
 export {}
