@@ -1,3 +1,12 @@
+import TallyDevice from '../../shared/flasher/TallyDevice'
+import TallySettingsIni from '../../shared/flasher/TallySettingsIni'
+import tmp from 'tmp-promise'
+import { promises as fs } from 'fs'
+// these two are defined in TallyDevice so client components can reference them
+// without importing this node-only module; re-exported for existing callers.
+import type { TallySettingsIniProgressType, TallyProgramProgressType } from "../../shared/flasher/TallyDevice"
+export type { TallySettingsIniProgressType, TallyProgramProgressType }
+
 // ponytail: nodemcu-tool pulls in a NAN-based serialport binding from 2021 that
 // cannot compile against modern V8 (fails on node >=17 / darwin-arm64). Load it
 // lazily and degrade to a stub so a missing binding disables the flasher instead
@@ -20,10 +29,6 @@ function loadNodemcuLib(): any {
     })
   }
 }
-import TallyDevice from '../../shared/flasher/TallyDevice'
-import TallySettingsIni from '../../shared/flasher/TallySettingsIni'
-import tmp from 'tmp-promise'
-import { promises as fs } from 'fs'
 
 const baudRate = 115200
 const fileName = "tally-settings.ini"
@@ -38,11 +43,6 @@ const tryToAquireMutex = () => {
     return false
   }
 }
-
-// moved to TallyDevice.ts so client components can reference them without
-// importing this node-only module; re-exported here for existing callers.
-import type { TallySettingsIniProgressType, TallyProgramProgressType } from "../../shared/flasher/TallyDevice"
-export type { TallySettingsIniProgressType, TallyProgramProgressType }
 
 class NodeMcuConnector {
   nodemcu: any

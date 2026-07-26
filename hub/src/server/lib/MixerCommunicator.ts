@@ -3,6 +3,10 @@
 import Channel from "../../shared/domain/Channel"
 import { AppConfiguration } from "./AppConfiguration"
 import ServerEventEmitter from "./ServerEventEmitter"
+// ChannelList lives in domain/Channel (shared) because the socket contract and
+// the client tracker both need it; re-exported for existing callers.
+import type { ChannelList } from "../../shared/domain/Channel"
+export type { ChannelList }
 
 const haveValuesChanged = (lastArray: any, newArray: any) => {
     if(Array.isArray(lastArray) && Array.isArray(newArray)) {
@@ -11,9 +15,6 @@ const haveValuesChanged = (lastArray: any, newArray: any) => {
         return lastArray !== newArray
     }
 }
-
-import type { ChannelList } from "../../shared/domain/Channel"
-export type { ChannelList }
 
 export class MixerCommunicator {
     configuration: AppConfiguration
