@@ -137,8 +137,10 @@ loop, gate table, cleanup trap) is generic and shouldn't need to change.
 
 ## Environment knowledge encoded here (paid for once, don't rediscover)
 
-- Installs need `--legacy-peer-deps` (`react-full-screen` has a peer
-  conflict). `npm ci` does not work on this lockfile/platform yet — use
+- Installs need `--legacy-peer-deps`. The cause is no longer
+  `react-full-screen` — that package is gone as of the React 19 upgrade — but
+  the flag is still required: `@types/node@12` does not satisfy vite's
+  `peerOptional @types/node ^18.0.0 || >=20.0.0`. Use
   `npm install --legacy-peer-deps`.
 - `NODE_OPTIONS=--openssl-legacy-provider` is required for `test:ci`,
   `build:frontend`, and `start:frontend` while react-scripts 4 / webpack 4
