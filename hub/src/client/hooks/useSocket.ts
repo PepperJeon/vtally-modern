@@ -7,7 +7,10 @@ import DisconnectedClientSideSocket from '../lib/DisconnectedClientSideSocket'
 // @TODO: remove socket event emitter. It does not have any purpose apart from announcing connection and disconnection
 const socketEventEmitter = new Emitter()
 
-const isTestEnvironment = process.env.JEST_WORKER_ID !== undefined
+// Vitest sets MODE to 'test'; vite dev/build set 'development'/'production'.
+// (was process.env.JEST_WORKER_ID under CRA — process is not defined in a
+// Vite browser bundle.)
+const isTestEnvironment = import.meta.env.MODE === 'test'
 
 const socket: ClientSideSocket = isTestEnvironment ? new DisconnectedClientSideSocket() : io()
 

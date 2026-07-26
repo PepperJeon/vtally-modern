@@ -18,12 +18,12 @@
     "yargs": "^15.4.1"
   },
   "scripts": {
-    "start:frontend": "cross-env PORT=3001 BROWSER=none react-scripts start",
+    "start:frontend": "vite",
     "start:backend": "ts-node --project tsconfig.server.json src/server/server.ts --env=development",
-    "build:frontend": "react-scripts build",
+    "build:frontend": "vite build",
     "build:backend": "tsc --project tsconfig.server.json",
-    "test": "react-scripts test",
-    "test:ci": "CI=true react-scripts test",
+    "test": "vitest",
+    "test:ci": "vitest run",
     "cypress:open": "cypress open",
     "cypress:backend": "ts-node --project tsconfig.server.json src/server/server.ts --env=development --with-test",
     "lint": "eslint ."
@@ -49,7 +49,6 @@
     "cross-env": "^7.0.3",
     "cypress": "^6.9.1",
     "eslint-plugin-cypress": "^2.12.1",
-    "jest-extended": "^0.11.5",
     "jsdom": "^29.1.1",
     "lato-font": "^3.0.0",
     "nosleep.js": "^0.12.0",

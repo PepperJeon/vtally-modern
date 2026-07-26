@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import React from 'react'
 import { act, render } from '@testing-library/react'
 import { ConnectionState } from '../../shared/domain/Tally'
