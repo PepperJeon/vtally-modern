@@ -265,3 +265,15 @@ Tested in an isolated scratch dir (`/private/tmp/.../scratchpad/pin-test/`, outs
 4. **`require()` loads clean.** `require('nodemcu-tool')` (package version `3.2.1`, transitively resolving `serialport@13.0.0`) returns the full expected API surface (`onError, disconnect, connect, isConnected, checkConnection, compile, deviceInfo, listDevices, download, upload, execute, format, fsinfo, remove, softreset, hardreset, run`) with no throw.
 
 **Conclusion: the SHA-pin approach is confirmed to work end-to-end.** No need to fall back to vendoring. The re-pin task, once unblocked, is just: change the one `nodemcu-tool` line in `hub/package.json` to `"github:PepperJeon/NodeMCU-Tool#9b5f8d027042155d35ffbcfb33af7fb941c4bdd5"`, run `npm install` to regenerate `hub/package-lock.json`, then confirm `npm ci` in `hub/` — this exact sequence already proven to work in isolation.
+
+### Re-pin executed in the real repo (Phase 2d)
+
+Done for real, not just in the scratch dir. `hub/package.json`'s `nodemcu-tool` line changed from `"github:wifi-tally/NodeMCU-Tool"` to `"github:PepperJeon/NodeMCU-Tool#9b5f8d027042155d35ffbcfb33af7fb941c4bdd5"`, `hub/package-lock.json` regenerated against it (`npm install --legacy-peer-deps`, run after Phase 1's dependency graph changes — Vite, Vitest, Cypress 15, TypeScript 5.9 — landed).
+
+Re-verified against the real lockfile, not the isolated scratch-dir one:
+- `npm install --legacy-peer-deps` resolved cleanly (161 added / 143 removed / 106 changed packages vs. the pre-repin lockfile).
+- `rm -rf node_modules && npm ci --legacy-peer-deps` — **exit 0**, run twice on a fresh `node_modules` both times.
+- `require('nodemcu-tool')` returns all 17 API methods; `require('serialport/package.json').version` → `13.0.0`; no compile step observed.
+- **Isolated the `--legacy-peer-deps` requirement**: a plain `npm ci` (no flag) was also tried fresh, and it fails — but only on the pre-existing `react-full-screen@0.3.2-0` / `react@17` peer conflict (`BASELINE.md` Deviation #6, already known, unrelated to nodemcu-tool). Zero nodemcu-tool/serialport errors appear in that failure. This confirms the git-dependency reproducibility problem itself (Deviation #2) is fully closed; the remaining flag requirement is a separate, already-documented issue.
+
+**BASELINE.md Deviation #2 updated to reflect this is resolved.**
