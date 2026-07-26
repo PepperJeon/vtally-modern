@@ -23,10 +23,19 @@ free_port() {
     s.listen(0, '127.0.0.1', () => { const p = s.address().port; s.close(() => console.log(p)); });
   "
 }
+# Same trick, UDP socket instead of TCP — the tally protocol (hub/src/server/tally/UdpTallyDriver.ts)
+# is UDP, so it needs its own free port picked the same race-proof way.
+udp_free_port() {
+  node -e "
+    const s = require('dgram').createSocket('udp4');
+    s.bind(0, '127.0.0.1', () => { const p = s.address().port; s.close(() => console.log(p)); });
+  "
+}
 BACKEND_PORT=$(free_port)
 FRONTEND_PORT=$(free_port)
 while [ "$FRONTEND_PORT" = "$BACKEND_PORT" ]; do FRONTEND_PORT=$(free_port); done
-echo "ports: backend=$BACKEND_PORT frontend=$FRONTEND_PORT"
+TALLY_PORT=$(udp_free_port)
+echo "ports: backend=$BACKEND_PORT frontend=$FRONTEND_PORT tally=$TALLY_PORT/udp"
 
 cleanup() {
   for p in "${PIDS[@]:-}"; do kill "$p" 2>/dev/null; done
@@ -46,6 +55,12 @@ cleanup() {
     pids=$(lsof -nP -tiTCP:"$port" -sTCP:LISTEN 2>/dev/null)
     [ -n "$pids" ] && kill $pids 2>/dev/null
   done
+  # UDP has no listen state, so no -sTCP:LISTEN filter — a bound UDP socket is
+  # enough to receive traffic, which is exactly the process we want gone.
+  if [ -n "${TALLY_PORT:-}" ]; then
+    pids=$(lsof -nP -tiUDP:"$TALLY_PORT" 2>/dev/null)
+    [ -n "$pids" ] && kill $pids 2>/dev/null
+  fi
 }
 trap cleanup EXIT INT TERM
 
@@ -62,20 +77,25 @@ for port in "$BACKEND_PORT" "$FRONTEND_PORT"; do
   fi
 done
 
-# UDP 7411 (the tally protocol port, AppConfiguration.tallyPort — cite the
-# symbol, not a line number, this file is churning too fast this phase for
-# line refs to survive a day) is hardcoded, unlike BACKEND_PORT/FRONTEND_PORT
-# above which we allocate fresh per run. A second hub already bound to it
-# doesn't crash ours — UdpTallyDriver.io.bind just logs and closes its own
-# socket — so every UDP-tally cypress spec times out waiting for a tally
-# element that will never appear. That reads as a real regression; it's
-# actually just two hubs on one box.
-if lsof -nP -iUDP:7411 >/dev/null 2>&1; then
-  echo "ABORT: UDP port 7411 (tally) is already in use — another hub is running."
-  lsof -nP -iUDP:7411 | tail -n +2 | sed 's/^/  /'
-  echo "  kill it, then re-run. (UDP tally tests would silently time out otherwise.)"
-  exit 2
-fi
+# TALLY_PORT is now allocated fresh per run (AppConfiguration.getTallyPort()
+# honors it, mirroring getHttpPort()/PORT), so two verify.sh runs no longer
+# fight over one port. UDP has no listen state, so no -sTCP:LISTEN filter — a
+# bound socket receives traffic regardless. A collision here doesn't crash the
+# loser: UdpTallyDriver.io.bind just logs and closes its own socket, so its
+# cypress specs would either time out waiting for a tally that never appears,
+# or — worse — silently receive the winner's tally traffic and look like
+# cross-spec state leakage. Also check the historical default 7411 even though
+# no verify.sh run should land on it: it catches a hand-started hub (no
+# TALLY_PORT set, so it always binds there) left running from outside this
+# script.
+for port in "$TALLY_PORT" 7411; do
+  if lsof -nP -iUDP:$port >/dev/null 2>&1; then
+    echo "ABORT: UDP port $port (tally) is already in use — another hub is running."
+    lsof -nP -iUDP:$port | tail -n +2 | sed 's/^/  /'
+    echo "  kill it, then re-run. (UDP tally tests would time out or see phantom tallies otherwise.)"
+    exit 2
+  fi
+done
 
 base() { node -pe "require('./$BASELINE').$1"; }
 
@@ -150,7 +170,7 @@ wait_ready() { # wait_ready <url> -> 0 once it returns 200 with a served app she
 # DEV_PROXY_PORT/BACKEND_PORT/FRONTEND_PORT cover the CRA and Vite proxy
 # directions respectively — see hub/vite.config.ts and hub/src/server/server.ts.
 SERVER_LOG=$(mktemp)
-start_backend()  { (cd "$HUB" && PORT="$BACKEND_PORT" DEV_PROXY_PORT="$FRONTEND_PORT" eval "$BACKEND_CMD")  >>"$SERVER_LOG" 2>&1 & BACKEND_PID=$!;  PIDS+=("$BACKEND_PID"); }
+start_backend()  { (cd "$HUB" && PORT="$BACKEND_PORT" DEV_PROXY_PORT="$FRONTEND_PORT" TALLY_PORT="$TALLY_PORT" eval "$BACKEND_CMD")  >>"$SERVER_LOG" 2>&1 & BACKEND_PID=$!;  PIDS+=("$BACKEND_PID"); }
 start_frontend() { (cd "$HUB" && PORT="$FRONTEND_PORT" BACKEND_PORT="$BACKEND_PORT" FRONTEND_PORT="$FRONTEND_PORT" eval "$FRONTEND_CMD") >>"$SERVER_LOG" 2>&1 & FRONTEND_PID=$!; PIDS+=("$FRONTEND_PID"); }
 
 # ---------------------------------------------------------------------------
@@ -238,7 +258,7 @@ else
   while IFS= read -r spec; do
     [ -z "$spec" ] && continue
     CY_LOG=$(mktemp)
-    (cd "$HUB" && CYPRESS_BASE_URL="$APP_URL" npx cypress run --spec "$CYPRESS_SPEC_DIR/$spec") > "$CY_LOG" 2>&1
+    (cd "$HUB" && CYPRESS_BASE_URL="$APP_URL" CYPRESS_TALLY_PORT="$TALLY_PORT" npx cypress run --spec "$CYPRESS_SPEC_DIR/$spec") > "$CY_LOG" 2>&1
     p=$(grep -oE '[0-9]+ passing' "$CY_LOG" | grep -oE '[0-9]+' | head -1 || echo 0)
     f=$(grep -oE '[0-9]+ failing' "$CY_LOG" | grep -oE '[0-9]+' | head -1 || echo 0)
     n=$(grep -oE '[0-9]+ pending' "$CY_LOG" | grep -oE '[0-9]+' | head -1 || echo 0)
