@@ -1,0 +1,14 @@
+{
+  // The Electron app is compiled into its own self-contained tree
+  // (dist/app/{electron,src}) rather than being added to tsconfig.server.json's
+  // include list. That config's rootDir is inferred as src/, so adding
+  // electron/ to it would push every server output one directory deeper and
+  // break bin/vtally's hardcoded ../src/server/server.js path — the npm/Pi
+  // distribution must keep working untouched.
+  "extends": "./tsconfig.server.json",
+  "compilerOptions": {
+    "outDir": "dist/app",
+    "rootDir": "."
+  },
+  "include": ["electron", "src/server", "src/shared"]
+}

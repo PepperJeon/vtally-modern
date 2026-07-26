@@ -80,21 +80,35 @@ class NodeMcuConnector {
   private static async getLocalFiles() {
     // NOTE: one ../ deeper than before because this file moved from
     // src/flasher/ to src/server/flasher/ in the server/client/shared split.
-    // Both targets are unchanged: <hub>/esp8266 and <repo>/tally/out.
-    let dirName = __dirname + "/../../../esp8266" // path in release package
-    let files: string[]
-    try {
-      files = await fs.readdir(dirName).catch(() => {
-        dirName = __dirname + "/../../../../tally/out" // path during development
-        return fs.readdir(dirName)
-      })
-    } catch (e) {
-      // ponytail: neither firmware directory exists (normal for a hub-only checkout,
+    // Both non-Electron targets are unchanged: <hub>/esp8266 and <repo>/tally/out.
+    const candidates = [
+      // Electron: extraResources places esp8266/ next to the app, outside the
+      // asar archive. __dirname would resolve inside app.asar, where readdir
+      // cannot reach — so this has to come first when it is defined at all.
+      // `as any`: resourcesPath is Electron's addition to process, absent from
+      // @types/node. It is undefined everywhere else, which is what makes this
+      // one list work for all four run modes.
+      (process as any).resourcesPath ? (process as any).resourcesPath + "/esp8266" : undefined,
+      __dirname + "/../../../esp8266", // path in release package
+      __dirname + "/../../../../tally/out", // path during development
+    ].filter((p): p is string => p !== undefined)
+
+    let dirName: string | undefined
+    let files: string[] | undefined
+    for (const candidate of candidates) {
+      try {
+        files = await fs.readdir(candidate)
+        dirName = candidate
+        break
+      } catch (e) { /* try the next candidate */ }
+    }
+    if (files === undefined || dirName === undefined) {
+      // ponytail: no firmware directory exists (normal for a hub-only checkout,
       // no release esp8266/ and no sibling tally/out/ from `make build`). This used to
       // escape unhandled and crash the whole backend process when /flasher was opened;
       // "update not available" is a state getDevice()/program() already implement, it
       // just never got reached. Report [] so it does.
-      console.debug(`No firmware directory found (checked esp8266/ and ../tally/out); flasher update disabled.`)
+      console.debug(`No firmware directory found (checked ${candidates.join(", ")}); flasher update disabled.`)
       return []
     }
 

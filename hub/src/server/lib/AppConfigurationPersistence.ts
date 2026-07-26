@@ -71,13 +71,26 @@ class AppConfigurationPersistence {
                 _warning2: "Do not edit it while the hub is running. Your changes will be lost."
             }, data)
             
-            fs.writeFile(this.fileName, JSON.stringify(dataToWrite, null, '\t'), err => {
+            // write-then-rename, not write-in-place: rename is atomic on both
+            // POSIX and Windows, so a hub that loses power mid-write leaves the
+            // previous config intact instead of a truncated JSON file the next
+            // start refuses to parse. This is a real field failure mode for
+            // gear that gets unplugged rather than shut down.
+            const tmpName = `${this.fileName}.tmp`
+            fs.writeFile(tmpName, JSON.stringify(dataToWrite, null, '\t'), err => {
                 if(err) {
                     console.error(`error when saving file ${this.fileName}: ${err}`)
                     reject(err)
-                } else {
-                    resolve(null)
+                    return
                 }
+                fs.rename(tmpName, this.fileName, renameErr => {
+                    if(renameErr) {
+                        console.error(`error when saving file ${this.fileName}: ${renameErr}`)
+                        reject(renameErr)
+                    } else {
+                        resolve(null)
+                    }
+                })
             })
         })
     }
