@@ -19,9 +19,14 @@ cleanup() {
   # Match the REAL command lines: `npm run start:frontend` execs
   # `node .../react-scripts/scripts/start.js`, so a "react-scripts start"
   # pattern never matches and the CRA dev server survives every run.
+  # `npm run start:frontend` execs node with the RESOLVED script path:
+  #   CRA   node .../node_modules/react-scripts/scripts/start.js
+  #   Vite  node .../node_modules/.bin/vite
+  # Patterns like "react-scripts start" or "vite/bin/vite" match neither, so
+  # the dev server outlives every run and the next one aborts on a busy port.
   pkill -f "ts-node.*server\.ts.*--with-test" 2>/dev/null
   pkill -f "react-scripts/scripts/start.js" 2>/dev/null
-  pkill -f "vite/bin/vite" 2>/dev/null
+  pkill -f "bin/vite" 2>/dev/null
 }
 trap cleanup EXIT INT TERM
 
@@ -52,6 +57,10 @@ if [ -f "$HUB/vite.config.ts" ] || [ -f "$HUB/vite.config.js" ]; then
   BUILD_CMD="npm run build:frontend"
   BUNDLE_DIR="$HUB/dist/client"
   CYPRESS_SPEC_DIR="cypress/e2e"
+  # Dev-proxy direction inverted (plan 0.3): Vite:3001 is the entry point and
+  # proxies /socket.io to express:3000. express no longer serves the app shell,
+  # so probing :3000 for id="root" can never succeed here.
+  APP_URL="http://localhost:3001"
   export NODE_OPTIONS="${NODE_OPTIONS:-}"        # webpack4 legacy-provider no longer needed
 else
   WORLD=cra
@@ -59,6 +68,7 @@ else
   BUILD_CMD="npm run build:frontend"
   BUNDLE_DIR="$HUB/build"
   CYPRESS_SPEC_DIR="cypress/integration"
+  APP_URL="http://localhost:3000"                 # express is the entry point, proxies to CRA:3001
   export NODE_OPTIONS="--openssl-legacy-provider" # react-scripts4/webpack4 md4 hash breaks on modern OpenSSL
 fi
 BACKEND_CMD="npm run cypress:backend"   # ts-node --with-test, port 3000
@@ -97,8 +107,12 @@ wait_ready() { # wait_ready <url> -> 0 once it returns 200 with a served app she
   rm -f "$body"; return 1
 }
 
-start_backend()  { (cd "$HUB" && eval "$BACKEND_CMD")  & BACKEND_PID=$!;  PIDS+=("$BACKEND_PID"); }
-start_frontend() { (cd "$HUB" && eval "$FRONTEND_CMD") & FRONTEND_PID=$!; PIDS+=("$FRONTEND_PID"); }
+# Server stdout goes to a log, not to ours. Both servers are chatty ("Connecting
+# event ... to socket ..." per socket per spec) and inline they bury the pass/fail
+# table this script exists to print.
+SERVER_LOG=$(mktemp)
+start_backend()  { (cd "$HUB" && eval "$BACKEND_CMD")  >>"$SERVER_LOG" 2>&1 & BACKEND_PID=$!;  PIDS+=("$BACKEND_PID"); }
+start_frontend() { (cd "$HUB" && eval "$FRONTEND_CMD") >>"$SERVER_LOG" 2>&1 & FRONTEND_PID=$!; PIDS+=("$FRONTEND_PID"); }
 
 # ---------------------------------------------------------------------------
 echo "== typecheck =="
@@ -109,12 +123,28 @@ echo
 echo "== unit tests =="
 UNIT_LOG=$(mktemp)
 (cd "$HUB" && eval "$UNIT_TEST_CMD") > "$UNIT_LOG" 2>&1
-SUITE_LINE=$(grep '^Test Suites:' "$UNIT_LOG" || true)
-TEST_LINE=$(grep '^Tests:' "$UNIT_LOG" || true)
-SUITES_PASSED=$(echo "$SUITE_LINE" | grep -oE '[0-9]+ passed' | grep -oE '[0-9]+' || echo 0)
-SUITES_TOTAL=$(echo "$SUITE_LINE" | grep -oE '[0-9]+ total' | grep -oE '[0-9]+' || echo 0)
-TESTS_PASSED=$(echo "$TEST_LINE" | grep -oE '[0-9]+ passed' | grep -oE '[0-9]+' || echo 0)
-TESTS_TOTAL=$(echo "$TEST_LINE" | grep -oE '[0-9]+ total' | grep -oE '[0-9]+' || echo 0)
+# Two summary dialects:
+#   jest    "Test Suites: 1 failed, 32 passed, 33 total"
+#   vitest  " Test Files  1 failed | 32 passed (33)"
+# "N passed" is common to both; the total is "N total" (jest) or "(N)" (vitest).
+n_passed() { echo "$1" | grep -oE '[0-9]+ passed' | grep -oE '[0-9]+' | head -1; }
+n_total() {
+  local t
+  t=$(echo "$1" | grep -oE '[0-9]+ total' | grep -oE '[0-9]+' | head -1)
+  [ -z "$t" ] && t=$(echo "$1" | grep -oE '\([0-9]+\)' | tr -d '()' | head -1)
+  echo "${t:-0}"
+}
+SUITE_LINE=$(grep -E '^ *(Test Suites:|Test Files )' "$UNIT_LOG" | tail -1 || true)
+TEST_LINE=$(grep -E '^ *Tests[: ]' "$UNIT_LOG" | tail -1 || true)
+SUITES_PASSED=$(n_passed "$SUITE_LINE"); SUITES_TOTAL=$(n_total "$SUITE_LINE")
+TESTS_PASSED=$(n_passed "$TEST_LINE");   TESTS_TOTAL=$(n_total "$TEST_LINE")
+if [ -z "${SUITES_PASSED:-}" ] || [ -z "${TESTS_PASSED:-}" ]; then
+  # Never silently report 0 — that reads as a catastrophic regression when the
+  # real problem is an unrecognised summary format.
+  echo "FAIL  could not parse the test summary. Last lines of $UNIT_LOG:"
+  tail -5 "$UNIT_LOG" | sed 's/^/          /'
+  FAIL=1
+fi
 gate_count "unit suites passed" "${SUITES_PASSED:-0}" "$(base unit_suites_passed)"
 gate_count "unit tests passed"  "${TESTS_PASSED:-0}"  "$(base unit_tests_passed)"
 echo "        (suites: ${SUITES_PASSED:-0}/${SUITES_TOTAL:-0}, tests: ${TESTS_PASSED:-0}/${TESTS_TOTAL:-0}, log: $UNIT_LOG)"
@@ -127,21 +157,25 @@ echo
 
 echo "== bundle leak check (server-only deps must not reach the client bundle) =="
 if [ $BUILD_STATUS -eq 0 ] && [ -d "$BUNDLE_DIR" ]; then
-  LEAKS=$(grep -rl "obs-websocket\|nodemcu\|atem-connection\|@julusian" "$BUNDLE_DIR" 2>/dev/null | wc -l | tr -d ' ')
-  WANT_LEAKS=$(base bundle_leaks)
-  # Pre-Phase-1 this is EXPECTED to be non-zero: ObsSettings.tsx imports
-  # ObsConnector just for ObsConnector.ID and drags obs-websocket-js into the
-  # client bundle (plan §0.1). Gate on "no worse than baseline", not on 0 —
-  # hard-coding 0 made the harness fail at the known-good state.
-  # Phase 1 drives this to 0; lower the baseline in the same commit.
-  if [ "$LEAKS" -gt "$WANT_LEAKS" ]; then
-    printf "FAIL  %-28s %s file(s) leak a server-only dep (baseline: %s)\n" "bundle leak check" "$LEAKS" "$WANT_LEAKS"
-    FAIL=1
-  elif [ "$LEAKS" -lt "$WANT_LEAKS" ]; then
-    printf "PASS  %-28s %s leaked (baseline: %s — better, lower it in %s)\n" "bundle leak check" "$LEAKS" "$WANT_LEAKS" "$BASELINE"
-  else
-    printf "PASS  %-28s %s leaked (baseline: %s)\n" "bundle leak check" "$LEAKS" "$WANT_LEAKS"
-  fi
+  # One probe per dependency, each asserted to be 0 separately. A single
+  # combined alternation that matches nothing cannot distinguish "clean" from
+  # "my regex is wrong" — five that each match nothing can.
+  #
+  # NOTE: the package is `obs-websocket-js`. Probing for bare "obs-websocket"
+  # also matches ObsSettings.tsx's user-facing copy naming the OBS *plugin*
+  # ("the obs-websocket plugin version 4.x"), which is product text, not a
+  # library import. That false positive is why this gate failed Phase 1.
+  LEAK_TOTAL=0
+  for dep in "obs-websocket-js" "nodemcu" "atem-connection" "@julusian" "child_process"; do
+    n=$(grep -rl -- "$dep" "$BUNDLE_DIR" 2>/dev/null | wc -l | tr -d ' ')
+    if [ "$n" -ne 0 ]; then
+      printf "FAIL  %-28s %s: %s file(s)\n" "bundle leak check" "$dep" "$n"
+      grep -rl -- "$dep" "$BUNDLE_DIR" 2>/dev/null | sed 's/^/          /'
+      LEAK_TOTAL=$((LEAK_TOTAL + n)); FAIL=1
+    else
+      printf "PASS  %-28s %s: 0\n" "bundle leak check" "$dep"
+    fi
+  done
 else
   printf "FAIL  %-28s (build failed or bundle dir missing: %s)\n" "bundle leak check" "$BUNDLE_DIR"
   FAIL=1
@@ -151,8 +185,14 @@ echo
 echo "== cypress ($CYPRESS_SPEC_DIR, manual_* excluded — manual_flasher hangs headless via cy.pause()) =="
 start_backend
 start_frontend
-if ! wait_ready "http://localhost:3000"; then
-  echo "FAIL  cypress                       servers never became ready"
+# Two separate readiness facts: the app shell must be served by whichever port
+# is the entry point in this world, AND our own backend must still be alive.
+# Checking only the shell would let a stranger's server satisfy the gate.
+if ! wait_ready "$APP_URL"; then
+  echo "FAIL  cypress                       app shell never became ready at $APP_URL"
+  FAIL=1
+elif ! kill -0 "$BACKEND_PID" 2>/dev/null; then
+  echo "FAIL  cypress                       backend died during startup (port already taken?)"
   FAIL=1
 else
   CY_PASS=0 CY_FAIL=0 CY_PEND=0
@@ -165,15 +205,20 @@ else
     n=$(grep -oE '[0-9]+ pending' "$CY_LOG" | grep -oE '[0-9]+' | head -1 || echo 0)
     CY_PASS=$((CY_PASS + ${p:-0})); CY_FAIL=$((CY_FAIL + ${f:-0})); CY_PEND=$((CY_PEND + ${n:-0}))
     echo "  $spec: ${p:-0} passing / ${f:-0} failing / ${n:-0} pending"
+    if [ "${f:-0}" -ne 0 ]; then
+      # Counts alone are not actionable. Name the failing tests and keep the log.
+      grep -E '^\s+[0-9]+\) ' "$CY_LOG" | sed 's/^/     /'
+      echo "     log: $CY_LOG"
+    fi
     if ! kill -0 "$BACKEND_PID" 2>/dev/null; then
       echo "  WARNING: backend died after $spec (this is the known NodeMcuConnector /flasher crash if spec is smoke.spec.ts — expected, not a new failure). Restarting."
       start_backend
-      wait_ready "http://localhost:3000" || echo "  WARNING: backend did not come back up"
+      wait_ready "$APP_URL" || echo "  WARNING: app did not come back up"
     fi
   done < <(cd "$HUB" && ls "$CYPRESS_SPEC_DIR" | grep -v '^manual_' | sort)
   CY_TOTAL=$((CY_PASS + CY_FAIL + CY_PEND))
   gate_count "cypress passed" "$CY_PASS" "$(base cypress_passed)"
-  echo "        (total: $CY_PASS/$CY_TOTAL, baseline total: $(base cypress_total))"
+  echo "        (total: $CY_PASS/$CY_TOTAL, baseline total: $(base cypress_total), server log: $SERVER_LOG)"
 fi
 echo
 
