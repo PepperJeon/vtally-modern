@@ -29,13 +29,27 @@ import WebTallyDriver from './tally/WebTallyDriver'
 import { DefaultTallyConfiguration, TallyConfiguration } from '../shared/tally/TallyConfiguration'
 import NodeMcuConnector from './flasher/NodeMcuConnector'
 
-const argv = yargs.argv
-if (argv.env !== undefined) {
+export type StartServerOptions = {
+  /** listen port. defaults to AppConfiguration.getHttpPort() (env PORT, else 3000). 0 = ask the OS. */
+  port?: number
+  env?: string
+  withTest?: boolean
+}
+
+export type ServerHandle = {
+  /** the port actually bound — the only way to learn it when port 0 was requested */
+  port: number
+  /** persist config, then close socket.io (and with it the http server) and the UDP socket */
+  close(): Promise<void>
+}
+
+export async function startServer(opts: StartServerOptions = {}): Promise<ServerHandle> {
+if (opts.env !== undefined) {
   // @ts-ignore @TODO: setting the env is not nice, but the easiest way to be cross-platform compatible
   // @see https://github.com/wifi-tally/wifi-tally/issues/18
-  process.env.NODE_ENV = argv.env
+  process.env.NODE_ENV = opts.env
 }
-if (argv['with-test'] !== undefined) {
+if (opts.withTest) {
   process.env.HUB_WITH_TEST = "true"
 }
 const app = express()
@@ -60,20 +74,25 @@ const server = new Server(app)
 // ponytail: two numbers, not a heartbeat layer -- engine.io already does this.
 const io = new SocketIoServer(server, { pingInterval: 1000, pingTimeout: 2000 })
 
+// ponytail: the body below is deliberately left at its original indentation.
+// Re-indenting 300 lines would have made the diff of this extraction
+// unreviewable, and this refactor's whole safety argument is "you can see
+// nothing else changed".
 const myEmitter = new ServerEventEmitter()
 myEmitter.setMaxListeners(99)
 const myConfiguration = new AppConfiguration(myEmitter)
+let myPersistence: AppConfigurationPersistence | undefined
 if (myConfiguration.isTest()) {
   console.log("Starting test environment")
   myConfiguration.setMixerSelection(TestConnector.ID)
   myConfiguration.setTallyTimeoutMissing(1000)
   myConfiguration.setTallyTimeoutDisconnected(3000)
 } else {
-  new AppConfigurationPersistence(myConfiguration, myEmitter)
+  myPersistence = new AppConfigurationPersistence(myConfiguration, myEmitter)
 }
 
 const myTallyContainer = new TallyContainer(myConfiguration, myEmitter)
-new UdpTallyDriver(myConfiguration, myTallyContainer)
+const myUdpTallyDriver = new UdpTallyDriver(myConfiguration, myTallyContainer)
 const myWebTallyDriver = new WebTallyDriver(myConfiguration, myTallyContainer)
 
 const myMixerDriver = new MixerDriver(myConfiguration, myEmitter)
@@ -366,6 +385,38 @@ if (myConfiguration.isDev()) {
 
 
 
-server.listen(myConfiguration.getHttpPort(), () => {
-  console.log(`Web Server available on http://localhost:${myConfiguration.getHttpPort()}`)
+const requestedPort = opts.port !== undefined ? opts.port : myConfiguration.getHttpPort()
+await new Promise<void>((resolve, reject) => {
+  server.once('error', reject)
+  server.listen(requestedPort, () => resolve())
 })
+// port 0 means "ask the OS" (Electron), so read back what was actually bound
+const address = server.address()
+const port = typeof address === 'object' && address !== null ? address.port : requestedPort
+console.log(`Web Server available on http://localhost:${port}`)
+
+return {
+  port,
+  close: async () => {
+    // config first: AppConfigurationPersistence debounces writes by 500ms, so a
+    // quit inside that window would otherwise drop the operator's last change.
+    await myPersistence?.save()
+    myUdpTallyDriver.close()
+    await new Promise<void>(resolve => io.close(() => resolve()))
+  },
+}
+}
+
+// CLI shim. Only runs when this file is the entry point (bin/vtally ->
+// forever-monitor -> src/server/server.js, and `ts-node src/server/server.ts`);
+// importing startServer() from Electron does not trigger it.
+if (require.main === module) {
+  const argv = yargs.argv
+  startServer({
+    env: argv.env as string | undefined,
+    withTest: argv['with-test'] !== undefined,
+  }).catch(e => {
+    console.error(e)
+    process.exit(1)
+  })
+}
