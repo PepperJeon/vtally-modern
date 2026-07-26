@@ -60,12 +60,14 @@ describe('fromJson/toJson', () => {
         conf.setIp("1.2.3.4")
         conf.setPort(1234)
         conf.setLiveMode("stream")
+        conf.setPassword("hunter2")
         const loadedConf = createDefaultObsConfiguration()
         loadedConf.fromJson(conf.toJson())
         
         expect(loadedConf.getIp().toString()).toEqual("1.2.3.4")
         expect(loadedConf.getPort().toNumber()).toEqual(1234)
         expect(loadedConf.getLiveMode()).toEqual("stream")
+        expect(loadedConf.getPassword()).toEqual("hunter2")
     })
 })
 
@@ -75,11 +77,13 @@ describe('clone', () => {
         conf.setIp("1.2.3.4")
         conf.setPort(1234)
         conf.setLiveMode("stream")
+        conf.setPassword("hunter2")
         const clone = conf.clone()
         conf.setIp("2.3.4.5") // it should be a new instance
         
         expect(clone.getIp().toString()).toEqual("1.2.3.4")
         expect(clone.getPort().toNumber()).toEqual(1234)
         expect(clone.getLiveMode()).toEqual("stream")
+        expect(clone.getPassword()).toEqual("hunter2")
     })
 })
