@@ -1,0 +1,8 @@
+{
+  "unit_suites_passed": 25,
+  "unit_suites_total": 26,
+  "unit_tests_passed": 238,
+  "unit_tests_total": 244,
+  "cypress_passed": 53,
+  "cypress_total": 73
+}
