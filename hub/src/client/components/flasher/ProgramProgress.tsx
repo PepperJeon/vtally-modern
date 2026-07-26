@@ -39,8 +39,8 @@ function getSteps(progress: TallyProgramProgressType): StepType[] {
     step.active = lastDone && step.done === false
     step.error = step.active && progress?.error
     step.skipped = hadError
-    if (!hadError) {
-      // first step that errored
+    if (step.error) {
+      // every step after the one that errored is skipped
       hadError = true
     }
     lastDone = step.done
