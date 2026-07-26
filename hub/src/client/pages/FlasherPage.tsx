@@ -1,35 +1,19 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, makeStyles, Typography } from '@material-ui/core';
-import { Alert } from '@material-ui/lab';
 import React, { useEffect, useState } from 'react'
-import EditSettingsIni from '../components/EditSettingsIni';
-import Layout from '../components/layout/Layout'
-import MiniPage from '../components/layout/MiniPage';
-import Spinner from '../components/layout/Spinner';
-import TallySettingsIniProgress from '../components/flasher/TallySettingsProgress';
-import type { TallyProgramProgressType, TallySettingsIniProgressType } from '../../shared/flasher/TallyDevice';
-import TallyDevice, { TallyDeviceObjectType } from '../../shared/flasher/TallyDevice';
-import TallySettingsIni from '../../shared/flasher/TallySettingsIni';
-import RefreshIcon from '@material-ui/icons/Refresh';
-import { socket } from '../hooks/useSocket';
-import Help from '../components/flasher/Help';
-import ProgramProgress from '../components/flasher/ProgramProgress';
+import { Dialog as DialogPrimitive } from 'radix-ui'
+import { AlertTriangle, Check, Info, RefreshCw } from 'lucide-react'
 
-const useStyles = makeStyles(theme => {
-  return {
-    warning: {
-      marginBottom: theme.spacing(2),
-    },
-    success: {
-      marginBottom: theme.spacing(2),
-    },
-    footer: {
-      borderTop: "solid 1px " + theme.palette.background.default,
-      margin: theme.spacing(0, -2),
-      padding: theme.spacing(2, 2, 0, 2),
-      textAlign: "right",
-    },
-  }
-})
+import EditSettingsIni from '../components/EditSettingsIni'
+import Layout from '../components/layout/Layout'
+import MiniPage from '../components/layout/MiniPage'
+import Spinner from '../components/layout/Spinner'
+import TallySettingsIniProgress from '../components/flasher/TallySettingsProgress'
+import type { TallyProgramProgressType, TallySettingsIniProgressType } from '../../shared/flasher/TallyDevice'
+import TallyDevice, { TallyDeviceObjectType } from '../../shared/flasher/TallyDevice'
+import TallySettingsIni from '../../shared/flasher/TallySettingsIni'
+import { socket } from '../hooks/useSocket'
+import Help from '../components/flasher/Help'
+import ProgramProgress from '../components/flasher/ProgramProgress'
+import ExternalLink from '../components/ExternalLink'
 
 function useTallyDevice(i: number) {
   const [tallyDevice, setTallyDevice] = useState<TallyDevice>(undefined)
@@ -50,6 +34,35 @@ function useTallyDevice(i: number) {
   return tallyDevice
 }
 
+const panelFooterClass = "-mx-6 mt-6 border-t border-border px-6 pt-4 text-right max-sm:-mx-4 max-sm:px-4"
+const primaryButtonClass =
+  "inline-flex h-11 items-center justify-center rounded-sm px-4 font-sans text-base font-medium " +
+  "bg-white text-n-950 transition-colors duration-[var(--duration-fast)] hover:bg-n-100 " +
+  "focus-visible:shadow-focus focus-visible:outline-none " +
+  "disabled:cursor-not-allowed disabled:bg-n-600 disabled:text-text-disabled disabled:hover:bg-n-600"
+
+/** Amber, outlined. The only alert colour left in the app. */
+function WarningAlert({ children }: { children: React.ReactNode }) {
+  return (
+    <div role="alert" className="mb-4 flex items-start gap-3 rounded-md border border-missing/60 px-4 py-3 text-base text-missing">
+      <AlertTriangle aria-hidden className="mt-0.5 size-5 shrink-0" />
+      <div>{children}</div>
+    </div>
+  )
+}
+
+/** Neutral, not green and not amber — "a capability this build does not have"
+ *  and "already up to date" are both non-events (design-screens.md §5.3, §5.6).
+ *  Green would be hue spent on something that is not a tally state. */
+function NeutralBlock({ icon, children }: { icon: React.ReactNode, children: React.ReactNode }) {
+  return (
+    <div className="flex items-start gap-3 rounded-md border border-border bg-surface-hover px-4 py-3 text-base text-text">
+      <span className="mt-0.5 shrink-0 text-n-300">{icon}</span>
+      <div className="min-w-0">{children}</div>
+    </div>
+  )
+}
+
 const FlasherPage = () => {
   // every increment will refresh tallyDevice
   const [increment, setIncrement] = useState<number>(1)
@@ -59,8 +72,6 @@ const FlasherPage = () => {
   const [programProgress, setProgramProgress] = useState<TallyProgramProgressType>(undefined)
   const tallyDevice = useTallyDevice(increment)
   const isLoading = tallyDevice === undefined
-
-  const classes = useStyles()
 
   const handleReload = () => {
     setIncrement(increment + 1)
@@ -82,7 +93,7 @@ const FlasherPage = () => {
     socket.on('flasher.settingsIni.progress', fnc)
     socket.emit('flasher.settingsIni', tallyDevice.path, tallySettings.toString())
   }
-  
+
   const handleProgram = () => {
     setUploadProgress(undefined)
     setProgramProgress(undefined)
@@ -100,63 +111,112 @@ const FlasherPage = () => {
     socket.emit('flasher.program', tallyDevice.path)
   }
 
+  const hasFailed = uploadProgress?.error || programProgress?.error
+  const update = tallyDevice?.update
+
   return (
     <Layout testId="flasher">
-      <Dialog
-        data-testid="progress"
-        disableBackdropClick={isUploading}
-        disableEscapeKeyDown={isUploading}
-        open={uploadingOpen}
-      >
-        <DialogTitle>Upload</DialogTitle>
-        <DialogContent>
-          { uploadProgress && <TallySettingsIniProgress progress={uploadProgress} /> }
-          { programProgress && <ProgramProgress progress={programProgress} /> }
-        </DialogContent>
-        <DialogActions>
-          <Button data-testid="progress-close" disabled={isUploading} onClick={() => setUploadingOpen(false)}>Close</Button>
-        </DialogActions>
-      </Dialog>
-      <MiniPage title="Tally Flasher" addHeaderContent={<IconButton aria-label="reload" disabled={isLoading || isUploading} onClick={handleReload}><RefreshIcon /></IconButton>}>
-        <Typography paragraph>
-          This tool allows to update the configuration or software of a Hardware Tally Light.
-        </Typography>
-        { tallyDevice === undefined ? (
-          <Spinner />
-        ) : (
-          <Help tallyDevice={tallyDevice} onReload={handleReload} />
-        )}
-      </MiniPage>
-      { (tallyDevice?.update === "updateable" || tallyDevice?.update === "up-to-date") && <MiniPage testId="update-software" title="Software Update">
-        { tallyDevice?.update === "up-to-date" && <Alert
-          className={classes.success}
-          variant="outlined"
-          severity="success">
-            The software on this Tally is up to date.
-        </Alert>}
-        { tallyDevice?.update === "updateable" && <>
-          <Alert 
-            className={classes.warning} 
-            severity="warning"
-            variant="outlined"
+      <DialogPrimitive.Root open={uploadingOpen} onOpenChange={open => { if (!open && !isUploading) { setUploadingOpen(false) } }}>
+        <DialogPrimitive.Portal>
+          <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/60" />
+          <DialogPrimitive.Content
+            data-testid="progress"
+            /* Closing mid-flash leaves a half-written device — both escapes stay
+               shut while uploading, exactly as MUI's disableBackdropClick /
+               disableEscapeKeyDown did. */
+            onEscapeKeyDown={e => { if (isUploading) { e.preventDefault() } }}
+            onPointerDownOutside={e => { if (isUploading) { e.preventDefault() } }}
+            onInteractOutside={e => { if (isUploading) { e.preventDefault() } }}
+            className="fixed left-1/2 top-1/2 z-50 w-full max-w-[440px] -translate-x-1/2 -translate-y-1/2 rounded-md border border-border-strong bg-surface-raised p-6 text-text shadow-overlay outline-none max-sm:inset-0 max-sm:size-full max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-none"
           >
-            The Software on this Tally can be updated.
-          </Alert>
-          <div className={classes.footer}>
-            <Button color="primary" variant="contained" onClick={handleProgram} data-testid="update-software-now">Update now</Button>
-          </div>
-        </>}
-      </MiniPage>}
-      { tallyDevice?.nodeMcuVersion !== undefined && <MiniPage title="Edit tally-settings.ini" testId="tally-settings">
-        { !tallyDevice.tallySettings && <Alert 
-          className={classes.warning} 
-          severity="warning"
-          variant="outlined"
+            <DialogPrimitive.Title className="m-0 mb-4 text-xl font-semibold">Upload</DialogPrimitive.Title>
+            { uploadProgress && <TallySettingsIniProgress progress={uploadProgress} /> }
+            { programProgress && <ProgramProgress progress={programProgress} /> }
+            { hasFailed && <WarningAlert>The upload failed. Unplug the tally, plug it back in and try again.</WarningAlert> }
+            <div className="-mx-6 mt-6 border-t border-border px-6 pt-4 text-right">
+              <button
+                type="button"
+                data-testid="progress-close"
+                disabled={isUploading}
+                onClick={() => setUploadingOpen(false)}
+                className={primaryButtonClass}
+              >Close</button>
+            </div>
+          </DialogPrimitive.Content>
+        </DialogPrimitive.Portal>
+      </DialogPrimitive.Root>
+
+      <div className="flex flex-col gap-6">
+        <MiniPage
+          title="Tally Flasher"
+          className="mb-0 max-w-[720px]"
+          addHeaderContent={
+            <button
+              type="button"
+              aria-label="reload"
+              disabled={isLoading || isUploading}
+              onClick={handleReload}
+              className="inline-flex size-9 items-center justify-center rounded-sm text-n-300 transition-colors duration-[var(--duration-fast)] hover:bg-surface-hover hover:text-text focus-visible:shadow-focus focus-visible:outline-none disabled:cursor-not-allowed disabled:text-n-600 disabled:hover:bg-transparent"
+            ><RefreshCw aria-hidden className="size-5" /></button>
+          }
         >
-          tally-settings.ini does not exist yet and will be created.
-        </Alert> }
-        <EditSettingsIni settingsIni={tallyDevice.tallySettings} onSave={handleSettingsIniSave} disabled={isLoading || isUploading} />
-      </MiniPage>}
+          <p className="m-0 mb-4 text-base text-text-muted">
+            This tool allows to update the configuration or software of a Hardware Tally Light.
+          </p>
+          { tallyDevice === undefined ? (
+            <Spinner />
+          ) : (
+            <Help tallyDevice={tallyDevice} onReload={handleReload} />
+          )}
+        </MiniPage>
+
+        {/* "not-available" is included deliberately: it used to render nothing
+            at all, which reads as a broken page, and before that the same state
+            reported "up to date" — a false all-clear on a hub that ships no
+            firmware (design-screens.md §5.3). */}
+        { (update === "updateable" || update === "up-to-date" || update === "not-available") && (
+          <MiniPage testId="update-software" title="Software Update" className="mb-0 max-w-[720px]">
+            { update === "not-available" && (
+              <NeutralBlock icon={<Info aria-hidden className="size-5" />}>
+                <p className="m-0 font-medium">Firmware not available on this hub</p>
+                <p className="m-0 mt-2 text-sm text-text-muted">
+                  This copy of the hub does not ship the tally firmware, so it cannot check for or
+                  install software updates. Editing tally-settings.ini below still works normally.
+                </p>
+                <p className="m-0 mt-2 text-sm text-text-muted">Looked in:</p>
+                <ul className="m-0 mt-1 list-none p-0 font-mono text-sm text-text-muted">
+                  <li>esp8266/ <span className="font-sans">(release package)</span></li>
+                  <li>../tally/out/ <span className="font-sans">(development checkout — run <code>make build</code>)</span></li>
+                </ul>
+                <p className="m-0 mt-2 text-sm text-text-muted">
+                  Install a release build of vTally to enable firmware updates.{" "}
+                  <ExternalLink href="https://github.com/peperjeon/vtally-modern">Docs ↗</ExternalLink>
+                </p>
+              </NeutralBlock>
+            )}
+            { update === "up-to-date" && (
+              <NeutralBlock icon={<Check aria-hidden className="size-5" />}>
+                The software on this Tally is up to date.
+              </NeutralBlock>
+            )}
+            { update === "updateable" && <>
+              <WarningAlert>The Software on this Tally can be updated.</WarningAlert>
+              <div className={panelFooterClass}>
+                <button type="button" onClick={handleProgram} data-testid="update-software-now" className={primaryButtonClass}>Update now</button>
+              </div>
+            </>}
+          </MiniPage>
+        )}
+
+        { tallyDevice?.nodeMcuVersion !== undefined && (
+          <MiniPage title="Edit tally-settings.ini" testId="tally-settings" className="mb-0 max-w-[720px]">
+            { !tallyDevice.tallySettings && (
+              <WarningAlert>tally-settings.ini does not exist yet and will be created.</WarningAlert>
+            )}
+            <EditSettingsIni settingsIni={tallyDevice.tallySettings} onSave={handleSettingsIniSave} disabled={isLoading || isUploading} />
+          </MiniPage>
+        )}
+      </div>
     </Layout>
   )
 }
