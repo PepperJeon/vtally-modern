@@ -297,7 +297,7 @@ I looked for the failure mode you named — module-level singletons leaking betw
 | Singleton | Reachable from a spec? |
 |---|---|
 | `flasher/NodeMcuConnector.ts:31` `let mutex = false` | **No.** No spec imports `NodeMcuConnector`. `TallyDevice.spec.ts` only touches `TallyDevice`/`TallySettingsIni`. |
-| `hooks/useSocket.ts:12` module-scope `socket` | **No.** `ChannelSelector.spec.tsx` is the only component spec and `ChannelSelector` takes props, no hooks. The trackers (`useConfiguration`, `useChannels`, `useTallies`, `useProgramPreview`, `useMixerInfo`, `useTallyLog`) have **no specs at all**. |
+| `hooks/useSocket.ts:12` module-scope `socket` | **No longer accurate — corrected in unit 2b.** This row originally read "the trackers … have **no specs at all**". Seven tracker specs exist as of the Phase 1 restructure: `src/client/hooks/tracker/{channel,config,mixer,program,tally,tallylog}.spec.ts` plus `src/client/hooks/useTallies.spec.tsx`. They drive a fake socket (`tracker/fakeSocket.ts`), not the module-scope one, so the *singleton-leak* answer is still **No** — but the coverage claim was wrong. |
 | `server.ts:39-60` (`io`, `myConfiguration`, `myMixerDriver`, `myNodeMcuConnector`, …) | **No.** No spec imports `server.ts`. |
 
 What *is* shared:
@@ -422,7 +422,7 @@ This is the number that determines whether "≥ baseline" protects each unit of 
 | Unit | Suites that would catch a regression | Gate strength |
 |---|---|---|
 | **2a `channelsByMixer`** | `AppConfiguration`, `AppConfigurationPersistence`, `MixerCommunicator` — **all three are in the `midi`-blocked set**. Plus Cypress, also 0/13 measured. | **ZERO.** Not weak — zero. Every test that would notice a `getChannels()`/`setChannels()` regression is currently unmeasured. Unblocking `midi` is a hard prerequisite for 2a, not a nice-to-have. |
-| **2b socket.io v2→v4** | Cypress only (the plan says so itself: "여기선 Cypress가 socket 통합 테스트다"). Currently 0/13 measured. | **ZERO** until the backend starts. |
+| **2b socket.io v2→v4** | Cypress only (the plan says so itself: "여기선 Cypress가 socket 통합 테스트다"). ~~Currently 0/13 measured.~~ **Superseded:** the Cypress suite is measured and green; see `scripts/baseline.json` for the live numbers (never restated here — this table has already gone stale once). | **REAL, and it earned its keep** — 2b's one genuine regression (the "Hub disconnected" banner going dead) was caught by `hub-disconnected-banner.spec.ts` and by nothing else. Still nothing covers the socket *transport* itself. |
 | **2c obs-websocket v5** | `ObsConnector.spec.ts` (grade B, being replaced), `ObsConfiguration.spec.ts` (grade B, blind to the port-default change), `configObs.spec.ts` (unmeasured). | **WEAK, and self-repairing** — 2c rewrites its own gate. The `ObsConfiguration` default-port hole (§1.2) is the one thing to fix outside that rewrite. |
 | **2d `midi`→`@julusian/midi`, atem deep import** | **`AtemConnector.ts` has no spec at all.** `MixerDriver.spec.ts` covers only `getAllowedMixers`. | **NEAR-ZERO.** The plan already flags this (risk #9: "AtemConnector엔 스펙이 없으므로 얇은 연결 테스트 추가"). Confirmed accurate. |
 | **2e Feelworld (new)** | None yet — greenfield, spec written alongside. | N/A. |

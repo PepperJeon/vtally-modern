@@ -39,12 +39,23 @@ if (argv['with-test'] !== undefined) {
 }
 const app = express()
 const server = new Server(app)
-// v4 relaxed engine.io's heartbeat defaults a long way (pingInterval 25s,
-// pingTimeout 20s) for flaky mobile networks. v2's were tight enough that a
-// browser noticed a dead hub in about a second; at v4's defaults the same
-// outage goes unnoticed for up to 45s, and the operator's "Hub disconnected"
-// banner with it. This is a LAN tool watched from across a control room, so
-// tight is correct: worst-case detection is now ~3s.
+// REQUIREMENT, not a tuning preference: a web tally must notice a dead hub
+// within ~2s. Do not relax these back toward the defaults to save traffic
+// without replacing the guarantee with something else.
+//
+// The thing at the other end of this socket is a phone taped to a camera, and
+// its only job is to be *currently* right. socket.io v4 relaxed engine.io's
+// heartbeat a long way for flaky mobile networks (pingInterval 25s,
+// pingTimeout 20s), so a dead hub can go unnoticed for up to 45s — v2 noticed
+// in about a second. The dangerous case is not a stale "on air" (that just
+// makes an operator over-cautious); it is a stale "idle" while the camera has
+// actually gone live, so the operator believes they are safe while
+// broadcasting. 45s of that in a live show is not acceptable, and it would
+// have arrived silently as a side effect of a version bump.
+//
+// Cost is negligible here: web tallies hold a wake lock and run a full-screen
+// bright fill, so the radio is already awake and the screen dominates the
+// power budget — 1 Hz against that is noise, for a handful of LAN clients.
 // ponytail: two numbers, not a heartbeat layer -- engine.io already does this.
 const io = new SocketIoServer(server, { pingInterval: 1000, pingTimeout: 2000 })
 
