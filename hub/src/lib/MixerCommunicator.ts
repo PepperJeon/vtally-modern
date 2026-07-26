@@ -12,7 +12,8 @@ const haveValuesChanged = (lastArray: any, newArray: any) => {
     }
 }
 
-export type ChannelList = string[] | null
+import type { ChannelList } from "../domain/Channel"
+export type { ChannelList }
 
 export class MixerCommunicator {
     configuration: AppConfiguration

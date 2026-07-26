@@ -6,7 +6,7 @@ import Layout from '../components/layout/Layout'
 import MiniPage from '../components/layout/MiniPage';
 import Spinner from '../components/layout/Spinner';
 import TallySettingsIniProgress from '../components/flasher/TallySettingsProgress';
-import { TallyProgramProgressType, TallySettingsIniProgressType } from '../flasher/NodeMcuConnector';
+import type { TallyProgramProgressType, TallySettingsIniProgressType } from '../flasher/TallyDevice';
 import TallyDevice, { TallyDeviceObjectType } from '../flasher/TallyDevice';
 import TallySettingsIni from '../flasher/TallySettingsIni';
 import RefreshIcon from '@material-ui/icons/Refresh';

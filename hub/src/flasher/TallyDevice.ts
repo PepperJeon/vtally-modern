@@ -1,5 +1,28 @@
 import TallySettingsIni from "./TallySettingsIni"
 
+// Flasher progress shapes. Defined here rather than in NodeMcuConnector
+// (node-only: nodemcu-tool, fs, tmp-promise) because three client components
+// need them as types and must not import that module.
+export interface TallySettingsIniProgressType {
+  tallyName: string
+  inititalizeDone: boolean
+  connectionDone: boolean
+  uploadDone: boolean
+  rebootDone: boolean
+  allDone: boolean
+  error: boolean
+}
+
+export interface TallyProgramProgressType {
+  inititalizeDone: boolean
+  connectionDone: boolean
+  filesUploaded: number
+  filesTotal: number
+  rebootDone: boolean
+  allDone: boolean
+  error: boolean
+}
+
 export type UpdateType = "not-available" | "up-to-date" | "updateable"
 
 export interface TallyDeviceObjectType {

@@ -1,5 +1,5 @@
 import React from 'react'
-import { TallyProgramProgressType } from '../../flasher/NodeMcuConnector'
+import type { TallyProgramProgressType } from '../../flasher/TallyDevice'
 import StepDisplay, { StepType } from './StepDisplay'
 
 function getSteps(progress: TallyProgramProgressType): StepType[] {

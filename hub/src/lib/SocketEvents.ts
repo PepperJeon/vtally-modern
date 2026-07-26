@@ -1,18 +1,19 @@
-import { AtemConfigurationSaveType } from "../mixer/atem/AtemConfiguration";
-import { MockConfigurationSaveType } from "../mixer/mock/MockConfiguration";
-import { ObsConfigurationSaveType } from "../mixer/obs/ObsConfiguration";
-import { RolandV8HDConfigurationSaveType } from "../mixer/rolandV8HD/RolandV8HDConfiguration";
-import { RolandV60HDConfigurationSaveType } from "../mixer/rolandV60HD/RolandV60HDConfiguration";
-import { VmixConfigurationSaveType } from "../mixer/vmix/VmixConfiguration";
-import { ChannelList } from "./MixerCommunicator";
-import { TallyObjectType, TallyType, WebTallyObjectType } from "../domain/Tally";
-import { ChannelSaveObject } from "../domain/Channel";
-import { LogObjectType } from "../domain/Log";
-import { TestConfigurationSaveType } from "../mixer/test/TestConfiguration";
-import { StateCommand } from "../tally/CommandCreator";
-import { TallyConfigurationObjectType } from "../tally/TallyConfiguration";
-import { TallyDeviceObjectType } from "../flasher/TallyDevice";
-import { TallyProgramProgressType, TallySettingsIniProgressType } from "../flasher/NodeMcuConnector";
+// Every import here is type-only: this file declares the socket.io wire
+// contract and is imported by both server and client, so it must never pull a
+// runtime module across the boundary.
+import type { AtemConfigurationSaveType } from "../mixer/atem/AtemConfiguration";
+import type { MockConfigurationSaveType } from "../mixer/mock/MockConfiguration";
+import type { ObsConfigurationSaveType } from "../mixer/obs/ObsConfiguration";
+import type { RolandV8HDConfigurationSaveType } from "../mixer/rolandV8HD/RolandV8HDConfiguration";
+import type { RolandV60HDConfigurationSaveType } from "../mixer/rolandV60HD/RolandV60HDConfiguration";
+import type { VmixConfigurationSaveType } from "../mixer/vmix/VmixConfiguration";
+import type { TallyObjectType, TallyType, WebTallyObjectType } from "../domain/Tally";
+import type { ChannelList, ChannelSaveObject } from "../domain/Channel";
+import type { LogObjectType } from "../domain/Log";
+import type { TestConfigurationSaveType } from "../mixer/test/TestConfiguration";
+import type { StateCommand } from "../tally/CommandCreator";
+import type { TallyConfigurationObjectType } from "../tally/TallyConfiguration";
+import type { TallyDeviceObjectType, TallyProgramProgressType, TallySettingsIniProgressType } from "../flasher/TallyDevice";
 
 // events the server sends to the client
 export interface ServerSentEvents {

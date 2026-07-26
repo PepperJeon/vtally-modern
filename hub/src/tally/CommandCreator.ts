@@ -1,5 +1,5 @@
 import Tally, { UdpTally } from "../domain/Tally";
-import { ChannelList } from "../lib/MixerCommunicator";
+import type { ChannelList } from "../domain/Channel";
 import ColorSchemes, { Black, Color } from "./ColorScheme";
 import { DefaultTallyConfiguration } from "./TallyConfiguration";
 

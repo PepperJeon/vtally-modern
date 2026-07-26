@@ -39,25 +39,10 @@ const tryToAquireMutex = () => {
   }
 }
 
-export interface TallySettingsIniProgressType {
-  tallyName: string
-  inititalizeDone: boolean
-  connectionDone: boolean
-  uploadDone: boolean
-  rebootDone: boolean
-  allDone: boolean
-  error: boolean
-}
-
-export interface TallyProgramProgressType {
-  inititalizeDone: boolean
-  connectionDone: boolean
-  filesUploaded: number
-  filesTotal: number
-  rebootDone: boolean
-  allDone: boolean
-  error: boolean
-}
+// moved to TallyDevice.ts so client components can reference them without
+// importing this node-only module; re-exported here for existing callers.
+import type { TallySettingsIniProgressType, TallyProgramProgressType } from "./TallyDevice"
+export type { TallySettingsIniProgressType, TallyProgramProgressType }
 
 class NodeMcuConnector {
   nodemcu: any

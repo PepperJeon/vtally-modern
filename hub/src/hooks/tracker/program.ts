@@ -1,5 +1,5 @@
 import {EventEmitter} from 'events'
-import { ChannelList } from '../../lib/MixerCommunicator'
+import type { ChannelList } from '../../domain/Channel'
 import { ClientSideSocket } from '../../lib/SocketEvents'
 
 class ProgramTracker extends EventEmitter{

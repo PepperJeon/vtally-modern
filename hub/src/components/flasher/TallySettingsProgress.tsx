@@ -1,5 +1,5 @@
 import React from 'react'
-import { TallySettingsIniProgressType } from '../../flasher/NodeMcuConnector'
+import type { TallySettingsIniProgressType } from '../../flasher/TallyDevice'
 import useTallies from '../../hooks/useTallies'
 import StepDisplay, { StepType } from './StepDisplay'
 

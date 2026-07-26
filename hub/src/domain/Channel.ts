@@ -1,3 +1,9 @@
+// The set of channel ids currently live/previewed. Lives here rather than in
+// MixerCommunicator (server-only) because both the socket contract and the
+// client tracker need it, and a type may not drag a server module across the
+// client boundary.
+export type ChannelList = string[] | null
+
 export type ChannelSaveObject = {
     id: string
     name?: string

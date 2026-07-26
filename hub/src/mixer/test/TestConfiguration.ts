@@ -1,4 +1,4 @@
-import { ChannelList } from "../../lib/MixerCommunicator";
+import type { ChannelList } from "../../domain/Channel";
 import { Configuration } from "../interfaces";
 
 
