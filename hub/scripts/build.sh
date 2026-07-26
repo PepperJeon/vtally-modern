@@ -1,7 +1,6 @@
 #!/bin/bash -eux
 
 RELEASE_DIR="./dist"
-REACT_DIR="./build"
 BUILD_NAME=${BUILD_NAME:=$(git describe --tags --always)}
 BUILD_NAME=${BUILD_NAME/#v/} # remove the leading "v" in the version
 
@@ -38,7 +37,7 @@ fi
 #
 # ###
 
-rm -rf "$RELEASE_DIR" "$REACT_DIR"
+rm -rf "$RELEASE_DIR"
 mkdir "$RELEASE_DIR"
 
 # ###
@@ -57,11 +56,12 @@ npm run build:backend -- --outDir "$RELEASE_DIR/src"
 # ###
 
 
-# "CI=false": We don't want to have the build fail on warnings
-# @see https://github.com/facebook/create-react-app/issues/3657#issuecomment-354797029
-CI=false npm run build:frontend
-# react-scripts has the "build" directory hard-coded. So we need to move it
-cp -r "$REACT_DIR" "$RELEASE_DIR/src/frontend"
+# server.ts serves static files from `${__dirname}/frontend/`, and the compiled
+# server lives at "$RELEASE_DIR/src/server/server.js" (tsc mirrors src/server/),
+# so the frontend bundle has to land at "$RELEASE_DIR/src/server/frontend" —
+# same target directory shape as `build:electron`'s `--outDir dist/app/src/server/frontend`.
+# Vite writes there directly; no separate build+copy step needed like CRA required.
+npm run build:frontend -- --outDir "$RELEASE_DIR/src/server/frontend" --emptyOutDir
 
 # ###
 #
