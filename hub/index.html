@@ -1,5 +1,14 @@
 <!DOCTYPE html>
-<html lang="en">
+<!--
+  data-theme is the hook the Tailwind/shadcn conversion targets (the `dark:`
+  variant in src/client/index.css resolves against it). It is hardcoded, not
+  toggled and not read from prefers-color-scheme: design-tokens.md §2 declines
+  a light theme outright — a light UI in a dark control room is a flashlight in
+  the operator's face. The attribute exists so the variant has something to
+  match and so a future *dimmer* has somewhere to hang, not so a theme can be
+  switched.
+-->
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="utf-8" />
     <link rel="alternate icon" type="image/png" href="/favicon.png">
