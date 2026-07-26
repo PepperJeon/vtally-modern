@@ -1,0 +1,265 @@
+/* =========================================================================
+ * vTally design foundation — Tailwind v4 + design tokens.
+ * Token names, values and contrast ratios are verbatim from
+ * docs/design/design-tokens.md §2. Do not adjust a value without updating
+ * that document and its stated ratio.
+ * =========================================================================
+ *
+ * PREFLIGHT IS DELIBERATELY NOT IMPORTED. Read this before "fixing" it.
+ *
+ * `@import "tailwindcss"` pulls in three layers: theme, preflight (a global
+ * element reset) and utilities. MUI v4's <CssBaseline /> (App.tsx) is doing
+ * the reset job today — it sets box-sizing, strips body margin, applies the
+ * theme's background/typography to <body>, and normalises headings and lists.
+ * Tailwind's preflight resets the same elements with *different* values:
+ * headings lose MUI's font-size/margins, lists lose padding, and — worst —
+ * both write `background-color`/`color` on <body>, so whichever CSS ships
+ * last silently wins the app background.
+ *
+ * The two cannot both be authoritative during the transition, and there is no
+ * ordering that is safe: MUI injects its baseline into <head> at runtime via
+ * JSS, so the loser is decided by React mount timing, not by import order.
+ *
+ * So: import theme + utilities only, and let CssBaseline stay the single
+ * reset. Tailwind then contributes *nothing* that applies to an element the
+ * conversion has not opted in — it only defines custom properties (inert) and
+ * utility classes (inert until a className uses them). That is what makes
+ * this phase provably invisible: no existing page can change, because no
+ * existing page carries a Tailwind class.
+ *
+ * Scoping preflight to a wrapper was the alternative and was rejected: v4's
+ * preflight is authored against bare element selectors in `@layer base`, so
+ * re-scoping it means forking upstream CSS that then drifts every minor
+ * release, and `body`/`html` rules cannot be scoped at all.
+ *
+ * WHEN MUI GOES (last route converted, <CssBaseline /> deleted from App.tsx):
+ * add the one line below and delete this block. Nothing else changes.
+ *
+ *     @import "tailwindcss/preflight.css" layer(base);
+ *
+ * Until then, shadcn components render without preflight's two globals:
+ * `box-sizing: border-box` (already provided by CssBaseline, so covered) and
+ * `border-color: currentColor` (not covered — always name a border colour
+ * explicitly, e.g. `border border-border`, never a bare `border`).
+ */
+
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+/* Split imports skip the automatic source detection that `@import
+ * "tailwindcss"` sets up, so name the scanned tree explicitly. src/server is
+ * excluded by construction: it is never scanned, so a stray class name there
+ * cannot pull server code anywhere near the client bundle. */
+@source "./";
+@source "../shared/";
+
+/* Dark mode is applied by `data-theme="dark"` on <html> (see index.html).
+ * The palette is dark-only by decision (design-tokens.md §2 — a light theme
+ * is declined work, not deferred work), so the token values below are not
+ * conditioned on it. The attribute exists as the target hook the conversion
+ * writes against, and so `dark:` utilities resolve rather than silently
+ * dropping. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* `static`, not a bare `@theme`: Tailwind v4 tree-shakes theme variables and
+ * emits only the ones some generated utility actually references. Nothing uses
+ * these yet — this phase converts no component — so a plain `@theme` block
+ * compiles to an empty :root and every token silently vanishes from the
+ * stylesheet. `static` forces all of them out, which is what makes the tokens
+ * usable from `var(--color-live)` in hand-written CSS and inline styles, not
+ * just from class names. */
+@theme static {
+  /* --- neutrals (§2.1) — cool-shifted greys ------------------------------ */
+  --color-n-950: #0B0E11;   /* app bg; also text on any bright fill */
+  --color-n-900: #12161A;   /* surface */
+  --color-n-850: #171C21;   /* surface hover / zebra */
+  --color-n-800: #1E242B;   /* raised surface — card, dialog, popover */
+  --color-n-700: #2A323B;   /* hairline borders (decorative only, 1.49:1) */
+  --color-n-600: #3A444F;   /* input borders at rest, disabled fills */
+  --color-n-500: #6B7787;   /* meaningful borders, disabled text, idle */
+  --color-n-400: #8A98A8;   /* secondary / muted text */
+  --color-n-300: #A3B0BD;   /* tertiary emphasis, icon default */
+  --color-n-200: #C7D0D9;
+  --color-n-100: #E3E8ED;   /* primary text — brightest routine value, not white */
+  --color-white: #FFFFFF;   /* reserved: highlight/locate + primary button fill */
+
+  /* --- semantic surfaces & text (§2.9) ---------------------------------- */
+  --color-bg:             var(--color-n-950);
+  --color-surface:        var(--color-n-900);
+  --color-surface-hover:  var(--color-n-850);
+  --color-surface-raised: var(--color-n-800);
+  --color-border:         var(--color-n-700);
+  --color-border-strong:  var(--color-n-500);
+  --color-text:           var(--color-n-100);
+  --color-text-muted:     var(--color-n-400);
+  --color-text-disabled:  var(--color-n-500);
+  --color-on-fill:        var(--color-n-950);
+
+  /* --- tally state (§2.2) ----------------------------------------------- *
+   * Safety-critical. Ratios are vs --color-n-950 / --color-n-800.
+   * --color-live       5.46 / 4.41 — on card bg use for fill/border/large only
+   * --color-live-text  6.58 / 5.32 — the text-safe live red
+   * --color-preview    9.63 / 7.78
+   * --color-idle       4.25 / 3.43 — border/indicator only, never text
+   * --color-unpatched  6.05 / 4.89
+   * --color-disconnected 6.58 / 5.32 — neutral grey on purpose, must not read as on air
+   * --color-missing   10.58 / 8.55
+   * --color-highlight 19.35 / 15.64 */
+  --color-live:         #FF3B30;
+  --color-live-text:    #FF6257;
+  --color-preview:      #34D07A;
+  --color-idle:         #6B7787;
+  --color-unpatched:    #4C8DFF;
+  --color-disconnected: #8A98A8;
+  --color-missing:      #FFB020;
+  --color-highlight:    #FFFFFF;
+
+  /* --- LED hardware truth (§2.3) — render exactly, never restyle -------- */
+  --color-led-program:    rgb(255 0 0);
+  --color-led-preview:    rgb(0 255 0);
+  --color-led-highlight:  rgb(255 255 255);
+  --color-led-unknown:    rgb(0 0 255);
+  --color-led-idle:       rgb(0 1 0);   /* renders black — correct, the lamp is off */
+  --color-led-yp-program: rgb(255 255 0);
+  --color-led-yp-preview: rgb(255 0 255);
+
+  /* --- type (§2.4) — base is 16px; weight below 400 does not exist ------ */
+  --font-sans: Inter, Lato, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --text-2xs: 0.6875rem;  --text-2xs--line-height: 1.45;  /* 11px */
+  --text-xs:  0.75rem;    --text-xs--line-height:  1.45;  /* 12px */
+  --text-sm:  0.875rem;   --text-sm--line-height:  1.5;   /* 14px */
+  --text-base:1rem;       --text-base--line-height:1.5;   /* 16px */
+  --text-lg:  1.125rem;   --text-lg--line-height:  1.4;   /* 18px */
+  --text-xl:  1.375rem;   --text-xl--line-height:  1.3;   /* 22px */
+  --text-2xl: 1.75rem;    --text-2xl--line-height: 1.2;   /* 28px — tally name */
+  --text-3xl: 2.25rem;    --text-3xl--line-height: 1.15;  /* 36px */
+  --text-4xl: 3rem;       --text-4xl--line-height: 1.05;  /* 48px — kiosk readout */
+
+  --font-weight-normal:   400;
+  --font-weight-medium:   500;
+  --font-weight-semibold: 600;
+  --font-weight-bold:     700;
+
+  --tracking-tight:  -0.015em;  /* ≥28px */
+  --tracking-normal:  0;
+  --tracking-wide:    0.06em;   /* ALL-CAPS state labels only */
+
+  /* --- spacing (§2.5) — 4px base, no half-steps ------------------------- */
+  --spacing: 0.25rem;
+
+  /* --- radii (§2.6) ----------------------------------------------------- */
+  --radius-none: 0;
+  --radius-xs:   2px;
+  --radius-sm:   4px;
+  --radius-md:   8px;
+  --radius-lg:   12px;
+  --radius-xl:   16px;
+  --radius-full: 9999px;
+
+  /* --- elevation (§2.7) — lightness + hairline, not shadow -------------- */
+  --shadow-overlay: 0 8px 24px -4px rgb(0 0 0 / 0.6), 0 2px 6px -2px rgb(0 0 0 / 0.5);
+  --shadow-focus:   0 0 0 2px var(--color-n-950), 0 0 0 4px #FFFFFF;
+
+  /* --- motion (§2.8) ---------------------------------------------------- */
+  --duration-0:    0ms;    /* ALL tally state changes. Principle 2. */
+  --duration-fast: 120ms;
+  --duration-base: 180ms;
+  --duration-slow: 240ms;
+  --ease-out:  cubic-bezier(0.2, 0, 0, 1);
+  --ease-in:   cubic-bezier(0.4, 0, 1, 1);
+  --ease-both: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Elevation surfaces are documented as aliases of the neutrals rather than
+ * as @theme entries: they resolve to a colour already in the scale, and a
+ * second utility namespace for the same hex invites `bg-elevation-1` and
+ * `bg-surface-raised` drifting apart. Declared here so `var()` still works
+ * for the handful of places that want the semantic name. */
+:root {
+  --elevation-0: var(--color-n-900);  /* + 1px solid --color-border */
+  --elevation-1: var(--color-n-800);  /* + 1px solid --color-border */
+  --elevation-2: var(--color-n-800);  /* + 1px solid --color-border-strong + --shadow-overlay */
+  color-scheme: dark;                  /* native scrollbars/controls follow */
+}
+
+/* §2.8: reduced motion collapses every duration except --duration-0, which is
+ * already 0. The highlight/locate pulse is replaced by a static white fill in
+ * the component, not here. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-base: 0ms;
+    --duration-slow: 0ms;
+  }
+}
+
+/* =========================================================================
+ * shadcn/ui bridge.
+ * shadcn's stock components are written against a fixed set of names
+ * (--background, --primary, --ring, --radius, …). Rather than hand-edit
+ * every generated component, map those names onto the tokens above so a
+ * freshly-added component is on-palette by default and `npx shadcn add`
+ * stays a clean, reviewable diff.
+ *
+ * Two rules from design-components.md §2.0 are enforced here:
+ *  - Rule B, hue belongs to tally state: every interactive mapping is
+ *    achromatic. --destructive is mapped to a neutral, NOT red. Red means on
+ *    air. §2.1 drops variant="destructive" entirely; the variable exists only
+ *    so the stock class strings resolve instead of computing to nothing.
+ *  - The focus ring is white (--shadow-focus), never a state colour.
+ *
+ * The two-step shape (bare name on :root, --color-* alias in @theme inline)
+ * is shadcn's own and is load-bearing, not ceremony: generated components use
+ * BOTH forms. `bg-secondary` needs the --color-* theme entry to exist as a
+ * utility, while arbitrary values like
+ * `bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)]` (dropdown-menu,
+ * select) emit raw var() references that only resolve if the bare name is a
+ * real custom property. Define only one and half the components render
+ * transparent — with no build error to tell you.
+ * ========================================================================= */
+:root {
+  --background:           var(--color-bg);
+  --foreground:           var(--color-text);
+  --card:                 var(--color-surface-raised);
+  --card-foreground:      var(--color-text);
+  --popover:              var(--color-surface-raised);
+  --popover-foreground:   var(--color-text);
+  --primary:              var(--color-white);
+  --primary-foreground:   var(--color-n-950);
+  --secondary:            var(--color-surface-hover);
+  --secondary-foreground: var(--color-text);
+  --muted:                var(--color-surface-hover);
+  --muted-foreground:     var(--color-text-muted);
+  --accent:               var(--color-surface-hover);
+  --accent-foreground:    var(--color-text);
+  --destructive:          var(--color-n-500);   /* achromatic on purpose */
+  --destructive-foreground: var(--color-n-950);
+  --input:                var(--color-n-600);
+  --ring:                 var(--color-white);
+}
+
+@theme inline {
+  --color-background:          var(--background);
+  --color-foreground:          var(--foreground);
+  --color-card:                var(--card);
+  --color-card-foreground:     var(--card-foreground);
+  --color-popover:             var(--popover);
+  --color-popover-foreground:  var(--popover-foreground);
+  --color-primary:             var(--primary);
+  --color-primary-foreground:  var(--primary-foreground);
+  --color-secondary:           var(--secondary);
+  --color-secondary-foreground:var(--secondary-foreground);
+  --color-muted:               var(--muted);
+  --color-muted-foreground:    var(--muted-foreground);
+  --color-accent:              var(--accent);
+  --color-accent-foreground:   var(--accent-foreground);
+  --color-destructive:         var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  /* --color-border is already a token above; shadcn's name for it is identical,
+   * so it needs no bridge entry and must not be redeclared here. */
+  --color-input:               var(--input);
+  --color-ring:                var(--ring);
+}
