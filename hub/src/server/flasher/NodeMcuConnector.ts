@@ -82,10 +82,21 @@ class NodeMcuConnector {
     // src/flasher/ to src/server/flasher/ in the server/client/shared split.
     // Both targets are unchanged: <hub>/esp8266 and <repo>/tally/out.
     let dirName = __dirname + "/../../../esp8266" // path in release package
-    const files = await fs.readdir(dirName).catch(e => {
-      dirName = __dirname + "/../../../../tally/out" // path during development
-      return fs.readdir(dirName)
-    })
+    let files: string[]
+    try {
+      files = await fs.readdir(dirName).catch(() => {
+        dirName = __dirname + "/../../../../tally/out" // path during development
+        return fs.readdir(dirName)
+      })
+    } catch (e) {
+      // ponytail: neither firmware directory exists (normal for a hub-only checkout,
+      // no release esp8266/ and no sibling tally/out/ from `make build`). This used to
+      // escape unhandled and crash the whole backend process when /flasher was opened;
+      // "update not available" is a state getDevice()/program() already implement, it
+      // just never got reached. Report [] so it does.
+      console.debug(`No firmware directory found (checked esp8266/ and ../tally/out); flasher update disabled.`)
+      return []
+    }
 
     console.debug(`Files from ${dirName} will be flashed.`)
 
@@ -129,6 +140,24 @@ class NodeMcuConnector {
         await this.sleep(100)
       }
       retries--
+    }
+  }
+
+  // ponytail: nodemcu-tool's isConnected() can lie after a failed connect() — it sets
+  // its internal device handle before open() resolves and never clears it on the error
+  // path, so isConnected() reports true and disconnect() then rejects with "Port is not
+  // open". Fixed here rather than in the fork: guarding all 3 call sites in code we own
+  // avoids another round trip through re-pinning a forked dependency for one line, and
+  // an unguarded disconnect() in a `finally` was clobbering clean results/rejections
+  // (getDevice's catch-built TallyDevice, and unhandled rejections in program()/
+  // writeTallySettingsIni() where disconnect() wasn't even awaited).
+  private async safeDisconnect() {
+    if (this.nodemcu && this.nodemcu.isConnected()) {
+      try {
+        await this.nodemcu.disconnect()
+      } catch (e) {
+        console.warn("disconnect() failed during cleanup (ignored):", e)
+      }
     }
   }
 
@@ -204,7 +233,7 @@ class NodeMcuConnector {
       return tallyDevice
     }
     finally {
-      if(this.nodemcu && this.nodemcu.isConnected()) { await this.nodemcu.disconnect() }
+      await this.safeDisconnect()
     }
   }
 
@@ -254,7 +283,7 @@ class NodeMcuConnector {
       return false
     }
     finally {
-      if(this.nodemcu && this.nodemcu.isConnected()) { this.nodemcu.disconnect() }
+      await this.safeDisconnect()
     }
   }
 
@@ -314,7 +343,7 @@ class NodeMcuConnector {
       return false
     }
     finally {
-      if(this.nodemcu && this.nodemcu.isConnected()) { this.nodemcu.disconnect() }
+      await this.safeDisconnect()
     }
   }
 
