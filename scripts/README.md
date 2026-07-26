@@ -81,14 +81,22 @@ never a place to quietly hide new red tests:
   trip. A single flaky read, not a real defect; see the FLAKINESS NOTE at the
   top of `tally-remove.spec.ts` for the full explanation of why this file
   alone uses a bare task read instead of `cy.getTestId(...).should(...)`.
+- **`dialog-cancel.spec.ts`** (1 test) — `'closes without saving edits when
+  Cancel is clicked'` fails reproducibly on a second open cycle: MUI's
+  popover doesn't survive the settings dialog being reopened after Cancel.
+  Root cause not yet identified; tracked for Phase 3.
+- **`hub-disconnected-banner.spec.ts`** (1 test) — `'keeps already-loaded
+  tally data visible (stale, not blank) during the outage'` fails
+  reproducibly: CDP's `Network.emulateNetworkConditions` (`goOffline`)
+  doesn't reliably re-interrupt an already-established socket.io WebSocket
+  the second time it's used against the same page. Root cause not yet
+  identified; tracked for Phase 3.
 
-Tests with a *known, reproducible* failure cause are `.skip`'d in their spec
-file with a comment naming the cause instead of being added here — Cypress
-counts a skipped test as pending, not failing, so it doesn't need an
-allowlist entry. As of this writing that's
-`dialog-cancel.spec.ts`'s `TallySettings` test (MUI's popover doesn't survive
-a second open cycle) and `hub-disconnected-banner.spec.ts`'s second test
-(CDP's `goOffline` doesn't reliably re-interrupt an established WebSocket).
+These two used to be `.skip`'d instead of allowlisted. A permanent skip
+vanishes from the run output entirely — nobody sees it's still broken — while
+a permanently red, undocumented test just trains people to ignore red. Named
+allowlist entries avoid both: the count is visible, the cause is on record,
+and `verify.sh` still trips if a *new* failure shows up alongside them.
 
 ## Surviving the Phase 1 restructure
 
