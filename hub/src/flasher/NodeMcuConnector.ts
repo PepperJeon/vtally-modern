@@ -1,4 +1,25 @@
-import nodemcuLib from 'nodemcu-tool'
+// ponytail: nodemcu-tool pulls in a NAN-based serialport binding from 2021 that
+// cannot compile against modern V8 (fails on node >=17 / darwin-arm64). Load it
+// lazily and degrade to a stub so a missing binding disables the flasher instead
+// of preventing the whole hub from starting. Remove the stub once serialport is
+// upgraded; until then `flasher.device.get` reports the reason to the UI.
+const FLASHER_UNAVAILABLE = 'Flasher unavailable: nodemcu-tool could not be loaded'
+
+function loadNodemcuLib(): any {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    return require('nodemcu-tool')
+  } catch (e) {
+    console.error(`${FLASHER_UNAVAILABLE} - ${String((e as Error).message).split("\n")[0]}`)
+    return new Proxy({}, {
+      get: (_target, prop) => {
+        if (prop === 'onError') { return () => {/* nothing can fail if nothing runs */} }
+        if (prop === 'isConnected') { return () => false } // callers branch on this synchronously
+        return () => Promise.reject(new Error(FLASHER_UNAVAILABLE))
+      },
+    })
+  }
+}
 import TallyDevice from './TallyDevice'
 import TallySettingsIni from './TallySettingsIni'
 import tmp from 'tmp-promise'
@@ -64,7 +85,7 @@ class NodeMcuConnector {
   }
 
   // injectable for easier testing
-  constructor(nodemcu: any = nodemcuLib) {
+  constructor(nodemcu: any = loadNodemcuLib()) {
     this.nodemcu = nodemcu
     this.nodemcu.onError((error:any) => {
       console.error(error)
