@@ -1,4 +1,5 @@
 import tmp from 'tmp'
+import { file as tmpFile } from 'tmp-promise'
 import fs from 'fs'
 import { AppConfiguration } from './AppConfiguration'
 import { EventEmitter } from 'events'
@@ -21,56 +22,50 @@ describe('load()', () => {
         expect(config.getHttpPort()).toBeGreaterThan(0)
     })
     // @see https://github.com/wifi-tally/wifi-tally/issues/26
-    test('issues a warning if file is empty and uses defaults', done => {
+    test('issues a warning if file is empty and uses defaults', async () => {
         let warningsLogged = 0
         console.warn = () => { warningsLogged++ }
-        tmp.file((err, path) => {
-            if (err) { throw err }
-            
-            const emitter = new EventEmitter()
-            let config = new AppConfiguration(emitter)
-            expect(() => {
-                new AppConfigurationPersistence(config, emitter, path)
-            }).not.toThrow(SyntaxError)
+        const { path } = await tmpFile()
 
-            expect(warningsLogged).toEqual(1)
-            expect(config.getHttpPort()).toBeGreaterThan(0)
-            done()
-        })
+        const emitter = new EventEmitter()
+        let config = new AppConfiguration(emitter)
+        expect(() => {
+            new AppConfigurationPersistence(config, emitter, path)
+        }).not.toThrow(SyntaxError)
+
+        expect(warningsLogged).toEqual(1)
+        expect(config.getHttpPort()).toBeGreaterThan(0)
     })
-    test('fails if file is non-empty with jibberish data', done => {
+    test('fails if file is non-empty with jibberish data', async () => {
         let errorsLogged = 0
         console.error = () => { errorsLogged++ }
-        tmp.file((err, path, fd) => {
-            if (err) { throw err }
-            fs.write(fd, "Hello World", (err) => { if (err) { throw err }})
-            
-            const emitter = new EventEmitter()
-            const config = new AppConfiguration(emitter)
-            expect(() => {
-                new AppConfigurationPersistence(config, emitter, path)
-            }).toThrow(Error)
+        const { path, fd } = await tmpFile()
+        // writeSync, not fs.write: the constructor below reads the file
+        // synchronously, so an async write races it and intermittently leaves
+        // the file empty (which takes the warn-no-throw path and fails here).
+        fs.writeSync(fd, "Hello World")
 
-            expect(errorsLogged).toEqual(1)
-            done()
-        })
+        const emitter = new EventEmitter()
+        const config = new AppConfiguration(emitter)
+        expect(() => {
+            new AppConfigurationPersistence(config, emitter, path)
+        }).toThrow(Error)
+
+        expect(errorsLogged).toEqual(1)
     })
-    test('fails if file is non-empty with invalid json', done => {
+    test('fails if file is non-empty with invalid json', async () => {
         let errorsLogged = 0
         console.error = () => { errorsLogged++ }
-        tmp.file((err, path, fd) => {
-            if (err) { throw err }
-            fs.write(fd, '{"invalid": "JSON"', (err) => { if (err) { throw err }})
+        const { path, fd } = await tmpFile()
+        fs.writeSync(fd, '{"invalid": "JSON"')
 
-            const emitter = new EventEmitter()
-            const conf = new AppConfiguration(emitter)
-            expect(() => {
-                new AppConfigurationPersistence(conf, emitter, path)
-            }).toThrow(Error)
+        const emitter = new EventEmitter()
+        const conf = new AppConfiguration(emitter)
+        expect(() => {
+            new AppConfigurationPersistence(conf, emitter, path)
+        }).toThrow(Error)
 
-            expect(errorsLogged).toEqual(1)
-            done()
-        })
+        expect(errorsLogged).toEqual(1)
     })  
 })
 
@@ -142,30 +137,27 @@ describe('it can load configuration files from previous versions', () => {
     })
 })
 
-test('save/load persists data', (done) => {
-    tmp.file(async (err, path) => {
-        if (err) { throw err }
-        
-        const emitter = new EventEmitter()
-        const config = new AppConfiguration(emitter)
-        const persistence = new AppConfigurationPersistence(config, emitter, path)
-        // we use mock configuration just as an example
-        const mockConfiguration = config.getMockConfiguration()
-        mockConfiguration.setChannelCount(42)
-        config.setMockConfiguration(mockConfiguration)
-        await persistence.save()
+test('save/load persists data', async () => {
+    const { path } = await tmpFile()
 
-        // the file should exist now and have the data
-        const data = fs.readFileSync(path).toString()
-        expect(data).toBeTruthy()
-        expect(data).toContain("This file was automatically generated.")
+    const emitter = new EventEmitter()
+    const config = new AppConfiguration(emitter)
+    const persistence = new AppConfigurationPersistence(config, emitter, path)
+    // we use mock configuration just as an example
+    const mockConfiguration = config.getMockConfiguration()
+    mockConfiguration.setChannelCount(42)
+    config.setMockConfiguration(mockConfiguration)
+    await persistence.save()
 
-        const otherEmitter = new EventEmitter()
-        const otherConfig = new AppConfiguration(otherEmitter)
-        new AppConfigurationPersistence(otherConfig, otherEmitter, path)
-        
-        // the data should be loaded
-        expect(otherConfig.getMockConfiguration().getChannelCount()).toEqual(42)
-        done()
-    })
+    // the file should exist now and have the data
+    const data = fs.readFileSync(path).toString()
+    expect(data).toBeTruthy()
+    expect(data).toContain("This file was automatically generated.")
+
+    const otherEmitter = new EventEmitter()
+    const otherConfig = new AppConfiguration(otherEmitter)
+    new AppConfigurationPersistence(otherConfig, otherEmitter, path)
+
+    // the data should be loaded
+    expect(otherConfig.getMockConfiguration().getChannelCount()).toEqual(42)
 })

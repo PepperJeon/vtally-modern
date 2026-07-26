@@ -7,5 +7,14 @@
     "noEmit": false,
     "moduleResolution": "node",
     "isolatedModules": false,
-  }
+  },
+  // The server build is server/ + shared/ only. client/ is Vite's job and is
+  // ESM (import.meta), which cannot compile under module:commonjs.
+  "include": [
+    "src/server",
+    "src/shared"
+  ],
+  "exclude": [
+    "**/*.spec.*"
+  ]
 }
