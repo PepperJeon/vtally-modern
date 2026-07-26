@@ -348,13 +348,9 @@ describe('Tally Settings', () => {
     })
 
     it("works with the default", () => {
-      cy.task('tallyLastCommand', name).then((lastCommand) => {
-        expect(lastCommand).to.eq("O255/000/000 S255/000/000")
-      }).then(() => {
+      cy.task('tallyLastCommand', name).should('eq', "O255/000/000 S255/000/000").then(() => {
         cy.task("mixerProgPrev", {programs: ["2"], previews: ["1"]})
-        cy.task('tallyLastCommand', name).then((lastCommand) => {
-          expect(lastCommand).to.eq("O000/255/000 S000/255/000")
-        })
+        cy.task('tallyLastCommand', name).should('eq', "O000/255/000 S000/255/000")
       })
     })
 
@@ -365,13 +361,9 @@ describe('Tally Settings', () => {
       setSliderValue("*[data-testid=tally-settings-ob]", 50)
       cy.getTestId(`tally-settings-submit`).click()
 
-      cy.task('tallyLastCommand', name).then((lastCommand) => {
-        expect(lastCommand).to.eq("O128/000/000 S255/000/000")
-      }).then(() => {
+      cy.task('tallyLastCommand', name).should('eq', "O128/000/000 S255/000/000").then(() => {
         cy.task("mixerProgPrev", {programs: ["2"], previews: ["1"]})
-        cy.task('tallyLastCommand', name).then((lastCommand) => {
-          expect(lastCommand).to.eq("O000/128/000 S000/255/000")
-        })
+        cy.task('tallyLastCommand', name).should('eq', "O000/128/000 S000/255/000")
       })
     })
 
@@ -382,13 +374,9 @@ describe('Tally Settings', () => {
       cy.getTestId("tally-settings-oc-yellow-pink").click()
       cy.getTestId(`tally-settings-submit`).click()
 
-      cy.task('tallyLastCommand', name).then((lastCommand) => {
-        expect(lastCommand).to.eq("O255/255/000 S255/000/000")
-      }).then(() => {
+      cy.task('tallyLastCommand', name).should('eq', "O255/255/000 S255/000/000").then(() => {
         cy.task("mixerProgPrev", {programs: ["2"], previews: ["1"]})
-        cy.task('tallyLastCommand', name).then((lastCommand) => {
-          expect(lastCommand).to.eq("O255/000/255 S000/255/000")
-        })
+        cy.task('tallyLastCommand', name).should('eq', "O255/000/255 S000/255/000")
       })
     })
 
@@ -399,13 +387,9 @@ describe('Tally Settings', () => {
       setSliderValue("*[data-testid=tally-settings-sb]", 50)
       cy.getTestId(`tally-settings-submit`).click()
 
-      cy.task('tallyLastCommand', name).then((lastCommand) => {
-        expect(lastCommand).to.eq("O255/000/000 S128/000/000")
-      }).then(() => {
+      cy.task('tallyLastCommand', name).should('eq', "O255/000/000 S128/000/000").then(() => {
         cy.task("mixerProgPrev", {programs: ["2"], previews: ["1"]})
-        cy.task('tallyLastCommand', name).then((lastCommand) => {
-          expect(lastCommand).to.eq("O000/255/000 S000/128/000")
-        })
+        cy.task('tallyLastCommand', name).should('eq', "O000/255/000 S000/128/000")
       })
     })
 
@@ -416,13 +400,9 @@ describe('Tally Settings', () => {
       cy.getTestId("tally-settings-sc-yellow-pink").click()
       cy.getTestId(`tally-settings-submit`).click()
 
-      cy.task('tallyLastCommand', name).then((lastCommand) => {
-        expect(lastCommand).to.eq("O255/000/000 S255/255/000")
-      }).then(() => {
+      cy.task('tallyLastCommand', name).should('eq', "O255/000/000 S255/255/000").then(() => {
         cy.task("mixerProgPrev", {programs: ["2"], previews: ["1"]})
-        cy.task('tallyLastCommand', name).then((lastCommand) => {
-          expect(lastCommand).to.eq("O000/255/000 S255/000/255")
-        })
+        cy.task('tallyLastCommand', name).should('eq', "O000/255/000 S255/000/255")
       })
     })
 
@@ -433,13 +413,9 @@ describe('Tally Settings', () => {
       cy.getTestId("tally-settings-sp").click()
       cy.getTestId(`tally-settings-submit`).click()
 
-      cy.task('tallyLastCommand', name).then((lastCommand) => {
-        expect(lastCommand).to.eq("O255/000/000 S255/000/000")
-      }).then(() => {
+      cy.task('tallyLastCommand', name).should('eq', "O255/000/000 S255/000/000").then(() => {
         cy.task("mixerProgPrev", {programs: ["2"], previews: ["1"]})
-        cy.task('tallyLastCommand', name).then((lastCommand) => {
-          expect(lastCommand).to.eq("O000/255/000 S000/000/000")
-        })
+        cy.task('tallyLastCommand', name).should('eq', "O000/255/000 S000/000/000")
       })
     })
 
@@ -450,13 +426,9 @@ describe('Tally Settings', () => {
       cy.getTestId("tally-settings-oi").click()
       cy.getTestId(`tally-settings-submit`).click()
 
-      cy.task('tallyLastCommand', name).then((lastCommand) => {
-        expect(lastCommand).to.eq("O255/000/000 S255/000/000")
-      }).then(() => {
+      cy.task('tallyLastCommand', name).should('eq', "O255/000/000 S255/000/000").then(() => {
         cy.task("mixerProgPrev", {programs: [], previews: []})
-        cy.task('tallyLastCommand', name).then((lastCommand) => {
-          expect(lastCommand).to.eq("O000/000/000 S000/000/000")
-        })
+        cy.task('tallyLastCommand', name).should('eq', "O000/000/000 S000/000/000")
       })
     })
   })

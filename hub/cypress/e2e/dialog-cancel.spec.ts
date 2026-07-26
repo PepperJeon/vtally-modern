@@ -53,7 +53,7 @@ describe('Dialog cancel / close paths', () => {
     // MUI's popover doesn't survive the settings dialog being reopened after
     // Cancel — root cause not yet identified. Real finding, not noise; keep
     // documented here for Phase 3 rather than deleting the coverage.
-    it.skip('closes without saving edits when Cancel is clicked', () => {
+    it('closes without saving edits when Cancel is clicked', () => {
       const name = randomTallyName()
       cy.task('tally', name).then(() => {
         cy.visit('/')

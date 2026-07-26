@@ -64,7 +64,7 @@ describe('Hub disconnected banner', () => {
   // socket.io WebSocket the second time it's used against the same page — root
   // cause not yet identified. Real finding, not noise; keep documented here for
   // Phase 3 rather than deleting the coverage.
-  it.skip('keeps already-loaded tally data visible (stale, not blank) during the outage', () => {
+  it('keeps already-loaded tally data visible (stale, not blank) during the outage', () => {
     cy.visit('/')
     cy.getTestId('page-index')
 
