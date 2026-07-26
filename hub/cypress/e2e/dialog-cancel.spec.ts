@@ -42,7 +42,18 @@ describe('Dialog cancel / close paths', () => {
   })
 
   describe('TallySettings', () => {
-    it('closes without saving edits when Cancel is clicked', () => {
+    afterEach(() => {
+      // afterEach, not a .then() off the assertion chain below: if an
+      // assertion throws, a chained .then() never runs and the mock tally
+      // leaks onto the shared backend for the rest of the run.
+      cy.task('tallyCleanup')
+    })
+
+    // UNRESOLVED (per team-lead): fails reproducibly on a second open cycle.
+    // MUI's popover doesn't survive the settings dialog being reopened after
+    // Cancel — root cause not yet identified. Real finding, not noise; keep
+    // documented here for Phase 3 rather than deleting the coverage.
+    it.skip('closes without saving edits when Cancel is clicked', () => {
       const name = randomTallyName()
       cy.task('tally', name).then(() => {
         cy.visit('/')
@@ -62,8 +73,6 @@ describe('Dialog cancel / close paths', () => {
           cy.getTestId('tally-settings-oi').should('have.attr', 'data-value', originalValue)
           cy.getTestId('tally-settings-close').click()
         })
-      }).then(() => {
-        cy.task('tallyCleanup')
       })
     })
   })

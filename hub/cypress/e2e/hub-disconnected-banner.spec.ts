@@ -37,6 +37,11 @@ describe('Hub disconnected banner', () => {
     // best-effort: make sure a failed assertion mid-test doesn't leave the
     // browser offline for the next spec
     goOnline()
+    // afterEach, not a .then() off the second test's assertion chain: if an
+    // assertion throws, a chained .then() never runs and the mock tally
+    // leaks onto the shared backend for the rest of the run. Harmless to
+    // call for the first test too (no tally was ever created).
+    cy.task('tallyCleanup')
   })
 
   it('appears when the hub connection is cut and disappears on reconnect', () => {
@@ -54,7 +59,12 @@ describe('Hub disconnected banner', () => {
     cy.contains('Hub disconnected').should('not.exist')
   })
 
-  it('keeps already-loaded tally data visible (stale, not blank) during the outage', () => {
+  // UNRESOLVED (per team-lead): fails reproducibly. CDP's Network.emulateNetworkConditions
+  // ('offline': true/false) doesn't reliably re-interrupt an already-established
+  // socket.io WebSocket the second time it's used against the same page — root
+  // cause not yet identified. Real finding, not noise; keep documented here for
+  // Phase 3 rather than deleting the coverage.
+  it.skip('keeps already-loaded tally data visible (stale, not blank) during the outage', () => {
     cy.visit('/')
     cy.getTestId('page-index')
 
@@ -70,8 +80,6 @@ describe('Hub disconnected banner', () => {
 
       goOnline()
       cy.contains('Hub disconnected').should('not.exist')
-    }).then(() => {
-      cy.task('tallyCleanup')
     })
   })
 })

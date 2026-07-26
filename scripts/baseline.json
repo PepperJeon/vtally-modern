@@ -4,5 +4,6 @@
   "unit_tests_passed": 334,
   "unit_tests_total": 340,
   "cypress_passed": 54,
-  "cypress_total": 73
+  "cypress_total": 73,
+  "cypress_failed": 1
 }
