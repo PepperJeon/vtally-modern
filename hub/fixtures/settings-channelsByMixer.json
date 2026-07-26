@@ -1,0 +1,38 @@
+{
+	"_warning": "This file was automatically generated.",
+	"_warning2": "Do not edit it while the hub is running. Your changes will be lost.",
+	"mixer": "obs",
+	"obs": {
+		"ip": "127.0.0.1",
+		"port": 4444
+	},
+	"mock": {},
+	"null": {},
+	"tallies": [],
+	"channelsByMixer": {
+		"mock": [
+			{
+				"id": "1",
+				"name": "Dave's Cam"
+			},
+			{
+				"id": "2",
+				"name": "Judy's Cam"
+			}
+		],
+		"obs": [
+			{
+				"id": "Scene 1",
+				"name": "Scene 1"
+			},
+			{
+				"id": "Scene 2",
+				"name": "Scene 2"
+			},
+			{
+				"id": "Scene 3",
+				"name": "Scene 3"
+			}
+		]
+	}
+}

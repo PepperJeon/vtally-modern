@@ -25,7 +25,10 @@ export class AppConfiguration extends Configuration {
     vmixConfiguration: VmixConfiguration
     tallyConfiguration: DefaultTallyConfiguration
     tallies: Tally[]
-    channels: Channel[]
+    // one independent channel list per mixer id, so switching mixers does not
+    // destroy the channel names the previous one reported.
+    // "" is the bucket used while no mixer is selected yet.
+    channelsByMixer: Map<string, Channel[]>
     mixerSelection?: string
     tallyPort: number
     tallyHighlightTime: number
@@ -46,7 +49,7 @@ export class AppConfiguration extends Configuration {
         this.vmixConfiguration = new VmixConfiguration()
         this.tallyConfiguration = new DefaultTallyConfiguration()
         this.tallies = []
-        this.channels = MixerDriver.defaultChannels
+        this.channelsByMixer = new Map()
 
         this.tallyPort = 7411
         this.tallyHighlightTime = 1000 // ms
@@ -117,8 +120,21 @@ export class AppConfiguration extends Configuration {
         if (data.tallyDefaults) {
             this.tallyConfiguration.fromJson(data.tallyDefaults)
         }
+        // must stay after "mixer" is loaded: the legacy migration below keys the
+        // flat channel list on whatever mixer is currently selected.
         this.loadString("mixer", this.setMixerSelection.bind(this), data)
-        this.loadChannelArray("channels", this.setChannels.bind(this), data)
+        const byMixer = data.channelsByMixer
+        if (byMixer && typeof byMixer === "object" && !Array.isArray(byMixer)) {
+            Object.keys(byMixer).forEach(mixerId => {
+                this.loadChannelArray(mixerId, channels => this.channelsByMixer.set(mixerId, channels), byMixer)
+            })
+            this.emitter.emit('config.changed', this)
+            this.emitter.emit('config.changed.channels', this.getChannels())
+        } else {
+            // migration from the pre-channelsByMixer format: a flat top-level
+            // `channels` array belongs to the mixer that was selected when it was written.
+            this.loadChannelArray("channels", this.setChannels.bind(this), data)
+        }
         this.loadTallyArray("tallies", this.setTallies.bind(this), data)
     }
     toJson(): object {
@@ -134,7 +150,9 @@ export class AppConfiguration extends Configuration {
             vmix: this.vmixConfiguration.toJson(),
             tallyDefaults: this.tallyConfiguration.toJson(),
             tallies: this.tallies.map(tally => tally.toJsonForSave()),
-            channels: this.channels.map(channel => channel.toJson()),
+            channelsByMixer: Object.fromEntries(
+                Array.from(this.channelsByMixer, ([mixerId, channels]) => [mixerId, channels.map(c => c.toJson())])
+            ),
         }
     }
     clone(): AppConfiguration {
@@ -233,17 +251,24 @@ export class AppConfiguration extends Configuration {
         this.emitter.emit("config.changed.tallyconfig", this.tallyConfiguration)
     }
 
+    /** channels are stored per mixer; "" is the bucket for "no mixer selected yet" */
+    private channelKey() {
+        return this.mixerSelection || ""
+    }
+
     setChannels(channels: Channel[]) {
-        this.channels = channels
+        this.channelsByMixer.set(this.channelKey(), channels)
         this.emitter.emit('config.changed', this)
-        this.emitter.emit('config.changed.channels', this.channels)
+        this.emitter.emit('config.changed.channels', channels)
     }
 
     getChannels() {
-        return this.channels
+        // a mixer that never reported channels (null, test, a freshly selected one)
+        // falls through to the numbered defaults rather than getting its own bucket.
+        return this.channelsByMixer.get(this.channelKey()) || MixerDriver.defaultChannels
     }
     getChannelsAsJson() {
-        return this.channels.map(channel => channel.toJson())
+        return this.getChannels().map(channel => channel.toJson())
     }
 
     setTallies(tallies: Tally[]) {
@@ -259,6 +284,9 @@ export class AppConfiguration extends Configuration {
         this.mixerSelection = mixerSelection
         this.emitter.emit("config.changed", this)
         this.emitter.emit("config.changed.mixer", mixerSelection)
+        // getChannels() now resolves to a different bucket, so clients need the new list.
+        // This replaces the notifyChannels(defaultChannels) reset MixerDriver used to do.
+        this.emitter.emit('config.changed.channels', this.getChannels())
     }
     getMixerSelection() {
         return this.mixerSelection
