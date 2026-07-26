@@ -1,11 +1,6 @@
 import ipAddress, {IpAddress} from "../domain/IpAddress"
 import ipPort, { IpPort } from "../domain/IpPort"
 
-export type SettingsProps = {
-    id: string
-    label: string
-}
-
 export interface Connector {
     connect() : void
     disconnect() : void

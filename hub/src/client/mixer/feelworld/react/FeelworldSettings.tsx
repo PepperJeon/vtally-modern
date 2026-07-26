@@ -5,12 +5,7 @@ import { socket } from '../../../hooks/useSocket'
 import { useFeelworldConfiguration } from '../../../hooks/useConfiguration'
 import { FEELWORLD_ID } from '../../../../shared/mixer/ids'
 
-type FeelworldSettingsProps = {
-    id: typeof FEELWORLD_ID,
-    label: string,
-}
-
-function FeelworldSettings(props: FeelworldSettingsProps) {
+function FeelworldSettings() {
     const configuration = useFeelworldConfiguration()
     const [ip, setIp] = useState<string|null>(null)
     const [ipValid, setIpValid] = useState(true)
@@ -24,15 +19,13 @@ function FeelworldSettings(props: FeelworldSettingsProps) {
     const handleSave = () => {
         if (configuration === undefined) {
             console.error("Not saving, because there is an invalid value in the form.")
-        } else if (props.id !== FEELWORLD_ID) {
-            console.warn(`Changing id prop of FeelworldSettings is not supported. But got ${props.id}.`)
         } else {
             const config = configuration.clone()
             config.setIp(ip)
             config.setPort(port)
             config.setRequestInterval(requestInterval)
 
-            socket.emit('config.change.feelworld', config.toJson(), props.id)
+            socket.emit('config.change.feelworld', config.toJson(), FEELWORLD_ID)
         }
     }
 
@@ -52,11 +45,6 @@ function FeelworldSettings(props: FeelworldSettingsProps) {
         </>)}
         </MixerSettingsWrapper>
     )
-}
-
-FeelworldSettings.defaultProps = {
-    id: FEELWORLD_ID,
-    label: "Feelworld",
 }
 
 export default FeelworldSettings

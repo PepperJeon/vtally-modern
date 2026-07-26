@@ -6,14 +6,9 @@ import { useVmixConfiguration } from '../../../hooks/useConfiguration'
 import { socket } from '../../../hooks/useSocket'
 import { VMIX_ID } from '../../../../shared/mixer/ids'
 
-type VmixSettingsProps = {
-    id: typeof VMIX_ID,
-    label: string,
-}
-
 const httpApiPort = "8088"
 
-function VmixSettings(props: VmixSettingsProps) {
+function VmixSettings() {
     const configuration = useVmixConfiguration()
     const [ip, setIp] = useState<string|null>(null)
     const [ipValid, setIpValid] = useState(true)
@@ -25,14 +20,12 @@ function VmixSettings(props: VmixSettingsProps) {
     const handleSave = () => {
         if (configuration === undefined) {
             console.error("Not saving, because there is an invalid value in the form.")
-        } else if (props.id !== VMIX_ID) {
-            console.warn(`Changing id prop of VmixSettings is not supported. But got ${props.id}.`)
         } else {
             const config = configuration.clone()
             config.setIp(ip)
             config.setPort(port)
 
-            socket.emit('config.change.vmix', config.toJson(), props.id)
+            socket.emit('config.change.vmix', config.toJson(), VMIX_ID)
         }
     }
 
@@ -59,11 +52,6 @@ function VmixSettings(props: VmixSettingsProps) {
         </>)}
         </MixerSettingsWrapper>
     )
-}
-
-VmixSettings.defaultProps = {
-    id: VMIX_ID,
-    label: "vMix",
 }
 
 export default VmixSettings
