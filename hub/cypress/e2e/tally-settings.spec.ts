@@ -2,8 +2,8 @@
 /// <reference types="../support" />
 
 import randomTallyName from '../browserlib/randomTallyName'
-import { socket } from '../../src/hooks/useSocket'
-import { DefaultTallyConfiguration, TallyConfiguration } from '../../src/tally/TallyConfiguration'
+import { socket } from '../../src/client/hooks/useSocket'
+import { DefaultTallyConfiguration, TallyConfiguration } from '../../src/shared/tally/TallyConfiguration'
 import { setSliderValue, validateSliderValue } from '../browserlib/sliderTestTool'
 
 describe('Tally Settings', () => {

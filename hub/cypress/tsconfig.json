@@ -6,8 +6,13 @@
     // to avoid clashing with Jest types
     "types": ["cypress"]
   },
+  // note: ../node_modules/cypress is deliberately NOT included. "types":
+  // ["cypress"] already loads the global typings, and including the directory
+  // makes tsc parse Cypress 15's bundled lodash .d.ts, which uses syntax this
+  // repo's TypeScript 4.5 cannot read.
   "include": [
-    "../node_modules/cypress",
+    "../cypress.config.ts",
+    "./*.ts",
     "./*/*.ts"
   ]
 }

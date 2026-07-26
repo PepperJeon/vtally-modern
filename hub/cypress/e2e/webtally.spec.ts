@@ -1,9 +1,9 @@
 /// <reference types="Cypress" />
 /// <reference types="../support" />
 
-import { socket } from '../../src/hooks/useSocket'
-import TestConfiguration from '../../src/mixer/test/TestConfiguration'
-import { DefaultTallyConfiguration, TallyConfiguration } from '../../src/tally/TallyConfiguration'
+import { socket } from '../../src/client/hooks/useSocket'
+import TestConfiguration from '../../src/shared/mixer/test/TestConfiguration'
+import { DefaultTallyConfiguration, TallyConfiguration } from '../../src/shared/tally/TallyConfiguration'
 import randomTallyName from '../browserlib/randomTallyName'
 
 describe('Web Tally Creation', () => {

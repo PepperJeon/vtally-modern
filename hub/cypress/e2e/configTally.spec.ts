@@ -1,7 +1,7 @@
 /// <reference types="Cypress" />
 /// <reference types="../support" />
-import { socket } from '../../src/hooks/useSocket'
-import { DefaultTallyConfiguration } from '../../src/tally/TallyConfiguration'
+import { socket } from '../../src/client/hooks/useSocket'
+import { DefaultTallyConfiguration } from '../../src/shared/tally/TallyConfiguration'
 import { setSliderValue, validateSliderValue } from '../browserlib/sliderTestTool'
 
 describe('Check Default Tally Configuration', () => {
