@@ -1,11 +1,10 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { withRouter } from "react-router"
 import { socket } from '../hooks/useSocket'
 import useSocketInfo from '../hooks/useSocketInfo'
 import { WebTally, WebTallyObjectType } from '../../shared/domain/Tally'
 import { useParams } from "react-router-dom"
 import { Maximize, Minimize, SlidersHorizontal } from 'lucide-react'
-import { FullScreen, useFullScreenHandle } from "react-full-screen"
 import NoSleepJs from 'nosleep.js'
 import { StateCommand } from '../../shared/tally/CommandCreator'
 import PageNotFound from './PageNotFound'
@@ -70,6 +69,40 @@ function useWebTally(tallyName: string) {
 }
 
 /**
+ * `react-full-screen` replaced by the native Fullscreen API. That package peers
+ * on react ^16.8 and was the last thing pinning React below 19 (and the reason
+ * installs needed --legacy-peer-deps). The page only ever used three of its
+ * features — enter, exit and "am I fullscreen?" — which map 1:1 onto
+ * requestFullscreen / exitFullscreen / the `fullscreenchange` event.
+ *
+ * `ref` goes on the page's own root <div>, so the wrapper element the package
+ * rendered is gone rather than reproduced: it existed only to have something to
+ * call requestFullscreen on, and the root div serves that just as well.
+ *
+ * The `document.fullscreenElement` guard in exit() is not defensive noise —
+ * exitFullscreen() rejects when nothing is fullscreen, and the toggle can be
+ * reached in that state via Esc, which fires `fullscreenchange` and flips
+ * `active` back on its own.
+ */
+function useFullScreen() {
+  const ref = useRef<HTMLDivElement>(null)
+  const [active, setActive] = useState(false)
+
+  useEffect(() => {
+    const onChange = () => setActive(document.fullscreenElement !== null)
+    document.addEventListener('fullscreenchange', onChange)
+    return () => document.removeEventListener('fullscreenchange', onChange)
+  }, [])
+
+  return {
+    ref,
+    active,
+    enter: () => { ref.current?.requestFullscreen() },
+    exit: () => { document.fullscreenElement && document.exitFullscreen() },
+  }
+}
+
+/**
  * The phone taped next to a camera — design-screens.md §4. Legibility at three
  * metres in a dark studio beats aesthetics and beats consistency with the rest
  * of the product, so this route has no Layout chrome at all.
@@ -93,9 +126,14 @@ function WebTallyPage() {
   const defaultTallyConfiguration = useDefaultTallyConfiguration()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const isLoading = !tally || !command
-  const handle = useFullScreenHandle()
+  const handle = useFullScreen()
   // @TODO: nosleep is quite hacky, so use https://caniuse.com/?search=Wake%20Lock%20API sooner or later
-  const [noSleep] = useState(new NoSleepJs())
+  // Lazy initialiser, not `useState(new NoSleepJs())`: the eager form constructs
+  // (and, on iOS, builds a hidden <video>) a NoSleep on EVERY render and throws
+  // all but the first away. useState only keeps the first value either way, so
+  // the bug was invisible — until React 19's stricter StrictMode double-render
+  // made it twice as loud.
+  const [noSleep] = useState(() => new NoSleepJs())
   useEffect(() => {return () => {
     // make sure no-sleep is turned off when unmounted
     noSleep.disable()
@@ -158,8 +196,8 @@ function WebTallyPage() {
 
   const iconButtonClass = "absolute flex size-11 items-center justify-center rounded-sm border-0 bg-transparent text-current focus-visible:shadow-focus focus-visible:outline-none"
 
-  return <FullScreen handle={handle}>
-    <div
+  return <div
+      ref={handle.ref}
       data-testid="page-tally-web"
       data-color={dataColor}
       data-brightness={brightness}
@@ -215,7 +253,6 @@ function WebTallyPage() {
         )}
       </>)}
     </div>
-  </FullScreen>
 }
 
 export default withRouter(WebTallyPage)

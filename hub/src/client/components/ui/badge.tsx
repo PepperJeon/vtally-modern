@@ -34,8 +34,7 @@ function Badge({
   ...props
 }: React.ComponentProps<"span"> &
   VariantProps<typeof badgeVariants> & { asChild?: boolean }) {
-  // React-17 typings patch — see the identical note in button.tsx.
-  const Comp = (asChild ? Slot.Root : "span") as React.ElementType
+  const Comp = asChild ? Slot.Root : "span"
 
   return (
     <Comp
