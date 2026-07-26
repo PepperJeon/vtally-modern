@@ -39,7 +39,7 @@ CI=true NODE_OPTIONS=--openssl-legacy-provider npm run test:ci -- --verbose
 
 **Result (post Deviation #6 midi swap): 25 passed / 1 failed, 26 total suites. 238 passed / 5 failed / 1 skipped, 244 total tests. Total time: 5.655s.**
 
-This ran cleanly to completion — no infrastructure blocker here. The 5 suites that previously failed only via the `midi` native-bindings crash now pass, exactly as expected from the Deviation #6 swap. `VmixConnector.spec.js` remains the sole failure, left as-is per explicit instruction — it is a genuine pre-existing environment coupling, not something Phase 0 fixes.
+This ran cleanly to completion — no infrastructure blocker here. The 5 suites that previously failed only via the `midi` native-bindings crash now pass, exactly as expected from the Deviation #6 swap. `VmixConnector.spec.js` remains the sole failure, left as-is per explicit instruction — it is a one-line spec defect (not an environment property), deferred rather than fixed; see row #22.
 
 | # | Spec file | Result | Notes |
 |---|---|---|---|
@@ -64,13 +64,23 @@ This ran cleanly to completion — no infrastructure blocker here. The 5 suites 
 | 19 | `src/mixer/rolandV8HD/RolandV8HDConfiguration.spec.ts` | PASS | Pure config object; passed before and after (never imported `midi`). |
 | 20 | `src/mixer/test/TestConfiguration.spec.ts` | PASS | |
 | 21 | `src/mixer/vmix/VmixConfiguration.spec.ts` | PASS | |
-| 22 | `src/mixer/vmix/VmixConnector.spec.js` | **FAIL** (unchanged, left as-is) | Not a bindings issue — genuine environment difference. `VmixConfiguration.setIp` is called with the loopback address returned by Node's `net` module in this sandbox, which resolves to `::1` (IPv6) instead of `127.0.0.1` (IPv4); the app's `IpAddress` validator only accepts IPv4 and throws `Invalid IP address: ::1`. Pre-existing test/environment coupling. Explicitly left failing per team-lead instruction — it belongs in the baseline as red, not worked around. |
+| 22 | `src/mixer/vmix/VmixConnector.spec.js` | **FAIL** (unchanged, left as-is) | Not a bindings issue and not an environment property — it's a one-line defect in the spec itself. `VmixConnector.spec.js:81` binds its mock server with `host: 'localhost'`, while the sibling `RolandV60HDConnector.spec.js:79` binds with `host: '127.0.0.1'`. Both then feed `server.address().address` into `VmixConfiguration.setIp`, which only accepts IPv4. On this machine `localhost` resolves to `::1` first, so Vmix's spec fails where Roland's (which hardcodes the IPv4 literal) doesn't — same `IpAddress` validator, different bind target. One-line fix (`'localhost'` → `'127.0.0.1'` in the spec), deliberately deferred rather than fixed per explicit team-lead instruction: it belongs in the baseline as red, not worked around here. |
 | 23 | `src/tally/CommandCreator.spec.ts` | PASS | |
 | 24 | `src/tally/CommandParser.spec.ts` | PASS | |
 | 25 | `src/tally/TallyConfiguration.spec.ts` | PASS | |
 | 26 | `src/tally/TallyContainer.spec.ts` | **PASS** (was FAIL) | Import chain `MixerCommunicator` → `MixerDriver` → `RolandV8HDConnector` → `midi`, unblocked. |
 
-**Root cause of the 5 previously-failing suites (#8–11, #26)**: the `midi` npm package (native NAN/RtMidi addon, last built for Node 12–14 in 2021) had no prebuilt binary for Node 25/darwin-arm64 and could not even be rebuilt on this machine — `npm rebuild midi` failed with C++ compile errors in RtMidi against the current macOS 26 CoreAudio SDK headers. This is fixed by Deviation #6 (`midi` → `@julusian/midi`, which ships prebuilds). `#22`'s `::1` failure is unrelated and intentionally untouched.
+**Root cause of the 5 previously-failing suites (#8–11, #26)**: the `midi` npm package (native NAN/RtMidi addon, last built for Node 12–14 in 2021) had no prebuilt binary for Node 25/darwin-arm64 and could not even be rebuilt on this machine — `npm rebuild midi` failed with C++ compile errors in RtMidi against the current macOS 26 CoreAudio SDK headers. This is fixed by Deviation #6 (`midi` → `@julusian/midi`, which ships prebuilds). `#22`'s failure is unrelated and intentionally untouched — see row #22 for the actual cause (a one-line spec defect, not an environment property).
+
+### What the baseline actually guarantees
+
+A green suite count is not the same as a regression net. `docs/design/test-audit.md` graded every passing unit suite for assertion quality: **12 solid / 7 partial / 1 empty** out of the 20 passing pre-midi-swap, rising to **16 solid / 9 partial / 1 empty** out of 25 now that midi is unblocked. Specifics that matter for later phases:
+
+- **`NullConfiguration.spec.ts` (#14) is empty**: both of its tests contain zero assertions (the source comment itself admits this). 2 of the 238 "passing" tests assert nothing at all — they cannot fail.
+- **All 5 mixer-config suites (#12–13, #17, #19, #21) are partial**: they check defaults only via `expect(...).toBeTruthy()`. Consequence: **nothing in this repo would notice a mixer's default value changing** — e.g. OBS's default port silently changing from 4444 to 4455, or any mixer's default IP changing, would still pass. This is a real gap in the regression net, not a hypothetical one.
+- **`ObsConnector.spec.ts` (#16) has 19 `waitUntil` call sites that degrade to a fixed ~100ms sleep**, because their predicate compares against a fresh array literal each poll (so it never matches early, never short-circuits). The `toEqual` assertions that follow are still real and still catch regressions — the damage is test slowness and blindness to latency regressions specifically, not silent-green on correctness. (This is the precise finding; an earlier stronger claim by the audit's author — that the assertions themselves were dead — was self-corrected.)
+
+**For unit-testing purposes, there is currently no regression net at all for module 1a (mixer identification via the `midi`-driven Roland connector's runtime behavior beyond default config), 2a (mixer default-value correctness), and 2b (`ObsConnector` timing behavior)** — a later phase touching those areas is not protected by "the suite passed," because the suite's assertions in those areas don't check the thing that would need to regress. Treat "≥ baseline" for those modules as "zero tests exist for this today," not "N tests exist and passed."
 
 ---
 
