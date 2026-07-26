@@ -12,7 +12,9 @@ Gates, in order: `tsc` (app config, server config, both must exit 0) → unit
 tests (suites/tests passed vs baseline) → production build (exit 0) →
 bundle leak check (`grep -rl "obs-websocket|nodemcu|atem-connection|@julusian"`
 over the client bundle output — MUST be 0 hits, these are server-only deps)
-→ Cypress (13 non-manual specs, passed count vs baseline).
+→ distribution (pack the npm tarball, install it outside the repo, run the
+installed binary, require it to actually serve the app — exit 0) → Cypress
+(13 non-manual specs, passed count vs baseline).
 
 ## Concurrent runs are safe
 
@@ -47,6 +49,42 @@ still listening on this run's own ports (`lsof` by port, not `pkill -f`
 by command line — a command-line pattern can't distinguish "my server" from
 "a sibling worktree's server", since concurrent runs' command lines are
 identical).
+
+## Distribution gate
+
+`production build` above only proves `vite build` succeeds in place — it
+never assembles, packs, or installs `scripts/build.sh`'s npm tarball, which
+is the actual shipping route for headless and Raspberry Pi users. That gap
+is exactly how `build.sh` sat broken for weeks after the Vite migration:
+every other gate was green because none of them touch the distribution
+path. The `distribution` gate closes it by reproducing the manual check:
+
+1. run `scripts/build.sh` for real (backend `tsc`, `vite build`, the
+   jq-stripped `package.json`, `npm install --package-lock-only`)
+2. `npm pack` the result
+3. install that tarball into a fresh `mktemp -d` directory *outside the
+   repo* (`npm install <tarball>`), proving it installs standalone rather
+   than relying on anything already present in this checkout
+4. start the installed `vtally` binary on its own OS-assigned port
+   (`free_port`, same race-proof allocation as backend/frontend/tally)
+5. reuse `wait_ready` — the same HTTP-200-plus-`id="root"` readiness signal
+   Cypress waits on below — against the installed binary
+6. fetch one real `<script src>`/`<link href>` asset out of the served HTML
+   and require 200 on it too, so a shell that references a bundle the
+   install never wrote fails the gate instead of passing on a static `/`
+
+Cleanup mirrors the rest of the harness: the server's PID is tracked in the
+same `PIDS` array the trap already kills, its port is added to the same
+port-based kill backstop, and the temp install directory is removed in
+`cleanup()` itself — so a `Ctrl-C` mid-gate tears down exactly as cleanly as
+a normal pass or fail. This gate is exit-code only (like `tsc`/`production
+build`/`bundle leak check`) — it has no `baseline.json` entry because
+there's no count to compare, only pass or fail.
+
+Adds a full backend+frontend build plus an `npm install` to every run.
+Default is to run it — the failure this closes is precisely "nobody
+remembers to run the optional check" — but it can be skipped with
+`SKIP_DIST_GATE=1 scripts/verify.sh` when iterating on something unrelated.
 
 ## Baseline numbers
 

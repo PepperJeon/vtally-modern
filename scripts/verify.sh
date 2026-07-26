@@ -50,7 +50,7 @@ cleanup() {
   # avoid. Killing by port instead solves both: it matches whatever is
   # actually listening regardless of resolved path, and it can only ever
   # match what's bound to *this run's own* ports.
-  for port in "${BACKEND_PORT:-}" "${FRONTEND_PORT:-}"; do
+  for port in "${BACKEND_PORT:-}" "${FRONTEND_PORT:-}" "${DIST_PORT:-}"; do
     [ -z "$port" ] && continue
     pids=$(lsof -nP -tiTCP:"$port" -sTCP:LISTEN 2>/dev/null)
     [ -n "$pids" ] && kill $pids 2>/dev/null
@@ -61,6 +61,9 @@ cleanup() {
     pids=$(lsof -nP -tiUDP:"$TALLY_PORT" 2>/dev/null)
     [ -n "$pids" ] && kill $pids 2>/dev/null
   fi
+  # Distribution gate installs into a temp dir outside the repo — clean it up
+  # on every exit path (pass, fail, or interrupt), not just the happy path.
+  [ -n "${DIST_INSTALL_DIR:-}" ] && rm -rf "$DIST_INSTALL_DIR"
 }
 trap cleanup EXIT INT TERM
 
@@ -238,6 +241,67 @@ if [ $BUILD_STATUS -eq 0 ] && [ -d "$BUNDLE_DIR" ]; then
 else
   printf "FAIL  %-28s (build failed or bundle dir missing: %s)\n" "bundle leak check" "$BUNDLE_DIR"
   FAIL=1
+fi
+echo
+
+echo "== distribution (build.sh -> npm pack -> install -> serve, the actual npm/Pi shipping path) =="
+# BUILD_CMD above only proves `vite build` succeeds in place — it never proves
+# the thing headless/Raspberry Pi users actually install (scripts/build.sh's
+# tarball) contains a working frontend. That gap is exactly how build.sh sat
+# broken for weeks: every other gate was green because none of them assemble,
+# pack, or install the distribution. This reproduces the manual check by hand:
+# pack it, install it into a directory outside the repo, start the installed
+# binary, and require it to actually serve the app shell + a real asset — an
+# open socket or a 200 on "/" alone would pass even if the bundle were empty.
+if [ "${SKIP_DIST_GATE:-0}" = "1" ]; then
+  echo "SKIP  distribution                  (SKIP_DIST_GATE=1)"
+else
+  DIST_LOG=$(mktemp)
+  DIST_STATUS=0
+  TARBALL="" DIST_INSTALL_DIR="" DIST_PID="" DIST_PORT=""
+
+  (cd "$HUB" && bash scripts/build.sh) >"$DIST_LOG" 2>&1 || DIST_STATUS=$?
+
+  if [ $DIST_STATUS -eq 0 ]; then
+    TARBALL=$(cd "$HUB/dist" && npm pack --silent 2>>"$DIST_LOG") || DIST_STATUS=$?
+  fi
+
+  if [ $DIST_STATUS -eq 0 ]; then
+    DIST_INSTALL_DIR=$(mktemp -d) # outside the repo — proves it installs standalone
+    # Must be absolute: npm install resolves a relative tarball path against
+    # the install dir's cwd, not the repo root verify.sh itself runs from.
+    (cd "$DIST_INSTALL_DIR" && npm init -y >/dev/null 2>>"$DIST_LOG" \
+      && npm install "$PWD_REPO_ROOT/$HUB/dist/$TARBALL" >>"$DIST_LOG" 2>&1) || DIST_STATUS=$?
+  fi
+
+  if [ $DIST_STATUS -eq 0 ]; then
+    DIST_PORT=$(free_port)
+    (cd "$DIST_INSTALL_DIR" && PORT="$DIST_PORT" node_modules/.bin/vtally) >>"$DIST_LOG" 2>&1 &
+    DIST_PID=$!; PIDS+=("$DIST_PID")
+    if wait_ready "http://localhost:$DIST_PORT/"; then
+      # Require a real asset from the served HTML to 200 too — a shell that
+      # references a bundle the install never wrote must fail this gate, not
+      # just the root document (which is static and would serve regardless).
+      ASSET_PATH=$(curl -s "http://localhost:$DIST_PORT/" \
+        | grep -oE '(src|href)="[^"]+\.(js|css)"' | head -1 | grep -oE '"[^"]+"' | tr -d '"')
+      if [ -n "$ASSET_PATH" ]; then
+        ASSET_CODE=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:$DIST_PORT$ASSET_PATH")
+        [ "$ASSET_CODE" = "200" ] || { echo "asset $ASSET_PATH returned $ASSET_CODE" >>"$DIST_LOG"; DIST_STATUS=1; }
+      else
+        echo "no script/link asset reference found in served HTML" >>"$DIST_LOG"
+        DIST_STATUS=1
+      fi
+    else
+      echo "installed vtally binary never served a ready app shell on :$DIST_PORT" >>"$DIST_LOG"
+      DIST_STATUS=1
+    fi
+    kill "$DIST_PID" 2>/dev/null
+  fi
+
+  rm -f "${HUB:?}/dist/${TARBALL:-__none__}" 2>/dev/null
+  [ -n "$DIST_INSTALL_DIR" ] && rm -rf "$DIST_INSTALL_DIR"
+  gate_exit "distribution" $DIST_STATUS
+  [ $DIST_STATUS -ne 0 ] && echo "        log: $DIST_LOG"
 fi
 echo
 
