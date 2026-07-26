@@ -28,14 +28,15 @@ const onDisconnection = function() {
 }
 if (typeof window !== 'undefined') {
   // on client only
+  // "connect" is the signal four trackers re-subscribe on — socket.io v4 fires
+  // it again after every successful reconnect, so this stays the whole story.
+  // connect_timeout / reconnecting / reconnect_failed were removed here: v4's
+  // client Socket does not emit them at all (v2 did).
   socket.on("connect", onConnection)
   socket.on("connect_error", onDisconnection)
-  socket.on("connect_timeout", onDisconnection)
   socket.on("disconnected", onDisconnection)
   socket.on("reconnect", onDisconnection)
-  socket.on("reconnecting", onDisconnection)
   socket.on("reconnect_error", onDisconnection)
-  socket.on("reconnect_failed", onDisconnection)
 }
 
 /** @deprecated */

@@ -8,7 +8,9 @@ import { MixerDriver } from './lib/MixerDriver'
 import express from 'express'
 import { createProxyMiddleware } from 'http-proxy-middleware'
 import { Server } from 'http'
-import socketIo from 'socket.io'
+// aliased: socket.io v4's export is also called `Server`, and `http`'s is
+// already bound above.
+import { Server as SocketIoServer, Socket as SocketIoSocket } from 'socket.io'
 
 import { SocketAwareEvent } from './lib/SocketAwareEvent'
 import ServerEventEmitter from './lib/ServerEventEmitter'
@@ -37,7 +39,7 @@ if (argv['with-test'] !== undefined) {
 }
 const app = express()
 const server = new Server(app)
-const io = socketIo(server)
+const io = new SocketIoServer(server)
 
 const myEmitter = new ServerEventEmitter()
 myEmitter.setMaxListeners(99)
@@ -75,7 +77,7 @@ myEmitter.on('program.changed', ({programs, previews}) => {
 
 // socket.io server
 io.on('connection', (socket: ServerSideSocket) => {
-  (socket as socketIo.Socket).setMaxListeners(99)
+  (socket as unknown as SocketIoSocket).setMaxListeners(99)
   const mixerEvents = [
     // @TODO: use event objects instead of repeating the same structure again and again
     new SocketAwareEvent(myEmitter, 'mixer.connected', socket, (socket) => {
@@ -95,10 +97,6 @@ io.on('connection', (socket: ServerSideSocket) => {
       isConnected: myMixerDriver.isConnected()
     })
   })
-  socket.on('events.mixer.unsubscribe', () => {
-    // @TODO: not used yet
-    mixerEvents.forEach(pipe => pipe.unregister())
-  })
 
   const programEvents = [
     new SocketAwareEvent(myEmitter, 'program.changed', socket, (socket, {programs, previews}) => {
@@ -115,10 +113,6 @@ io.on('connection', (socket: ServerSideSocket) => {
       programs: myMixerDriver.getCurrentPrograms(),
       previews: myMixerDriver.getCurrentPreviews(),
     })
-  })
-  socket.on('events.program.unsubscribe', () => {
-    // @TODO: not used yet
-    programEvents.forEach(pipe => pipe.unregister())
   })
 
   const configEvents = [
@@ -153,10 +147,6 @@ io.on('connection', (socket: ServerSideSocket) => {
     socket.emit('config.state.vmix', myConfiguration.getVmixConfiguration().toJson())
     socket.emit('config.state.tallyconfig', myConfiguration.getTallyConfiguration().toJson())
   })
-  socket.on('events.program.unsubscribe', () => {
-    // @TODO: not used yet
-    configEvents.forEach(pipe => pipe.unregister())
-  })
 
   const tallyEvents = [
     new SocketAwareEvent(myEmitter, 'tally.changed', socket, (socket) => {
@@ -171,11 +161,6 @@ io.on('connection', (socket: ServerSideSocket) => {
 
     socket.emit('tally.state', {tallies: myTallyContainer.getTalliesAsJson()})
   })
-  socket.on('events.tally.unsubscribe', () => {
-    // @TODO: not used yet
-    tallyEvents.forEach(pipe => pipe.unregister())
-  })
-  
   socket.on('tally.patch', (tallyName, tallyType, channelId) => {
     myTallyContainer.patch(tallyName, tallyType, channelId)
   })
@@ -213,10 +198,6 @@ io.on('connection', (socket: ServerSideSocket) => {
 
     socket.emit('tally.log.state', logs)
   })
-  socket.on('events.tallyLog.unsubscribe', () => {
-    // @TODO: not used yet
-    tallyLogEvents.forEach(pipe => pipe.unregister())
-  })
 
   const channelEvents = [
     new SocketAwareEvent(myEmitter, 'config.changed.channels', socket, (socket, channels) => {
@@ -228,11 +209,6 @@ io.on('connection', (socket: ServerSideSocket) => {
 
     socket.emit('channel.state', {channels: myConfiguration.getChannelsAsJson()})
   })
-  socket.on('events.channel.unsubscribe', () => {
-    // @TODO: not used yet
-    channelEvents.forEach(pipe => pipe.unregister())
-  })
-
 
   socket.on('config.change.atem', (newAtemConfiguration, newMixerName) => {
     const atem = new AtemConfiguration()
