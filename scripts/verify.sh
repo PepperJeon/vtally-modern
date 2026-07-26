@@ -13,20 +13,39 @@ BASELINE=scripts/baseline.json
 FAIL=0
 PIDS=()
 
+# Allocate a free port by asking the OS for one (bind port 0, read back what
+# it assigned). Two runs starting in the same second still can't collide:
+# the kernel hands out ephemeral ports atomically, unlike two scripts both
+# probing upward from a fixed base and finding the same "free" one first.
+free_port() {
+  node -e "
+    const s = require('net').createServer();
+    s.listen(0, '127.0.0.1', () => { const p = s.address().port; s.close(() => console.log(p)); });
+  "
+}
+BACKEND_PORT=$(free_port)
+FRONTEND_PORT=$(free_port)
+while [ "$FRONTEND_PORT" = "$BACKEND_PORT" ]; do FRONTEND_PORT=$(free_port); done
+echo "ports: backend=$BACKEND_PORT frontend=$FRONTEND_PORT"
+
 cleanup() {
   for p in "${PIDS[@]:-}"; do kill "$p" 2>/dev/null; done
-  # backstop in case npm/ts-node forked children the PID kill above missed.
-  # Match the REAL command lines: `npm run start:frontend` execs
-  # `node .../react-scripts/scripts/start.js`, so a "react-scripts start"
-  # pattern never matches and the CRA dev server survives every run.
-  # `npm run start:frontend` execs node with the RESOLVED script path:
-  #   CRA   node .../node_modules/react-scripts/scripts/start.js
-  #   Vite  node .../node_modules/.bin/vite
-  # Patterns like "react-scripts start" or "vite/bin/vite" match neither, so
-  # the dev server outlives every run and the next one aborts on a busy port.
-  pkill -f "ts-node.*server\.ts.*--with-test" 2>/dev/null
-  pkill -f "react-scripts/scripts/start.js" 2>/dev/null
-  pkill -f "bin/vite" 2>/dev/null
+  # Backstop in case npm/ts-node forked children the PID kill above missed.
+  # This used to be `pkill -f` against resolved command lines (CRA execs
+  # node .../react-scripts/scripts/start.js, Vite execs node .../bin/vite —
+  # patterns like "react-scripts start" or "vite/bin/vite" matched neither,
+  # so the dev server outlived every run). Fixing that by matching the
+  # resolved paths would have made a NEW bug worse: with parallel worktrees
+  # every run's command line looks identical, so a command-pattern backstop
+  # kills a sibling run's servers too — the exact bug this script exists to
+  # avoid. Killing by port instead solves both: it matches whatever is
+  # actually listening regardless of resolved path, and it can only ever
+  # match what's bound to *this run's own* ports.
+  for port in "${BACKEND_PORT:-}" "${FRONTEND_PORT:-}"; do
+    [ -z "$port" ] && continue
+    pids=$(lsof -nP -tiTCP:"$port" -sTCP:LISTEN 2>/dev/null)
+    [ -n "$pids" ] && kill $pids 2>/dev/null
+  done
 }
 trap cleanup EXIT INT TERM
 
@@ -34,7 +53,7 @@ trap cleanup EXIT INT TERM
 # fails to bind, wait_ready succeeds against the STRANGER, and cypress then runs
 # against a server started without --with-test (no TestConnector) — dozens of
 # spurious failures with no visible cause. Refuse to run instead.
-for port in 3000 3001; do
+for port in "$BACKEND_PORT" "$FRONTEND_PORT"; do
   if lsof -nP -iTCP:$port -sTCP:LISTEN >/dev/null 2>&1; then
     echo "ABORT: port $port is already in use — a previous run's server is still alive."
     lsof -nP -iTCP:$port -sTCP:LISTEN | tail -n +2 | sed 's/^/  /'
@@ -57,10 +76,10 @@ if [ -f "$HUB/vite.config.ts" ] || [ -f "$HUB/vite.config.js" ]; then
   BUILD_CMD="npm run build:frontend"
   BUNDLE_DIR="$HUB/dist/client"
   CYPRESS_SPEC_DIR="cypress/e2e"
-  # Dev-proxy direction inverted (plan 0.3): Vite:3001 is the entry point and
-  # proxies /socket.io to express:3000. express no longer serves the app shell,
-  # so probing :3000 for id="root" can never succeed here.
-  APP_URL="http://localhost:3001"
+  # Dev-proxy direction inverted (plan 0.3): Vite is the entry point and
+  # proxies /socket.io to express. express no longer serves the app shell,
+  # so probing the backend port for id="root" can never succeed here.
+  APP_URL="http://localhost:$FRONTEND_PORT"
   export NODE_OPTIONS="${NODE_OPTIONS:-}"        # webpack4 legacy-provider no longer needed
 else
   WORLD=cra
@@ -68,11 +87,11 @@ else
   BUILD_CMD="npm run build:frontend"
   BUNDLE_DIR="$HUB/build"
   CYPRESS_SPEC_DIR="cypress/integration"
-  APP_URL="http://localhost:3000"                 # express is the entry point, proxies to CRA:3001
+  APP_URL="http://localhost:$BACKEND_PORT"        # express is the entry point, proxies to CRA
   export NODE_OPTIONS="--openssl-legacy-provider" # react-scripts4/webpack4 md4 hash breaks on modern OpenSSL
 fi
-BACKEND_CMD="npm run cypress:backend"   # ts-node --with-test, port 3000
-FRONTEND_CMD="npm run start:frontend"   # CRA/Vite dev server, port 3001
+BACKEND_CMD="npm run cypress:backend"   # ts-node --with-test, listens on $BACKEND_PORT
+FRONTEND_CMD="npm run start:frontend"   # CRA/Vite dev server, listens on $FRONTEND_PORT
 echo "world: $WORLD"
 echo
 
@@ -110,9 +129,14 @@ wait_ready() { # wait_ready <url> -> 0 once it returns 200 with a served app she
 # Server stdout goes to a log, not to ours. Both servers are chatty ("Connecting
 # event ... to socket ..." per socket per spec) and inline they bury the pass/fail
 # table this script exists to print.
+# PORT means different things to each process (express's own listen port vs.
+# CRA's dev-server port), but each is a separate subshell here, so the same
+# name can carry a different value into each without the two colliding.
+# DEV_PROXY_PORT/BACKEND_PORT/FRONTEND_PORT cover the CRA and Vite proxy
+# directions respectively — see hub/vite.config.ts and hub/src/server/server.ts.
 SERVER_LOG=$(mktemp)
-start_backend()  { (cd "$HUB" && eval "$BACKEND_CMD")  >>"$SERVER_LOG" 2>&1 & BACKEND_PID=$!;  PIDS+=("$BACKEND_PID"); }
-start_frontend() { (cd "$HUB" && eval "$FRONTEND_CMD") >>"$SERVER_LOG" 2>&1 & FRONTEND_PID=$!; PIDS+=("$FRONTEND_PID"); }
+start_backend()  { (cd "$HUB" && PORT="$BACKEND_PORT" DEV_PROXY_PORT="$FRONTEND_PORT" eval "$BACKEND_CMD")  >>"$SERVER_LOG" 2>&1 & BACKEND_PID=$!;  PIDS+=("$BACKEND_PID"); }
+start_frontend() { (cd "$HUB" && PORT="$FRONTEND_PORT" BACKEND_PORT="$BACKEND_PORT" FRONTEND_PORT="$FRONTEND_PORT" eval "$FRONTEND_CMD") >>"$SERVER_LOG" 2>&1 & FRONTEND_PID=$!; PIDS+=("$FRONTEND_PID"); }
 
 # ---------------------------------------------------------------------------
 echo "== typecheck =="
@@ -199,7 +223,7 @@ else
   while IFS= read -r spec; do
     [ -z "$spec" ] && continue
     CY_LOG=$(mktemp)
-    (cd "$HUB" && npx cypress run --spec "$CYPRESS_SPEC_DIR/$spec") > "$CY_LOG" 2>&1
+    (cd "$HUB" && CYPRESS_BASE_URL="$APP_URL" npx cypress run --spec "$CYPRESS_SPEC_DIR/$spec") > "$CY_LOG" 2>&1
     p=$(grep -oE '[0-9]+ passing' "$CY_LOG" | grep -oE '[0-9]+' | head -1 || echo 0)
     f=$(grep -oE '[0-9]+ failing' "$CY_LOG" | grep -oE '[0-9]+' | head -1 || echo 0)
     n=$(grep -oE '[0-9]+ pending' "$CY_LOG" | grep -oE '[0-9]+' | head -1 || echo 0)
