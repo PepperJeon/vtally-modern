@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>vTally — WebTallyPage states</title>
+<style>
+  :root {
+    color-scheme: dark;
+
+    --color-n-950: #0B0E11;
+    --color-n-900: #12161A;
+    --color-n-800: #1E242B;
+    --color-n-700: #2A323B;
+    --color-n-600: #3A444F;
+    --color-n-500: #6B7787;
+    --color-n-400: #8A98A8;
+    --color-n-100: #E3E8ED;
+    --color-missing: #FFB020;
+    --color-on-fill: var(--color-n-950);
+
+    --font-sans: Inter, Lato, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --tracking-tight: -0.015em;
+    --space-2: .5rem; --space-3: .75rem; --space-4: 1rem; --space-6: 1.5rem; --space-8: 2rem;
+    --radius-md: 8px; --radius-sm: 4px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--color-n-950); color: var(--color-n-100);
+    font-family: var(--font-sans); -webkit-font-smoothing: antialiased;
+  }
+
+  .sheet { max-width: 1400px; margin: 0 auto; padding: var(--space-8) var(--space-6); }
+  h1 { font-size: 1.75rem; letter-spacing: var(--tracking-tight); margin: 0 0 .25rem; }
+  .lede { color: var(--color-n-400); margin: 0 0 var(--space-8); max-width: 70ch; }
+
+  .row {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: var(--space-8);
+  }
+
+  figure { margin: 0; }
+  figcaption {
+    margin-top: var(--space-3); font-size: .875rem; color: var(--color-n-400);
+  }
+  figcaption b { color: var(--color-n-100); font-weight: 600; display: block; }
+  figcaption code {
+    font-family: var(--font-mono); font-size: .75rem;
+    background: var(--color-n-900); padding: 1px 4px; border-radius: 2px;
+  }
+
+  /* ---------- the tally surface ---------- */
+  /* In the real page this is 100vw x 100dvh with no chrome. Here each is a
+     phone-shaped frame so several states fit on one page. */
+  .phone {
+    position: relative;
+    aspect-ratio: 9 / 16;
+    border-radius: 18px;
+    border: 1px solid var(--color-n-700);
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: var(--space-4);
+    text-align: center;
+    transition: none;                 /* --duration-0 — never animate into a state */
+  }
+
+  .name {
+    font-size: clamp(1.5rem, 11cqw, 4rem);
+    font-weight: 700;
+    letter-spacing: var(--tracking-tight);
+    line-height: 1.05;
+    overflow-wrap: anywhere;
+    color: inherit;
+  }
+  .word {
+    margin-top: var(--space-3);
+    font-size: clamp(.8rem, 4.5cqw, 1.4rem);
+    font-weight: 500;
+    color: inherit;
+    opacity: .7;                      /* fade() of the derived contrast colour */
+  }
+  .phone { container-type: inline-size; }
+
+  .chrome {
+    position: absolute;
+    width: 44px; height: 44px;
+    display: grid; place-items: center;
+    background: none; border: 0; border-radius: var(--radius-sm);
+    color: inherit; opacity: .7; cursor: pointer; font-size: 1.1rem;
+  }
+  .chrome:hover { opacity: 1; }
+  .chrome.settings { top: var(--space-2); right: var(--space-2); }
+  .chrome.full     { bottom: var(--space-2); right: var(--space-2); }
+
+  .awake {
+    position: absolute; bottom: var(--space-3); left: var(--space-3);
+    font-size: .6875rem; opacity: .7; color: inherit;
+  }
+
+  /* spinner for loading / unknown */
+  .spinner {
+    width: min(30cqw, 96px); aspect-ratio: 1;
+    border: 4px solid currentColor; border-right-color: transparent;
+    border-radius: 50%;
+    opacity: .5;
+    animation: spin 1s linear infinite;
+    margin-bottom: var(--space-4);
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .warn {
+    margin-top: var(--space-3); font-size: .75rem; color: var(--color-missing);
+  }
+
+  /* highlight strobe: 4Hz hard step, white <-> black. Never dimmed by brightness. */
+  @keyframes locate {
+    0%,49.9%   { background: #FFFFFF; color: #0B0E11; }
+    50%,100%   { background: #000000; color: #FFFFFF; }
+  }
+  .phone[data-color="highlight"] {
+    animation: locate .25s step-start infinite;
+    background: #000; color: #fff;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .phone[data-color="highlight"] { animation: none; background: #FFFFFF; color: #0B0E11; }
+    .spinner { animation: none; }
+  }
+
+  hr { border: 0; border-top: 1px solid var(--color-n-700); margin: var(--space-8) 0; }
+  .note { color: var(--color-n-400); font-size: .875rem; max-width: 80ch; }
+  .note b { color: var(--color-n-100); }
+  .note code { font-family: var(--font-mono); font-size: .75rem;
+               background: var(--color-n-900); padding: 1px 4px; border-radius: 2px; }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <h1>WebTallyPage</h1>
+  <p class="lede">
+    The real page is one full-bleed surface: <code>100vw × 100dvh</code>, no nav, no card.
+    Each frame below is one state at phone proportions. Fill colours are the literal LED
+    <code>rgb()</code> values from <code>ColorScheme.ts</code>, multiplied per channel by the
+    brightness fraction — the same sRGB multiply the firmware applies to the LED's PWM duty
+    cycle, so screen and lamp agree.
+  </p>
+
+  <div class="row">
+
+    <!-- on air, 100% -->
+    <figure>
+      <div class="phone" data-testid="page-tally-web" data-color="program" data-brightness="1"
+           style="background: rgb(255,0,0); color: #0B0E11;">
+        <button class="chrome settings" data-testid="tally-settings-link" aria-label="Show settings">⚙</button>
+        <div class="name">Camera 2</div>
+        <div class="word">On Program</div>
+        <button class="chrome full" aria-label="Enter fullscreen">⛶</button>
+      </div>
+      <figcaption>
+        <b>on-air · 100%</b>
+        <code>rgb(255,0,0)</code> · text <code>#0B0E11</code> at 5.25:1.
+        White text here would be 4.00:1 and fail.
+      </figcaption>
+    </figure>
+
+    <!-- on air, dimmed -->
+    <figure>
+      <div class="phone" data-testid="page-tally-web" data-color="program" data-brightness="0.4"
+           style="background: rgb(102,0,0); color: #FFFFFF;">
+        <button class="chrome settings" aria-label="Show settings">⚙</button>
+        <div class="name">Camera 2</div>
+        <div class="word">On Program</div>
+        <button class="chrome full" aria-label="Enter fullscreen">⛶</button>
+      </div>
+      <figcaption>
+        <b>on-air · 40% — the unguarded one</b>
+        <code>dim(rgb(255,0,0), 0.4)</code> → <code>rgb(102,0,0)</code>, and the text flips to
+        white because it is derived from the <i>dimmed</i> colour. If the dim breaks, the text
+        colour breaks with it and the error becomes visible. Deriving text from the undimmed
+        colour would hide it.
+      </figcaption>
+    </figure>
+
+    <!-- preview -->
+    <figure>
+      <div class="phone" data-color="preview" data-brightness="1"
+           style="background: rgb(0,255,0); color: #0B0E11;">
+        <button class="chrome settings" aria-label="Show settings">⚙</button>
+        <div class="name">Camera 2</div>
+        <div class="word">On Preview</div>
+        <button class="chrome full" aria-label="Enter fullscreen">⛶</button>
+      </div>
+      <figcaption>
+        <b>preview · 100%</b>
+        <code>rgb(0,255,0)</code>, black text at 15.30:1. A naive
+        <code>(r+g+b)/3</code> brightness test would pick white here — 1.37:1, invisible.
+      </figcaption>
+    </figure>
+
+    <!-- idle -->
+    <figure>
+      <div class="phone" data-color="idle" data-brightness="1"
+           style="background: rgb(0,0,0); color: #6B7787;">
+        <button class="chrome settings" aria-label="Show settings">⚙</button>
+        <div class="name">Camera 2</div>
+        <div class="word">Idle</div>
+        <button class="chrome full" aria-label="Enter fullscreen">⛶</button>
+      </div>
+      <figcaption>
+        <b>release · idle</b>
+        <code>rgb(0,1,0)</code> renders black — the lamp is off and the swatch says so. The
+        dim name is the only thing separating &ldquo;light is off&rdquo; from &ldquo;phone is
+        dead&rdquo;, which from three metres otherwise look identical.
+      </figcaption>
+    </figure>
+
+    <!-- highlight -->
+    <figure>
+      <div class="phone" data-color="highlight">
+        <button class="chrome settings" aria-label="Show settings">⚙</button>
+        <div class="name">Camera 2</div>
+        <div class="word">Highlight</div>
+        <button class="chrome full" aria-label="Enter fullscreen">⛶</button>
+      </div>
+      <figcaption>
+        <b>highlight · locate</b>
+        4 Hz white↔black, <code>step-start</code>, never dimmed by brightness — the operator
+        asked &ldquo;which light is this?&rdquo;. Stops after 10 s. Under
+        <code>prefers-reduced-motion</code> it holds a static <i>white</i> fill: still
+        findable in a dark studio, where a static black one is not.
+      </figcaption>
+    </figure>
+
+    <!-- unknown -->
+    <figure>
+      <div class="phone" data-color="unknown" style="background: #1E242B; color: #E3E8ED;">
+        <div class="spinner" aria-hidden="true"></div>
+        <div class="word" style="font-size: clamp(.9rem, 6cqw, 1.6rem); opacity: 1;">
+          No connection to Mixer
+        </div>
+      </div>
+      <figcaption>
+        <b>unknown</b>
+        Same surface as loading, different word. Both mean: do not trust this screen. No
+        settings or fullscreen buttons — there is nothing to configure yet.
+      </figcaption>
+    </figure>
+
+    <!-- disconnected -->
+    <figure>
+      <div class="phone" data-color="loading" style="background: #1E242B; color: #E3E8ED;">
+        <div class="spinner" aria-hidden="true"></div>
+        <div class="word" style="font-size: clamp(.9rem, 6cqw, 1.6rem); opacity: 1;">
+          Waiting for data
+        </div>
+        <p class="warn">⚠ Disconnected — reconnecting</p>
+      </div>
+      <figcaption>
+        <b>hub socket lost</b>
+        <code>onDisconnect</code> clears the tally, so the page falls back to loading. The
+        amber line is what distinguishes &ldquo;lost the hub&rdquo; from &ldquo;slow first
+        load&rdquo;; without it they are the same screen.
+      </figcaption>
+    </figure>
+
+    <!-- fullscreen -->
+    <figure>
+      <div class="phone" data-color="program" data-brightness="1"
+           style="background: rgb(255,0,0); color: #0B0E11;">
+        <div class="name">Camera 2</div>
+        <div class="word">On Program</div>
+        <span class="awake">⦿ screen kept awake</span>
+        <button class="chrome full" aria-label="Exit fullscreen">⛶</button>
+      </div>
+      <figcaption>
+        <b>fullscreen</b>
+        Chrome fades out after 3 s of no touch and returns on any tap — opacity only, so it
+        stays hit-testable. The wake-lock line is the only visible evidence that
+        <code>noSleep</code> actually engaged; if it fails it reads
+        <span style="color:var(--color-missing)">⚠ screen may sleep</span>.
+      </figcaption>
+    </figure>
+
+  </div>
+
+  <hr>
+
+  <p class="note">
+    <b>Why the dimmed frame is the important one.</b> <code>webtally.spec.ts</code> asserts
+    that the <code>data-brightness</code> attribute changes — nothing asserts the pixel. The
+    attribute can read <code>0.4</code> while the screen paints full red. The design's answer
+    is that background and text colour are both derived from one computed value, so a broken
+    dim inverts the text and announces itself; the test's answer is one
+    <code>getComputedStyle(el).backgroundColor</code> assertion. Both, not either.
+  </p>
+
+</div>
+</body>
+</html>
