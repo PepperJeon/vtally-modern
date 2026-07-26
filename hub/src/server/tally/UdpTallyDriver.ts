@@ -14,6 +14,7 @@ class UdpTallyDriver {
     container: TallyContainer
     configuration: AppConfiguration
     lastTallyReport: Map<string, Date> = new Map()
+    private timers: NodeJS.Timeout[] = []
 
     constructor(configuration: AppConfiguration, container: TallyContainer) {
         this.configuration = configuration
@@ -58,7 +59,7 @@ class UdpTallyDriver {
         this.io.bind(this.configuration.getTallyPort())
 
         // check that all tallies are still reporting regularily
-        setInterval(() => {
+        this.timers.push(setInterval(() => {
             const now = new Date()
             this.container.getUdpTallies().forEach(tally => {
                 const lastTallyReportDate = this.lastTallyReport.get(tally.name)
@@ -81,16 +82,24 @@ class UdpTallyDriver {
                     }
                 }
             })
-        }, 500)
+        }, 500))
 
         // send keep-alive messages
         // - show the tally, we are still here
         // - compensate for lost packages
-        setInterval(() => {
+        this.timers.push(setInterval(() => {
             this.container.getUdpTallies().forEach(tally => {
                 this.updateTallyState(tally, this.container.lastPrograms, this.container.lastPreviews)
             })
-        }, 1000 / this.configuration.getTallyKeepAlivesPerSecond())
+        }, 1000 / this.configuration.getTallyKeepAlivesPerSecond()))
+    }
+
+    // releases UDP :7411 so a second hub can take it. Two hubs fighting over
+    // this port is the failure mode nobody diagnoses.
+    close() {
+        this.timers.forEach(clearInterval)
+        this.timers = []
+        try { this.io.close() } catch (e) { /* already closed */ }
     }
     private tallyReported(tallyName: string, rinfo: dgram.RemoteInfo) {
         this.lastTallyReport.set(tallyName, new Date())
