@@ -305,7 +305,7 @@ export class AppConfiguration extends Configuration {
     }
 
     getTallyPort() {
-        return this.tallyPort
+        return (typeof process.env.TALLY_PORT === "string" && parseInt(process.env.TALLY_PORT, 10)) || this.tallyPort
     }
 
     getTallyHighlightTime() {
