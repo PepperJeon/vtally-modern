@@ -35,5 +35,8 @@ import './commands'
 // What this does NOT cover is the shipping default, since the suite now never
 // sees it. cypress/e2e/i18n.spec.ts covers that gap and clears the key itself.
 Cypress.on('window:before:load', win => {
+  // cypress/e2e/i18n.spec.ts is the one spec that must see the real default, so
+  // it opts out rather than racing this handler's registration order.
+  if (Cypress.env('i18nUnpinned')) { return }
   win.localStorage.setItem('vtally.lang', 'en')
 })

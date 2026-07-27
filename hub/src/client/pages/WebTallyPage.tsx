@@ -12,6 +12,7 @@ import TallySettings from '../components/TallySettings'
 import { useDefaultTallyConfiguration } from '../hooks/useConfiguration'
 import ColorSchemes from '../../shared/tally/ColorScheme'
 import { contrastText, dim, fade } from '../../shared/lib/color'
+import { useT } from '../i18n'
 
 /** `--color-n-800`, the neutral fill for "do not trust this screen". */
 const NEUTRAL_FILL = "#1E242B"
@@ -132,6 +133,7 @@ function useFullScreen() {
  * colour as a shortcut.
  */
 function WebTallyPage() {
+  const t = useT()
   const { tallyId } = useParams<{tallyId: string}>()
   const tallyName = tallyId.replace(/^web-/, "")
   const { tally, command, isValid } = useWebTally(tallyName)
@@ -153,7 +155,7 @@ function WebTallyPage() {
   }}, [noSleep])
 
   if (isValid === false) {
-    return <PageNotFound>Tally with name <strong>{tallyName}</strong> not found.</PageNotFound>
+    return <PageNotFound>{t.webTally.notFound(tallyName, text => <strong>{text}</strong>)}</PageNotFound>
   }
 
   const colorSchemeId = tally?.configuration?.getOperatorColorScheme() || defaultTallyConfiguration?.getOperatorColorScheme() || "default"
@@ -165,27 +167,27 @@ function WebTallyPage() {
   let showSpinner = false
   if (isLoading) {
     dataColor = "loading"
-    text = "Waiting for data"
+    text = t.webTally.waitingForData
     showSpinner = true
   } else if (command === "highlight") {
     isHighlight = true
     dataColor = "highlight"
-    text = "Highlight"
+    text = t.webTally.highlight
   } else if (command === "on-air") {
     bgColor = colorScheme.program.toCss()
-    text = "On Program"
+    text = t.webTally.onProgram
     dataColor = "program"
   } else if (command === "preview") {
     bgColor = colorScheme.preview.toCss()
-    text = "On Preview"
+    text = t.webTally.onPreview
     dataColor = "preview"
   } else if (command === "release") {
     bgColor = colorScheme.idle.toCss()
     dataColor = "idle"
-    text = "Idle"
+    text = t.webTally.idle
   } else if (command === "unknown") {
     dataColor = "unknown"
-    text = "No connection to Mixer"
+    text = t.webTally.noMixerConnection
     showSpinner = true
   } else {
     // if typescript fails here, we forgot a case
@@ -225,7 +227,7 @@ function WebTallyPage() {
       { showSpinner ? (<>
         <div
           role="progressbar"
-          aria-label="Loading"
+          aria-label={t.common.loading}
           className="animate-spin rounded-full border-[0.06em] border-current border-t-transparent opacity-70"
           style={{width: "min(30vw, 30vh)", height: "min(30vw, 30vh)", fontSize: "min(30vw, 30vh)"}}
         />
@@ -235,7 +237,7 @@ function WebTallyPage() {
         { !isHubConnected && (
           // §4.7: without this line a lost socket is indistinguishable from a
           // slow first load — both render data-color="loading".
-          <div className="mt-4 text-lg text-missing"><span aria-hidden>⚠ </span>Disconnected — reconnecting</div>
+          <div className="mt-4 text-lg text-missing"><span aria-hidden>⚠ </span>{t.webTally.disconnected}</div>
         )}
       </>) : (<>
         <div
@@ -249,18 +251,18 @@ function WebTallyPage() {
           type="button"
           data-testid="tally-settings-link"
           className={iconButtonClass + " right-4 top-4"}
-          aria-label="Show settings"
+          aria-label={t.webTally.showSettings}
           onClick={() => setSettingsOpen(true)}
         >
           <SlidersHorizontal className="size-6" />
         </button>
         <TallySettings tally={tally} open={settingsOpen} onClose={() => setSettingsOpen(false)} />
         { handle.active ? (
-          <button type="button" className={iconButtonClass + " bottom-4 right-4"} aria-label="Exit fullscreen" onClick={exitFullScreen}>
+          <button type="button" className={iconButtonClass + " bottom-4 right-4"} aria-label={t.webTally.exitFullscreen} onClick={exitFullScreen}>
             <Minimize className="size-6" />
           </button>
         ) : (
-          <button type="button" className={iconButtonClass + " bottom-4 right-4"} aria-label="Enter fullscreen" onClick={enterFullScreen}>
+          <button type="button" className={iconButtonClass + " bottom-4 right-4"} aria-label={t.webTally.enterFullscreen} onClick={enterFullScreen}>
             <Maximize className="size-6" />
           </button>
         )}

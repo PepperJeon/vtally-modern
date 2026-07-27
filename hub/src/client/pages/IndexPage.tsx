@@ -9,7 +9,8 @@ import TallyComponent from '../components/Tally'
 import TallyCreate from '../components/TallyCreate'
 import { AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
+import { cn, latinCaps } from '@/lib/utils'
+import { useT } from '../i18n'
 
 const countConnectedTallies = (tallies: Tally[]|null) => {
   if(!tallies) { return null }
@@ -62,13 +63,14 @@ function StatusPill({testId, label, title, connected, children}: StatusPillProps
       )}
     >
       <span aria-hidden className={connected ? "text-preview" : "text-missing"}>{connected ? "●" : "⊘"}</span>
-      <span className="hidden font-semibold uppercase tracking-wide sm:inline">{label}</span>
+      <span className={cn("hidden font-semibold sm:inline", latinCaps)}>{label}</span>
       <span className="tabular-nums">{children}</span>
     </div>
   )
 }
 
 const IndexPage = () => {
+  const t = useT()
   const rawTallies = useTallies()
   const [showDisconnected, setShowDisconnected] = useState(true)
   const [showUnpatched, setShowUnpatched] = useState(true)
@@ -80,10 +82,12 @@ const IndexPage = () => {
 
   // Carrier 4 of the hub-disconnected design (§1.5): an operator with the hub
   // on a background tab finds out.
+  // Reads the base title from the table rather than off document.title: the
+  // language switcher rewrites document.title, and re-deriving it here by
+  // stripping the marker would have carried the old language's title forward.
   useEffect(() => {
-    const title = document.title.replace(/^⚠ /, "")
-    document.title = isHubConnected ? title : `⚠ ${title}`
-  }, [isHubConnected])
+    document.title = isHubConnected ? t.meta.title : `⚠ ${t.meta.title}`
+  }, [isHubConnected, t])
 
   const showAll = () => {
     setShowDisconnected(true)
@@ -114,11 +118,11 @@ const IndexPage = () => {
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
             <AlertTriangle aria-hidden className="size-5 shrink-0 text-missing" />
             <div className="flex-1">
-              <div className="text-base font-semibold uppercase tracking-wide text-missing">Hub disconnected</div>
-              <p className="text-sm text-text">The information below might be outdated.</p>
-              <p className="text-sm text-text-muted">Reconnecting automatically — you can also reload the page.</p>
+              <div className={cn("text-base font-semibold text-missing", latinCaps)}>{t.index.hubDisconnectedTitle}</div>
+              <p className="text-sm text-text">{t.index.hubDisconnectedBody}</p>
+              <p className="text-sm text-text-muted">{t.index.hubDisconnectedHint}</p>
             </div>
-            <Button type="button" variant="outline" className="h-11 px-4" onClick={() => window.location.reload()}>Reload</Button>
+            <Button type="button" variant="outline" className="h-11 px-4" onClick={() => window.location.reload()}>{t.common.reload}</Button>
           </div>
         </div>
       )}
@@ -126,23 +130,23 @@ const IndexPage = () => {
       <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap gap-2">
           <button type="button" data-testid="toggle-disconnected" aria-pressed={showDisconnected} className={filterClass(showDisconnected)} onClick={() => setShowDisconnected(!showDisconnected)}>
-            {showDisconnected && (<span aria-hidden className="mr-2">✓</span>)}Show Disconnected
+            {showDisconnected && (<span aria-hidden className="mr-2">✓</span>)}{t.index.showDisconnected}
           </button>
           <button type="button" data-testid="toggle-unpatched" aria-pressed={showUnpatched} className={filterClass(showUnpatched)} onClick={() => setShowUnpatched(!showUnpatched)}>
-            {showUnpatched && (<span aria-hidden className="mr-2">✓</span>)}Show Unpatched
+            {showUnpatched && (<span aria-hidden className="mr-2">✓</span>)}{t.index.showUnpatched}
           </button>
         </div>
         <div className="flex flex-wrap gap-2">
-          <StatusPill testId="hub-connected" label="Hub" connected={isHubConnected} title={"Hub " + (isHubConnected ? "connected" : "disconnected")}>
+          <StatusPill testId="hub-connected" label={t.index.hub} connected={isHubConnected} title={t.index.hubTitle(isHubConnected)}>
             {isHubConnected ? 1 : 0}
           </StatusPill>
-          <StatusPill testId="mixer-connected" label="Mixer" connected={isMixerConnected} title={"Video Mixer " + (isMixerConnected ? "connected" : "disconnected")}>
+          <StatusPill testId="mixer-connected" label={t.index.mixer} connected={isMixerConnected} title={t.index.mixerTitle(isMixerConnected)}>
             {isMixerConnected ? 1 : 0}
           </StatusPill>
           {/* `n / total`, counted over the UNFILTERED list: counting over the
             * filtered one made the display agree with itself and hide a dead
             * lamp whenever "show disconnected" was off (§1.4). */}
-          <StatusPill testId="tallies-connected" label="Tallies" connected={!!nrConnectedTallies} title={nrConnectedTallies + " connected tallies"}>
+          <StatusPill testId="tallies-connected" label={t.index.tallies} connected={!!nrConnectedTallies} title={t.index.talliesTitle(nrConnectedTallies)}>
             {nrConnectedTallies === null ? "?" : `${nrConnectedTallies} / ${rawTallies.length}`}
           </StatusPill>
         </div>
@@ -152,15 +156,15 @@ const IndexPage = () => {
         * itself (§1.2). */}
       { nrHidden > 0 && (
         <div role="status" className="mb-4 flex items-center gap-3 text-sm text-missing">
-          <span><span aria-hidden>⚠ </span>{nrHidden} {nrHidden === 1 ? "tally" : "tallies"} hidden by filters</span>
-          <button type="button" className="border-0 bg-transparent text-missing underline" onClick={showAll}>Show all</button>
+          <span><span aria-hidden>⚠ </span>{t.index.hiddenByFilters(nrHidden)}</span>
+          <button type="button" className="border-0 bg-transparent text-missing underline" onClick={showAll}>{t.index.showAll}</button>
         </div>
       )}
 
       <div className={cn(!isHubConnected && "opacity-55")}>
         { onAirCount > 0 && (
           <div className="mb-4 flex items-center gap-3">
-            <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">On Air</span>
+            <span className={cn("text-xs font-semibold text-text-muted", latinCaps)}>{t.index.onAir}</span>
             <span aria-hidden className="h-px flex-1 bg-border" />
           </div>
         )}
@@ -183,8 +187,8 @@ const IndexPage = () => {
         { tallies !== null && tallies.length === 0 && (
           <p className="mt-4 text-sm text-text-muted">
             { rawTallies.length === 0
-              ? "No tallies yet. Tallies appear here once they connect to the hub."
-              : `All ${rawTallies.length} tallies are hidden by your filters.` }
+              ? t.index.noTallies
+              : t.index.allHidden(rawTallies.length) }
           </p>
         )}
       </div>

@@ -55,8 +55,12 @@ export function setLanguage(lang: Lang) {
   if (typeof window !== 'undefined') {
     try { window.localStorage.setItem(STORAGE_KEY, lang) } catch { /* see detectLang */ }
     // Screen readers pick pronunciation from this attribute, so it has to
-    // track the actual language and not just index.html's static guess.
+    // track the actual language and not just index.html's static guess. It is
+    // also what the `:lang(ko)` rules in index.css and `latinCaps` match on.
     document.documentElement.lang = lang
+    // Set here rather than per-page so every route gets it. IndexPage re-applies
+    // it with its ⚠ prefix when the hub is disconnected.
+    document.title = TABLES[lang].meta.title
   }
   listeners.forEach(fn => fn())
 }

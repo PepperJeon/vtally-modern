@@ -6,6 +6,7 @@ import useTallies from '../hooks/useTallies'
 import ChannelSelector from './ChannelSelector'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { useT } from '../i18n'
 
 const createTally = function (tallyName, channelId) {
   socket.emit('tally.create', tallyName, channelId || undefined)
@@ -29,6 +30,7 @@ const maxLength = 26 // same as "tally.name" in tally
  * `.should('be.disabled')` directly), so this is Rule A's simple case.
  */
 function TallyCreatePopup({open, onClose}: TallyCreatePopupProps) {
+  const t = useT()
   const channels = useChannels()
   const tallies = useTallies()
   const [channelId, setChannelId] = useState<string>(undefined)
@@ -37,11 +39,11 @@ function TallyCreatePopup({open, onClose}: TallyCreatePopupProps) {
 
   let errorMessage = ""
   if (name === "") {
-    errorMessage = "Please enter a name"
+    errorMessage = t.tallyCreate.errorEmpty
   } else if (name.length > maxLength) {
-    errorMessage = `name must not be longer than ${maxLength} characters`
+    errorMessage = t.tallyCreate.errorTooLong(maxLength)
   } else if (tallies?.find(tally => tally.name === name)) {
-    errorMessage = `a tally with the name ${name} already exists`
+    errorMessage = t.tallyCreate.errorExists(name)
   }
 
   function handleCreate() {
@@ -57,20 +59,17 @@ function TallyCreatePopup({open, onClose}: TallyCreatePopupProps) {
         aria-describedby={undefined}
         className="w-full max-w-md border border-border-strong bg-surface-raised p-4 text-text sm:max-w-md"
       >
-        <DialogTitle className="text-xl font-semibold text-text">Create Web Tally</DialogTitle>
+        <DialogTitle className="text-xl font-semibold text-text">{t.tallyCreate.createWebTally}</DialogTitle>
         { !hasUdpTally ? (
           <div role="status" data-testid="tally-create-warning" className="flex gap-2 rounded-md border border-missing px-3 py-2 text-sm text-missing">
             <AlertTriangle aria-hidden className="mt-0.5 size-4 shrink-0" />
-            <span>
-              Hardware-Tallies, based on ESP8266, will automatically register and should not
-              be created via this form.
-            </span>
+            <span>{t.tallyCreate.hardwareWarning}</span>
           </div>
         ) : "" }
-        <p className="text-sm text-text-muted">A Web Tally, that can be viewed in any browser.</p>
+        <p className="text-sm text-text-muted">{t.tallyCreate.description}</p>
 
         <div>
-          <label htmlFor="tally-create-name-field" className="mb-1 block text-sm font-medium text-text-muted">Name</label>
+          <label htmlFor="tally-create-name-field" className="mb-1 block text-sm font-medium text-text-muted">{t.tallyCreate.name}</label>
           <input
             id="tally-create-name-field"
             data-testid="tally-create-name"
@@ -94,9 +93,9 @@ function TallyCreatePopup({open, onClose}: TallyCreatePopupProps) {
         <ChannelSelector value={channelId} channels={channels} onChange={setChannelId} />
 
         <div className="mt-2 flex justify-end gap-2">
-          <Button type="button" variant="outline" className="h-11 px-4" onClick={onClose} data-testid="tally-create-cancel">Cancel</Button>
+          <Button type="button" variant="outline" className="h-11 px-4" onClick={onClose} data-testid="tally-create-cancel">{t.common.cancel}</Button>
           <span title={errorMessage}>
-            <Button type="button" className="h-11 px-4" disabled={!!errorMessage} data-testid="tally-create-ok" onClick={handleCreate}>Create</Button>
+            <Button type="button" className="h-11 px-4" disabled={!!errorMessage} data-testid="tally-create-ok" onClick={handleCreate}>{t.common.create}</Button>
           </span>
         </div>
       </DialogContent>
@@ -105,6 +104,7 @@ function TallyCreatePopup({open, onClose}: TallyCreatePopupProps) {
 }
 
 function TallyCreate() {
+  const t = useT()
   const [modalOpen, setModalOpen] = useState(false)
 
   return (
@@ -119,7 +119,7 @@ function TallyCreate() {
         className="flex w-[250px] flex-col items-center justify-center gap-1 rounded-md border border-dashed border-n-600 bg-transparent p-6 text-text-muted transition-colors duration-[var(--duration-fast)] hover:border-n-500 hover:text-text focus-visible:shadow-focus focus-visible:outline-none"
       >
         <span aria-hidden className="text-2xl leading-none">+</span>
-        <span className="text-base">Create Web Tally</span>
+        <span className="text-base">{t.tallyCreate.createWebTally}</span>
       </button>
       <TallyCreatePopup open={modalOpen} onClose={() => setModalOpen(false)} />
     </>

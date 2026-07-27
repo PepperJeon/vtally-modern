@@ -5,7 +5,8 @@ import useChannels from '../hooks/useChannels'
 import useProgramPreview from '../hooks/useProgramPreview'
 import { socket } from '../hooks/useSocket'
 import TallyMenu from './TallyMenu'
-import { cn } from '@/lib/utils'
+import { cn, latinCaps } from '@/lib/utils'
+import { useT } from '../i18n'
 
 type TallyProps = {
     tally: TallyType
@@ -14,13 +15,6 @@ type TallyProps = {
 
 type DataColor = "unpatched" | "program" | "preview" | "idle"
 type Health = "connected" | "missing" | "disconnected"
-
-const stateWord: Record<DataColor, string> = {
-    program: "on air",
-    preview: "preview",
-    idle: "idle",
-    unpatched: "unpatched",
-}
 
 /**
  * The tally card — design-components.md §1.
@@ -38,13 +32,20 @@ const stateWord: Record<DataColor, string> = {
  * health styling is attribute-driven like the rest instead of a fourth
  * className branch.
  *
- * DEVIATION from §1.3's copy: the health words stay `connected` / `missing` /
- * `disconnected` rather than becoming CONNECTED / NOT REPORTING / NO SIGNAL.
- * `tally.spec.ts:41` asserts `cy.getTestId('tally-x').contains("missing")` and
- * that spec edit is not authorised. The uppercasing is done in CSS, so the card
- * reads the way the design intends while the DOM text is unchanged.
+ * DEVIATION from §1.3's copy: the English health words stay `connected` /
+ * `missing` / `disconnected` rather than becoming CONNECTED / NOT REPORTING /
+ * NO SIGNAL. `tally.spec.ts:41` asserts `cy.getTestId('tally-x').contains("missing")`
+ * and that spec edit is not authorised. The uppercasing is done in CSS, so the
+ * card reads the way the design intends while the DOM text is unchanged.
+ *
+ * `data-color` and `data-health` keep their ENGLISH keys in every language —
+ * they drive the styling and are read by specs. Only the rendered words come
+ * from the translation table. The uppercase/tracking pair is dropped under
+ * Korean by `latinCaps` (i18n-plan.md §6.1): on Hangul it is a silent no-op
+ * that would quietly remove the emphasis rather than break anything visible.
  */
 function Tally({ tally, className }: TallyProps) {
+    const t = useT()
     const channels = useChannels()
     const [programs, previews] = useProgramPreview()
 
@@ -70,7 +71,7 @@ function Tally({ tally, className }: TallyProps) {
             data-isactive={isActive}
             data-health={health}
             role="group"
-            aria-label={`${tally.name}, ${stateWord[dataColor]}, ${health}`}
+            aria-label={t.tally.cardLabel(tally.name, t.tally.state[dataColor], t.tally.health[health])}
             className={cn(
                 "group box-border w-[250px] overflow-hidden rounded-md border border-border bg-surface-raised text-text transition-none",
                 // state axis — fill and border only
@@ -90,16 +91,16 @@ function Tally({ tally, className }: TallyProps) {
             <div className="p-4">
                 <ChannelSelector value={tally.channelId} channels={channels} onChange={value => patchTally(tally, value)} />
             </div>
-            <div className="border-t border-border px-4 py-2 text-xs font-semibold uppercase tracking-wide group-data-[health=missing]:bg-missing group-data-[health=missing]:text-on-fill">
+            <div className={cn("border-t border-border px-4 py-2 text-xs font-semibold", latinCaps, "group-data-[health=missing]:bg-missing group-data-[health=missing]:text-on-fill")}>
                 {/* §1.4: both words, never one replacing the other. The mixer says
                   * this camera is live; the lamp is not answering. A plain red card
                   * would tell the operator the lamp is lit. */}
                 <div className="flex justify-between gap-2">
-                    <span className={cn(health === "disconnected" && "line-through")}>{stateWord[dataColor]}</span>
+                    <span className={cn(health === "disconnected" && "line-through")}>{t.tally.state[dataColor]}</span>
                     {/* grey only where it reads as grey — on a red program fill
                       * --color-disconnected has no contrast, so the on-fill colour
                       * is kept there instead */}
-                    <span className={cn(health === "disconnected" && dataColor !== "program" && "text-disconnected")}>{health}</span>
+                    <span className={cn(health === "disconnected" && dataColor !== "program" && "text-disconnected")}>{t.tally.health[health]}</span>
                 </div>
                 {tally.isUdpTally() && tally.address && tally.port && (
                     <div className="pt-0.5 text-right font-mono text-2xs font-normal normal-case tabular-nums opacity-80">{tally.address}:{tally.port}</div>

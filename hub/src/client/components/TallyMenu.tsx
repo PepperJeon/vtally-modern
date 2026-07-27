@@ -10,6 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { useT } from '../i18n'
 
 type TallyMenuProps = {
   tally: Tally
@@ -37,6 +38,7 @@ const itemClass = "min-h-11 gap-3 px-3 text-base text-text data-[disabled]:text-
  * returns in the handlers are the real enforcement; `disabled` is the hint.
  */
 function TallyMenu({ tally, className }: TallyMenuProps) {
+  const t = useT()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const allowHighlight = tally.isActive()
   const allowRemove = !tally.isConnected()
@@ -54,8 +56,8 @@ function TallyMenu({ tally, className }: TallyMenuProps) {
   return (<div data-testid={`tally-${tally.name}-menu`} className={className}>
     <DropdownMenu>
       <DropdownMenuTrigger
-        title={`${tally.name} Menu`}
-        aria-label={`${tally.name} Menu`}
+        title={t.tallyMenu.menu(tally.name)}
+        aria-label={t.tallyMenu.menu(tally.name)}
         className="flex size-11 items-center justify-center rounded-sm border-0 bg-transparent text-current hover:bg-surface-hover focus-visible:shadow-focus focus-visible:outline-none"
       >
         <MoreVertical className="size-5" />
@@ -64,7 +66,7 @@ function TallyMenu({ tally, className }: TallyMenuProps) {
         {tally.isWebTally() && (
           <DropdownMenuItem asChild data-testid={`tally-${tally.name}-web`} className={itemClass}>
             <RouterLink to={`/tally/${tally.getId()}`} className="no-underline">
-              <LinkIcon className="size-4" />Connect
+              <LinkIcon className="size-4" />{t.tallyMenu.connect}
             </RouterLink>
           </DropdownMenuItem>
         )}
@@ -78,34 +80,34 @@ function TallyMenu({ tally, className }: TallyMenuProps) {
             setTimeout(() => setSettingsOpen(true), 0)
           }}
         >
-          <SlidersHorizontal className="size-4" />Settings
+          <SlidersHorizontal className="size-4" />{t.tallyMenu.settings}
         </DropdownMenuItem>
         <DropdownMenuItem asChild data-testid={`tally-${tally.name}-logs`} className={itemClass}>
           <RouterLink to={`/tally/${tally.getId()}/log`} className="no-underline">
-            <FileText className="size-4" />Logs
+            <FileText className="size-4" />{t.tallyMenu.logs}
           </RouterLink>
         </DropdownMenuItem>
         {/* Radix kills pointer events on a disabled item, which would kill the
           * tooltip explaining *why* it is disabled. The span owns the title so
           * the explanation stays reachable (§1.7). */}
-        <span title={!allowHighlight ? "Tally is not connected" : undefined} className="block">
+        <span title={!allowHighlight ? t.tallyMenu.notConnected : undefined} className="block">
           <DropdownMenuItem
             data-testid={`tally-${tally.name}-highlight`}
             className={itemClass}
             disabled={!allowHighlight}
             onSelect={handleHighlightTally}
           >
-            <Lightbulb className="size-4" />Highlight
+            <Lightbulb className="size-4" />{t.tallyMenu.highlight}
           </DropdownMenuItem>
         </span>
-        <span title={!allowRemove ? "Connected Tallies can not be removed" : undefined} className="block">
+        <span title={!allowRemove ? t.tallyMenu.cannotRemoveConnected : undefined} className="block">
           <DropdownMenuItem
             data-testid={`tally-${tally.name}-remove`}
             className={itemClass}
             disabled={!allowRemove}
             onSelect={handleRemoveTally}
           >
-            <Trash2 className="size-4" />Remove
+            <Trash2 className="size-4" />{t.tallyMenu.remove}
           </DropdownMenuItem>
         </span>
       </DropdownMenuContent>

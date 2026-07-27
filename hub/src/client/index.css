@@ -341,3 +341,19 @@
     color: rgba(11, 14, 17, 0.7) !important;
   }
 }
+
+/* Korean line breaking. CSS's default `word-break: normal` is free to break a
+ * Korean line between any two syllable blocks, which is legal but reads as
+ * broken typesetting — Korean wants breaks at word boundaries. `keep-all` only
+ * changes CJK behaviour, so Latin text under lang=ko (product names, IPs) is
+ * untouched, and `overflow-wrap: anywhere` keeps a long unbreakable token from
+ * overflowing its box now that the default break point is gone.
+ *
+ * Global rather than a utility on each prose block: it is correct for every
+ * piece of Korean text on every route, and decorating N components with the
+ * same pair would only create N places to forget it.
+ * docs/design/i18n-plan.md §6.4. */
+:lang(ko) {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}

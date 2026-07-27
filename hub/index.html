@@ -8,7 +8,14 @@
   match and so a future *dimmer* has somewhere to hang, not so a theme can be
   switched.
 -->
-<html lang="en" data-theme="dark">
+<!--
+  lang is the app's DEFAULT (Korean), not a fixed value: src/client/i18n
+  rewrites it on boot and on every language switch, because it is what screen
+  readers pick pronunciation from and what the `:lang(ko)` rules in
+  index.css / lib/utils.ts match on. It is unrelated to the data-theme note
+  above — do not treat that comment as covering this attribute.
+-->
+<html lang="ko" data-theme="dark">
   <head>
     <meta charset="utf-8" />
     <link rel="alternate icon" type="image/png" href="/favicon.png">
@@ -29,10 +36,15 @@
       Paths above are absolute. Vite serves everything under publicDir from the
       site root, so CRA's %PUBLIC_URL% placeholder is no longer needed.
     -->
-    <title>vTally Hub</title>
+    <title>vTally 허브</title>
   </head>
   <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <!--
+      Both languages, Korean first. This is the one string that cannot be
+      swapped at runtime — JavaScript is off when it is read — so it cannot go
+      through the i18n table like everything else (i18n-plan.md §5).
+    -->
+    <noscript>이 앱을 사용하려면 JavaScript를 활성화해야 합니다. / You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
     <script type="module" src="/src/client/main.tsx"></script>
   </body>

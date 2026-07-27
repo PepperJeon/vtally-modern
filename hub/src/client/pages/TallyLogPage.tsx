@@ -7,6 +7,7 @@ import { NativeSelect } from '@/components/ui/native-select'
 import useTallyLog from '../hooks/useTallyLog'
 import useTallies from '../hooks/useTallies'
 import LogType from '../../shared/domain/Log'
+import { useT } from '../i18n'
 
 type SeverityName = "info" | "status" | "warning" | "error"
 
@@ -105,6 +106,7 @@ const filters = {
 type FilterName = keyof typeof filters
 
 const TallyLogPage = () => {
+  const t = useT()
   const { tallyId } = useParams<{ tallyId: string }>()
   const logs = useTallyLog(tallyId)
   const tallies = useTallies()
@@ -164,21 +166,21 @@ const TallyLogPage = () => {
   const controls = (
     <div className="flex flex-wrap items-center gap-2">
       <NativeSelect
-        aria-label="Severity filter"
+        aria-label={t.log.severityFilter}
         data-testid="log-filter"
         className="h-9 w-auto text-sm"
         value={filter}
         onChange={e => setFilter(e.target.value as FilterName)}
       >
-        <option value="all">All</option>
-        <option value="problems">Warnings &amp; errors</option>
-        <option value="errors">Errors</option>
+        <option value="all">{t.log.filterAll}</option>
+        <option value="problems">{t.log.filterProblems}</option>
+        <option value="errors">{t.log.filterErrors}</option>
       </NativeSelect>
       <input
         type="search"
-        aria-label="Search log messages"
+        aria-label={t.log.searchLabel}
         data-testid="log-search"
-        placeholder="Search…"
+        placeholder={t.log.searchPlaceholder}
         value={search}
         onChange={e => setSearch(e.target.value)}
         className="h-9 w-44 rounded-sm border border-n-600 bg-n-900 px-3 font-sans text-sm text-text placeholder:text-n-500 focus-visible:border-border-strong focus-visible:shadow-focus focus-visible:outline-none"
@@ -189,8 +191,8 @@ const TallyLogPage = () => {
   const title = tallies === undefined
     ? undefined
     : tally
-      ? `${tally.name} · Logs`
-      : "Logs"
+      ? t.log.title(tally.name)
+      : t.log.titleNoTally
 
   return (
     <Layout testId="tally-log">
@@ -214,22 +216,24 @@ const TallyLogPage = () => {
               </div>
             ) : tallies !== undefined && !tally ? (
               <p className="p-6 text-center text-text-muted">
-                Tally “{tallyId}” was not found. It may have been removed.{" "}
-                <a href="/" className="text-text underline underline-offset-2">Back to the tally list</a>
+                {t.log.tallyNotFound(tallyId, text => (
+                  <a href="/" className="text-text underline underline-offset-2">{text}</a>
+                ))}
               </p>
             ) : total === 0 ? (
               <p className="p-6 text-center text-text-muted">
-                No log entries yet.<br />
-                Entries appear as the tally connects, reports state, or fails.
+                {t.log.noEntries}<br />
+                {t.log.noEntriesHint}
               </p>
             ) : visible.length === 0 ? (
               <p className="p-6 text-center text-text-muted">
-                No lines match the current filter.{" "}
-                <button
-                  type="button"
-                  className="text-text underline underline-offset-2 focus-visible:shadow-focus focus-visible:outline-none"
-                  onClick={() => { setFilter("all"); setSearch("") }}
-                >Clear filters</button>
+                {t.log.noMatch(text => (
+                  <button
+                    type="button"
+                    className="text-text underline underline-offset-2 focus-visible:shadow-focus focus-visible:outline-none"
+                    onClick={() => { setFilter("all"); setSearch("") }}
+                  >{text}</button>
+                ))}
               </p>
             ) : (
               visible.map(({ log, idx }) => <Log key={idx} log={log} idx={idx} needle={search.trim()} />)
@@ -240,12 +244,12 @@ const TallyLogPage = () => {
               type="button"
               onClick={jumpToLatest}
               className="absolute bottom-3 right-4 rounded-full bg-white px-3 py-1 text-sm font-medium text-n-950 shadow-overlay focus-visible:shadow-focus focus-visible:outline-none"
-            >↓ {unread} new</button>
+            >{t.log.newCount(unread)}</button>
           )}
         </div>
         {/* A filter that hides information has to say how much. */}
         <div className="border-t border-border px-4 py-2 text-sm tabular-nums text-text-muted">
-          {total} {total === 1 ? "line" : "lines"}{isFiltering && ` · showing ${visible.length}`}
+          {t.log.lineCount(total)}{isFiltering && t.log.showingCount(visible.length)}
         </div>
       </MiniPage>
     </Layout>

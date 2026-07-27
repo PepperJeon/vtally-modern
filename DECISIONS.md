@@ -70,6 +70,46 @@ Two categories of allowed spec edits — do not conflate them.
 vTally is **MIT** — verified three independent ways (GitHub API `license.spdx_id`, the actual `LICENSE` file text, and the lost v1.0.0 `hub/package.json`'s `"license": "MIT"` field). `RedyAu/multitally` is **GPL-3.0** — confirmed via both the API and the actual `LICENSE` file (the API-only check on this repo initially, wrongly, reported GPL-3.0 for a different repo, which is why both were cross-checked here specifically). **Read multitally for Feelworld Open API protocol facts (endpoints, message shapes) only. Never copy, port, or closely paraphrase its source** — that would force the derived work to GPL-3.0 against an MIT codebase that's sold commercially via tallylite-web. If in doubt whether something is "close enough" to count as derivative, stop and ask — don't decide alone. Every other repo surveyed (`wifi-tally` upstream + 4 forks, `bitfocus/companion-module-obs-studio`) is MIT and freely reusable. *(ecosystem-survey.md)*
 - **Fixed**: `hub/package.json` now carries `"license": "MIT"` (previously absent, npm defaulted it to UNLICENSED).
 
+## Localisation
+
+Korean is the default language; English is detected from the browser or chosen
+from the nav toggle and persisted in `localStorage['vtally.lang']`. Strings live
+in `hub/src/client/i18n/`, where `en.tsx` **is** the type (`Translations = typeof en`)
+— so a key missing from `ko.tsx` is a `tsc` error, not a runtime fallback, and
+no operator can ever be shown a raw key. No i18n library: ~130 strings, two
+languages, two English plural sites, and an app that must work offline. Full
+reasoning and the conditions that would justify i18next in
+`docs/design/i18n-plan.md` §2.
+
+- **The suite is pinned to English**, from `cypress/support/e2e.ts` and
+  `src/client/setupTests.ts`, so the default could flip without touching any of
+  the 22 Cypress + 7 Vitest assertions that read English copy. Zero spec edits.
+  `cypress/e2e/i18n.spec.ts` covers what the pin stops covering. This is
+  authorised in `docs/design/spec-changes.md` §3.2, under the §3.0 rule that the
+  spec boundary binds on **effect, not file path** — a rule added because this
+  work found the gap.
+
+- **Server and firmware log text is deliberately NOT translated, and
+  `tally-logs.spec.ts` depends on that.** Lines 44 and 46 assert the literal
+  English strings `"Tally got missing"` and `"Tally got disconnected"`, which
+  come from `hub/src/server/tally/UdpTallyDriver.ts:74,80`. They are not
+  reachable from the i18n tables and the locale pin does not protect them —
+  the pin only controls the *client's* language.
+
+  **So: the day anyone localises server output, that spec goes red.** That is
+  the intended behaviour and it should be read as the design working, not as a
+  broken test to repair by loosening the assertion. Before touching those two
+  strings, read `docs/design/i18n-plan.md` §4.1: translating them is not a
+  4-string job. The hub authors only 4 log lines; every other log line is
+  free text sent over UDP by the tally firmware (`tally/src/my-log.lua` →
+  `my-tally.lua:98`) and reconstructed verbatim by
+  `shared/tally/CommandParser.ts:66`. Doing it properly means changing the wire
+  format to a message id plus params, versioning the UDP protocol so a new hub
+  still reads logs from already-flashed devices in the field, translating the
+  Lua, and reflashing hardware. That is a protocol change and a firmware
+  release, to translate a diagnostic view whose readers are also reading
+  English GitHub issues and English firmware source.
+
 ## Known bugs — recently closed
 
 The entries below are fixed and kept, not deleted, so a design doc still describing them as open reads correctly against history. The last two were fixed in Phase 2d (`768416c`, `7759e4b`).

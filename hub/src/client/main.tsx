@@ -1,6 +1,7 @@
 import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './App';
+import { detectLang, setLanguage } from './i18n';
 
 // No <React.StrictMode>. It is incompatible with react-router v5 from React 18
 // onwards, and React 19 is where that stopped being theoretical:
@@ -23,4 +24,10 @@ import App from './App';
 // dev-only breakage of all navigation is not a survivable trade. The two real
 // fixes are "drop StrictMode" and "migrate to react-router v6+"; the router
 // migration is deliberately not part of this commit, so it is this one.
+// Before the first render: setLanguage() writes <html lang>, which index.html
+// can only guess statically, and it is what a screen reader reads pronunciation
+// from. Also re-persists the detected choice, so a browser-detected language
+// survives as an explicit preference.
+setLanguage(detectLang());
+
 createRoot(document.getElementById('root')!).render(<App />);

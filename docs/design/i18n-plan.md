@@ -13,6 +13,38 @@ built around that split.
 
 ## 1. Spec compatibility — settled first, because nothing else can land until it is
 
+### 1.0 Correction to §1.1's count, found during implementation
+
+**§1.1 below undercounts by six.** Its grep covered `cy.contains` /
+`should('contain'` / `.contains(` / `have.text` — the assertion styles — and
+missed a *selector* style that is equally text-coupled: `.select()` matching an
+`<option>` by its label.
+
+```
+webtally.spec.ts:47   .select("Channel 1")
+webtally.spec.ts:56   .select("Channel 1")
+tally.spec.ts:65      .select("Channel 1")
+tally.spec.ts:70      .select("(unpatched)")
+tally.spec.ts:115     .select("Channel 1")
+tally.spec.ts:120     .select("(unpatched)")
+```
+
+Cypress's `.select()` accepts a value *or* a label, and these six pass the
+label. Both strings are `ChannelSelector.tsx` copy, so all six break on a naive
+Korean flip exactly like the sixteen in §1.1.
+
+**Corrected totals: 22 automated Cypress + 7 Vitest = 29**, plus the 2
+hardware-only sites. The strategy is unaffected — the locale pin covers a
+label-matching `.select()` identically to a `contains()` — but the number in
+§1.1 was wrong and is left there with this correction above it rather than
+quietly edited.
+
+Two `.select()` families are **not** at risk and were checked rather than
+assumed: the mixer dropdown (`select('obs')`, `select('atem')`, …) and the OBS
+live-mode dropdown (`select('record')`, `select('always')`, …) both select by
+**value**, so their labels are free to be translated. That is why
+`i18n/en.tsx`'s `mixers` and `obs.liveMode` tables exist at all.
+
 ### 1.1 The real count
 
 `grep -rn "cy\.contains\|should('contain\|should(\"contain\|\.contains(\|have\.text" hub/cypress/` returns **67 hits**. One
