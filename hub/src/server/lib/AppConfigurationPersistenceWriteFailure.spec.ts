@@ -21,7 +21,8 @@ test('a failed debounced write is logged, not left as an unhandled rejection', a
     const config = new AppConfiguration(emitter)
     // a path whose parent directory does not exist: writeFile rejects, the same
     // way it does on a read-only or full filesystem
-    new AppConfigurationPersistence(config, emitter, "/tmp/this/dir/does/not/exist/config.json")
+    const configFile = "/tmp/this/dir/does/not/exist/config.json"
+    new AppConfigurationPersistence(config, emitter, configFile)
 
     const rejections: unknown[] = []
     const onUnhandled = (reason: unknown) => { rejections.push(reason) }
@@ -37,6 +38,9 @@ test('a failed debounced write is logged, not left as an unhandled rejection', a
     }
 
     expect(rejections).toEqual([])
-    // and it is not swallowed silently either
-    expect(logged.some(call => JSON.stringify(call).includes("error when saving file"))).toBe(true)
+    // and it is not swallowed silently either. Anchored on the file path, which this
+    // test controls, rather than on save()'s message prose, which it does not:
+    // otherwise tidying the wording in save() turns this red for a reason that has
+    // nothing to do with what it guards.
+    expect(logged.some(call => JSON.stringify(call).includes(configFile))).toBe(true)
 })
