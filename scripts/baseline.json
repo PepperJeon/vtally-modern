@@ -3,7 +3,7 @@
   "unit_suites_total": 37,
   "unit_tests_passed": 407,
   "unit_tests_total": 413,
-  "cypress_passed": 61,
+  "cypress_passed": 62,
   "cypress_total": 81,
   "cypress_failed": 2
 }

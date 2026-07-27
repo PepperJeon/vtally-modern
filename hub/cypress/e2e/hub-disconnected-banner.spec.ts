@@ -13,10 +13,12 @@
 // in this directory. Run with one of those; it is a no-op / errors under
 // Firefox or WebKit.
 //
-// The banner itself has no data-testid (IndexPage.tsx line ~93, only reachable
-// via cy.contains) — a `data-testid="hub-disconnected-banner"` on the <Alert>
-// would make this more robust than text matching. Noted as owed, not added
-// here (no source changes in this task).
+// The banner now carries `data-testid="hub-disconnected-banner"` and this spec
+// selects on it. The debt this pays off was real: the previous
+// `cy.contains('Hub disconnected')` is case-sensitive and the banner renders
+// its copy through `uppercase` in CSS, so the DOM text and the rendered text
+// are not the same string. That worked only by accident of where the casing
+// was applied.
 
 const goOffline = () => cy.window().then(win => {
   return Cypress.automation('remote:debugger:protocol', {
@@ -48,22 +50,37 @@ describe('Hub disconnected banner', () => {
     cy.visit('/')
     cy.getTestId('page-index')
     cy.getTestId('hub-connected').contains('1')
-    cy.contains('Hub disconnected').should('not.exist')
+    cy.getTestId('hub-disconnected-banner').should('not.exist')
 
     goOffline()
     cy.getTestId('hub-connected').contains('0')
-    cy.contains('Hub disconnected').should('exist')
+    cy.getTestId('hub-disconnected-banner').should('exist')
 
     goOnline()
     cy.getTestId('hub-connected').contains('1')
-    cy.contains('Hub disconnected').should('not.exist')
+    cy.getTestId('hub-disconnected-banner').should('not.exist')
   })
 
-  // UNRESOLVED (per team-lead): fails reproducibly. CDP's Network.emulateNetworkConditions
-  // ('offline': true/false) doesn't reliably re-interrupt an already-established
-  // socket.io WebSocket the second time it's used against the same page — root
-  // cause not yet identified. Real finding, not noise; keep documented here for
-  // Phase 3 rather than deleting the coverage.
+  // RESOLVED. This comment used to read "UNRESOLVED: fails reproducibly ...
+  // CDP doesn't reliably re-interrupt an already-established socket.io
+  // WebSocket the second time". That was one sample of a race being written
+  // down as a reproducible property, and it pointed at the wrong subsystem —
+  // which is the worse half of the mistake, because the next person would have
+  // gone hunting in CDP.
+  //
+  // Neither test failed reproducibly and neither test's failure was about CDP.
+  // Both shared one precondition — the app must be showing "hub connected"
+  // before the outage is simulated — and `useSocketInfo()` only met it when it
+  // won a startup race against the socket.io handshake. Whichever test
+  // happened to lose it that run was the one that "failed reproducibly":
+  // measured 2/2, 2/2, 1/2 across Electron runs, and under Chrome it was the
+  // FIRST test that failed while this one passed. Cypress won the race by
+  // ~12ms (subscribe 341ms, connect 353ms) because it proxies AUT traffic;
+  // plain Chromium lost it by 45ms and stuck 8/8.
+  //
+  // Fixed in useSocketInfo.ts by re-reading socket.connected after
+  // subscribing. Both tests are deterministic now — if either starts flaking
+  // again, suspect that precondition first, not the CDP calls.
   it('keeps already-loaded tally data visible (stale, not blank) during the outage', () => {
     cy.visit('/')
     cy.getTestId('page-index')
@@ -72,14 +89,14 @@ describe('Hub disconnected banner', () => {
       cy.getTestId('tally-stale-during-outage').should('exist')
 
       goOffline()
-      cy.contains('Hub disconnected').should('exist')
+      cy.getTestId('hub-disconnected-banner').should('exist')
       // the row must still be there — the gap this guards against is the banner
       // implementation accidentally clearing tally state instead of just
       // overlaying a warning
       cy.getTestId('tally-stale-during-outage').should('exist')
 
       goOnline()
-      cy.contains('Hub disconnected').should('not.exist')
+      cy.getTestId('hub-disconnected-banner').should('not.exist')
     })
   })
 })

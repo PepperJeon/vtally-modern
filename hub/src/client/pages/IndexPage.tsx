@@ -110,7 +110,7 @@ const IndexPage = () => {
         * Amber, not red — a red band across the tally screen reads as "on air"
         * in peripheral vision (tokens §2.2). */}
       { !isHubConnected && (
-        <div role="alert" className="-mx-4 mb-4 border-t-[3px] border-missing bg-surface px-4 py-3">
+        <div data-testid="hub-disconnected-banner" role="alert" className="-mx-4 mb-4 border-t-[3px] border-missing bg-surface px-4 py-3">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
             <AlertTriangle aria-hidden className="size-5 shrink-0 text-missing" />
             <div className="flex-1">
