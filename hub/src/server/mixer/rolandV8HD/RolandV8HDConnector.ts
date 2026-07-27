@@ -17,6 +17,7 @@ class RolandV8HDConnector implements Connector {
     midi_input: any
     midi_output: any
     input_status: number[]
+    watchdog: NodeJS.Timeout | null
 
     constructor(configuration: RolandV8HDConfiguration, communicator: MixerCommunicator) {
         this.configuration = configuration
@@ -25,6 +26,37 @@ class RolandV8HDConnector implements Connector {
         this.interval = null
         this.midi = midi
         this.input_status = [0,0,0,0,0,0,0,0]
+        this.watchdog = null
+    }
+
+    // Same mechanism as FeelworldConnector (:81-84, :108-131): this connector also
+    // polls and expects an answer, so a poll that goes unanswered is the loss signal.
+    // Without it, unplugging the V-8HD's USB cable left isConnected() true forever and
+    // every tally frozen on its last state, with nothing reporting anything wrong.
+    private timeoutMs(): number {
+        return Math.max(1500, this.configuration.getRequestInterval() * 3)
+    }
+
+    private markConnected() {
+        if (!this.connected) {
+            this.connected = true
+            this.communicator.notifyMixerIsConnected()
+        }
+    }
+
+    private markDisconnected() {
+        if (this.connected) {
+            this.connected = false
+            this.communicator.notifyMixerIsDisconnected()
+        }
+    }
+
+    private armWatchdog() {
+        if (this.watchdog) { clearTimeout(this.watchdog) }
+        this.watchdog = setTimeout(() => {
+            console.error("No answer from the Roland V-8HD - treating the connection as lost.")
+            this.markDisconnected()
+        }, this.timeoutMs())
     }
 
     connect() {
@@ -58,6 +90,9 @@ class RolandV8HDConnector implements Connector {
 
         // Callback Method for Midi Input
         this.midi_input.on('message', (deltaTime, message) => {
+          // any inbound message means the device is still there
+          this.markConnected()
+          this.armWatchdog()
           //Check tally parameter area
           if(message[8] === 12){
         		// hdmi input id in byte 11
@@ -76,10 +111,12 @@ class RolandV8HDConnector implements Connector {
         this.interval = setInterval(this.checkRolandV8HDStatus, this.configuration.getRequestInterval(), this.communicator, this.midi_output)
 
         if(this.midi_input.isPortOpen() && this.midi_output.isPortOpen()){
-          this.connected = true
-          this.communicator.notifyMixerIsConnected()
+          this.markConnected()
+          this.armWatchdog()
         }else{
           console.log(`Cannot connect with RolandV8HD V-8HD. Please check connection and try again.`)
+          // no port, no device: say so instead of leaving the pill on its last value
+          this.communicator.notifyMixerIsDisconnected()
         }
     }
 
@@ -118,9 +155,16 @@ class RolandV8HDConnector implements Connector {
     disconnect() {
       //clean interval
       clearInterval(this.interval);
+      if (this.watchdog) {
+        clearTimeout(this.watchdog)
+        this.watchdog = null
+      }
       console.log(`RolandV8HD V-8HD connection closed`);
-      this.midi_output.closePort()
-      this.midi_input.closePort()
+      // optional chaining, not a bare call: connect() throws before assigning these
+      // if the native midi binding fails to load, and MixerDriver.changeMixer has no
+      // catch - a TypeError here would take the hub down on the next mixer switch.
+      this.midi_output?.closePort()
+      this.midi_input?.closePort()
       this.connected = false
       this.communicator.notifyMixerIsDisconnected()
       return true
