@@ -2,6 +2,11 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import ObsConnector from './ObsConnector'
 import FakeObs from './FakeObs'
 import ObsConfiguration, { ObsConfigurationLiveMode } from '../../../shared/mixer/obs/ObsConfiguration'
+import { EventEmitter } from 'events'
+import { MixerCommunicator } from '../../lib/MixerCommunicator'
+import { AppConfiguration } from '../../lib/AppConfiguration'
+import CommandCreator from '../../../shared/tally/CommandCreator'
+import { UdpTally } from '../../../shared/domain/Tally'
 
 /**
  * Polls until the predicate holds, or throws. Deliberately not the old helper:
@@ -133,6 +138,44 @@ describe('ObsConnector', () => {
             await waitUntil(() => communicator.isConnected === false, "a disconnect notification")
             await waitUntil(() => connector.isConnected(), "a reconnect", 5000)
             await waitForPrograms(["Scene 2"])
+        })
+
+        // The regression guard for the bug above it: 'reconnects and resyncs after
+        // the socket dies' asserts the disconnect notification and the *post*-reconnect
+        // programs, and passes either way, because it never looks at program state
+        // *during* the outage. This one does, against the real MixerCommunicator
+        // (MockCommunicator cannot see the fix - it lives in the communicator), and
+        // asserts what the tally is actually told.
+        test('tells every patched tally "unknown" while the mixer connection is down', async () => {
+            vi.spyOn(console, 'error').mockImplementation(() => {})
+            const emitter = new EventEmitter()
+            const appConfiguration = new AppConfiguration(emitter as any)
+            appConfiguration.save = async () => {}
+            const communicator = new MixerCommunicator(appConfiguration, emitter as any)
+
+            fake.scenes = [{ sceneName: "Scene 1" }, { sceneName: "Scene 2" }]
+            fake.programScene = "Scene 1"
+            configuration = new ObsConfiguration()
+            configuration.setIp("127.0.0.1")
+            configuration.setPort(fake.port)
+            connector = new ObsConnector(configuration, communicator)
+
+            connector.connect()
+            await waitUntil(() => same(communicator.getCurrentPrograms(), ["Scene 1"]), "the initial program list")
+
+            const live = new UdpTally("cam1", "Scene 1")
+            const standby = new UdpTally("cam2", "Scene 2")
+            const state = (tally: UdpTally) =>
+                CommandCreator.getState(tally, communicator.getCurrentPrograms(), communicator.getCurrentPreviews())
+            expect(state(live)).toEqual("on-air")
+            expect(state(standby)).toEqual("release")
+
+            fake.killSocket()
+            await waitUntil(() => communicator.isConnected === false, "a disconnect notification")
+
+            expect(communicator.getCurrentPrograms()).toEqual(null)
+            expect(state(live)).toEqual("unknown")
+            expect(state(standby)).toEqual("unknown")
         })
 
         test('does not reconnect after a deliberate disconnect', async () => {
