@@ -1,0 +1,821 @@
+<!doctype html>
+<html lang="ko" data-theme="dark" data-lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>vTally v2 — 탈리 그리드</title>
+<style>
+/* ═══════════════════════════════════════════════════════════════════
+   vTally v2 — "Instrument" direction
+   Tokens. Dark is the default; light is a full sibling, not a filter.
+   ═══════════════════════════════════════════════════════════════════ */
+
+:root, [data-theme="dark"] {
+  color-scheme: dark;
+
+  --n-950:#0B0E11; --n-900:#12161A; --n-850:#171C21; --n-800:#1E242B;
+  --n-700:#2A323B; --n-600:#3A444F; --n-500:#6B7787; --n-400:#8A98A8;
+  --n-300:#A3B0BD; --n-200:#C7D0D9; --n-100:#E3E8ED;
+
+  --bg:            #0B0E11;
+  --bg-elev:       #101419;
+  --surface:       #12161A;
+  --surface-hover: #171C21;
+  --raised:        #1B2127;
+  --sunken:        #0E1216;
+  --border:        #232B33;
+  --border-strong: #37414C;
+  --text:          #E3E8ED;
+  --text-muted:    #8A98A8;
+  --text-subtle:   #6B7787;
+
+  /* the anodised edge — what makes a surface read as built, not boxed */
+  --edge:      inset 0 1px 0 rgb(255 255 255 / .045);
+  --edge-soft: inset 0 1px 0 rgb(255 255 255 / .028);
+  --lift:      0 1px 2px rgb(0 0 0 / .40), 0 8px 24px -12px rgb(0 0 0 / .60);
+  --overlay:   0 8px 24px -4px rgb(0 0 0 / .6), 0 2px 6px -2px rgb(0 0 0 / .5);
+
+  /* tally state — safety critical */
+  --live:         #FF3B30;
+  --live-text:    #FF6257;
+  --live-deep:    #B3261E;   /* rail/edge under a live fill */
+  --preview:      #34D07A;
+  --idle:         #6B7787;
+  --unpatched:    #4C8DFF;
+  --disconnected: #8A98A8;
+  --missing:      #FFB020;
+  --highlight:    #FFFFFF;
+  --on-fill:      #0B0E11;   /* text on any state fill */
+
+  --focus: 0 0 0 2px var(--bg), 0 0 0 4px #FFFFFF;
+  --grid-line: rgb(255 255 255 / .022);
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+
+  --bg:            #F6F7F9;
+  --bg-elev:       #FFFFFF;
+  --surface:       #FFFFFF;
+  --surface-hover: #F1F3F6;
+  --raised:        #FFFFFF;
+  --sunken:        #EDEFF3;
+  --border:        #E2E6EB;
+  --border-strong: #C3CAD3;
+  --text:          #111820;
+  --text-muted:    #5B6774;
+  --text-subtle:   #78838F;
+
+  --edge:      inset 0 1px 0 rgb(255 255 255 / 1);
+  --edge-soft: inset 0 1px 0 rgb(255 255 255 / 1);
+  --lift:      0 1px 2px rgb(16 24 40 / .05), 0 8px 24px -14px rgb(16 24 40 / .18);
+  --overlay:   0 12px 32px -8px rgb(16 24 40 / .18), 0 2px 6px -2px rgb(16 24 40 / .08);
+
+  /* Recomputed, not inverted. Fills go DEEP and carry white text. */
+  --live:         #C4291E;
+  --live-text:    #A81F17;
+  --live-deep:    #8E1C13;
+  --preview:      #0E7040;
+  --idle:         #6B7787;   /* theme-invariant pivot: 4.25:1 on both pages */
+  --unpatched:    #2563EB;
+  --disconnected: #5B6774;
+  --missing:      #B45309;
+  --highlight:    #0B0E11;   /* locate flashes BLACK on a light page */
+  --on-fill:      #FFFFFF;
+
+  --focus: 0 0 0 2px var(--bg), 0 0 0 4px #111820;
+  --grid-line: rgb(16 24 40 / .028);
+}
+
+/* ── type ───────────────────────────────────────────────────────── */
+:root {
+  --sans: Pretendard, "Pretendard Variable", Inter, -apple-system,
+          "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic",
+          "Segoe UI", Roboto, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --t-2xs:.6875rem; --t-xs:.75rem;  --t-sm:.8125rem; --t-md:.875rem;
+  --t-base:1rem;    --t-lg:1.125rem;--t-xl:1.3125rem;--t-2xl:1.625rem;
+  --t-3xl:2rem;
+
+  --tight:-.02em; --wide:.075em;
+
+  --r-xs:3px; --r-sm:6px; --r-md:10px; --r-lg:14px; --r-full:9999px;
+
+  --fast:110ms; --base:170ms;
+  --ease:cubic-bezier(.2,0,0,1);
+}
+@media (prefers-reduced-motion: reduce){ :root{ --fast:0ms; --base:0ms; } }
+
+*,*::before,*::after{ box-sizing:border-box; }
+html,body{ height:100%; }
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--sans);
+  font-size:var(--t-base);
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+  font-feature-settings:"tnum" 1,"ss01" 1;
+  transition:background var(--base) var(--ease), color var(--base) var(--ease);
+}
+
+/* Korean needs a touch more leading than Latin at the same size —
+   no descender rhythm to ride on. */
+[data-lang="ko"] body{ line-height:1.62; letter-spacing:-.003em; }
+
+/* language swap: one string, two spellings, zero JS per node */
+[data-lang="ko"] .en,[data-lang="en"] .ko{ display:none; }
+
+/* ═════ page frame ═════ */
+.app{ min-height:100%; display:flex; flex-direction:column; }
+
+/* the faint machined grid — identity without hue */
+.app::before{
+  content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background:
+    linear-gradient(var(--grid-line) 1px, transparent 1px) 0 0/100% 88px,
+    linear-gradient(90deg,var(--grid-line) 1px, transparent 1px) 0 0/88px 100%;
+  mask-image:radial-gradient(120% 80% at 50% 0%, #000 30%, transparent 78%);
+}
+.app > *{ position:relative; z-index:1; }
+
+/* ── nav ── */
+.nav{
+  height:56px; display:flex; align-items:center; gap:2px;
+  padding:0 20px;
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  box-shadow:var(--edge);
+}
+.brand{
+  display:flex; align-items:center; gap:9px;
+  margin-right:22px; font-weight:680;
+  font-size:var(--t-md); letter-spacing:var(--tight);
+}
+.brand .glyph{
+  width:22px; height:22px; border-radius:var(--r-xs);
+  background:var(--text); color:var(--bg);
+  display:grid; place-items:center; font-size:11px; font-weight:800;
+  letter-spacing:0;
+}
+.nav a{
+  display:inline-flex; align-items:center; height:34px; padding:0 11px;
+  border-radius:var(--r-sm); color:var(--text-muted);
+  text-decoration:none; font-size:var(--t-md); font-weight:520;
+  transition:color var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+.nav a:hover{ color:var(--text); background:var(--surface-hover); }
+.nav a[aria-current]{ color:var(--text); background:var(--surface-hover); box-shadow:var(--edge-soft); }
+.nav-end{ margin-left:auto; display:flex; align-items:center; gap:6px; }
+
+.chip-btn{
+  height:32px; padding:0 10px; display:inline-flex; align-items:center; gap:6px;
+  font:inherit; font-size:var(--t-xs); font-weight:600; letter-spacing:.02em;
+  color:var(--text-muted); background:transparent;
+  border:1px solid var(--border); border-radius:var(--r-sm);
+  cursor:pointer; transition:all var(--fast) var(--ease);
+}
+.chip-btn:hover{ color:var(--text); border-color:var(--border-strong); background:var(--surface-hover); }
+.chip-btn:focus-visible{ outline:none; box-shadow:var(--focus); }
+
+/* ═════ status rail — the density + identity move ═════ */
+.rail{
+  display:flex; align-items:stretch; gap:0;
+  background:var(--bg-elev);
+  border-bottom:1px solid var(--border);
+  box-shadow:var(--edge-soft);
+  overflow-x:auto; scrollbar-width:none;
+}
+.rail::-webkit-scrollbar{ display:none; }
+.rail-cell{
+  padding:9px 18px; display:flex; flex-direction:column; gap:2px;
+  border-right:1px solid var(--border); min-width:max-content; flex:0 0 auto;
+}
+.rail-cell:last-child{ border-right:0; }
+.rail-k{
+  font-size:var(--t-2xs); font-weight:640; letter-spacing:var(--wide);
+  text-transform:uppercase; color:var(--text-subtle);
+}
+.rail-v{
+  font-size:var(--t-md); font-weight:600; letter-spacing:var(--tight);
+  display:flex; align-items:center; gap:7px; white-space:nowrap;
+}
+.rail-v .mono{ font-family:var(--mono); font-size:var(--t-sm); font-weight:500; color:var(--text-muted); }
+
+.dot{ width:7px; height:7px; border-radius:var(--r-full); flex:0 0 auto; }
+.dot.ok{ background:var(--preview); }
+.dot.warn{ background:var(--missing); }
+.dot.dead{ background:var(--missing); box-shadow:0 0 0 1px var(--missing); background:transparent; position:relative; }
+.dot.dead::after{
+  content:""; position:absolute; inset:-1px; border-radius:inherit;
+  background:linear-gradient(45deg,transparent 44%,var(--missing) 44%,var(--missing) 56%,transparent 56%);
+}
+
+/* program bus — every channel, live at a glance, no card parsing */
+.bus{ flex:1 1 auto; min-width:260px; }
+.bus-row{ display:flex; gap:4px; padding-top:3px; }
+.bus-ch{
+  width:26px; height:22px; border-radius:var(--r-xs);
+  display:grid; place-items:center;
+  font-size:var(--t-2xs); font-weight:700; font-family:var(--mono);
+  background:var(--sunken); color:var(--text-subtle);
+  border:1px solid var(--border);
+}
+.bus-ch[data-s="program"]{ background:var(--live); border-color:var(--live); color:var(--on-fill); }
+.bus-ch[data-s="preview"]{ background:transparent; border-color:var(--preview); color:var(--preview); border-width:2px; }
+
+/* ═════ hub-down banner ═════ */
+.banner{ display:none; }
+[data-hub="down"] .banner{
+  display:flex; gap:14px; align-items:flex-start;
+  padding:14px 20px 16px;
+  background:var(--surface);
+  border-top:3px solid var(--missing);
+  border-bottom:1px solid var(--border);
+}
+.banner-i{
+  width:22px; height:22px; flex:0 0 auto; color:var(--missing);
+  margin-top:1px;
+}
+.banner h2{
+  margin:0 0 2px; font-size:var(--t-md); font-weight:700;
+  letter-spacing:var(--wide); text-transform:uppercase; color:var(--missing);
+}
+.banner p{ margin:0; font-size:var(--t-md); color:var(--text-muted); }
+.banner .act{ margin-left:auto; align-self:center; }
+
+/* ═════ page body ═════ */
+.page{ width:100%; max-width:1560px; margin:0 auto; padding:22px 20px 64px; flex:1; }
+
+.toolbar{
+  display:flex; justify-content:space-between; align-items:center;
+  gap:14px; flex-wrap:wrap; margin-bottom:18px;
+}
+.filters{ display:flex; gap:7px; }
+.toggle{
+  height:34px; padding:0 12px 0 10px;
+  display:inline-flex; align-items:center; gap:7px;
+  font:inherit; font-size:var(--t-md); font-weight:520;
+  color:var(--text-muted); background:transparent;
+  border:1px solid var(--border); border-radius:var(--r-sm);
+  cursor:pointer; transition:all var(--fast) var(--ease);
+}
+.toggle:hover{ border-color:var(--border-strong); color:var(--text); }
+.toggle:focus-visible{ outline:none; box-shadow:var(--focus); }
+.toggle[aria-pressed="true"]{
+  color:var(--text); background:var(--surface-hover);
+  border-color:var(--border-strong); box-shadow:var(--edge-soft);
+}
+.toggle .tick{ width:14px; height:14px; opacity:0; flex:0 0 auto; }
+.toggle[aria-pressed="true"] .tick{ opacity:1; }
+
+.count{ font-size:var(--t-md); color:var(--text-subtle); font-variant-numeric:tabular-nums; }
+.count b{ color:var(--text); font-weight:600; }
+
+/* ── section label ── */
+.sec{ display:flex; align-items:center; gap:12px; margin:0 0 12px; }
+.sec-l{
+  font-size:var(--t-2xs); font-weight:700; letter-spacing:var(--wide);
+  text-transform:uppercase; color:var(--text-muted); white-space:nowrap;
+}
+.sec-l.live{ color:var(--live-text); }
+[data-theme="light"] .sec-l.live{ color:var(--live-text); }
+.sec-r{ flex:1; height:1px; background:var(--border); }
+.sec-n{
+  font-size:var(--t-2xs); font-weight:700; font-family:var(--mono);
+  color:var(--text-subtle);
+}
+
+/* ═════ the grid ═════ */
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(236px, 236px));
+  gap:14px; justify-content:start;
+  transition:opacity var(--base) var(--ease);
+}
+.grid + .sec{ margin-top:30px; }
+[data-hub="down"] .grid{ opacity:.5; }
+
+/* ═════ THE TALLY CARD ═════ */
+.card{
+  position:relative; width:236px;
+  display:flex; flex-direction:column;
+  background:var(--raised);
+  border:1px solid var(--border);
+  border-radius:var(--r-md);
+  box-shadow:var(--edge), var(--lift);
+  overflow:hidden;
+  transition:none;               /* never animate into a state */
+}
+
+/* The state rail: always present, only its colour changes.
+   Kills the 1–3px geometry jitter the old border-width scheme had. */
+.card::before{
+  content:""; position:absolute; left:0; top:0; bottom:0; width:4px;
+  background:var(--idle);
+}
+.card[data-color="preview"]::before  { background:var(--preview); }
+.card[data-color="idle"]::before     { background:var(--idle); }
+.card[data-color="unpatched"]::before{
+  background:repeating-linear-gradient(180deg,
+    var(--unpatched) 0 6px, transparent 6px 11px);
+}
+.card[data-color="program"]::before   { background:var(--live-deep); }
+
+.card[data-color="program"]{
+  background:var(--live); border-color:var(--live); color:var(--on-fill);
+}
+.card[data-color="preview"]  { border-color:color-mix(in srgb, var(--preview) 45%, var(--border)); }
+.card[data-color="unpatched"]{ border-color:color-mix(in srgb, var(--unpatched) 40%, var(--border)); }
+
+/* transport health rides OUTSIDE the box so it can never erase the fill */
+.card[data-health="disconnected"]{
+  outline:2px dashed var(--disconnected); outline-offset:2px;
+}
+
+.card-h{ display:flex; align-items:center; gap:9px; padding:11px 8px 9px 14px; }
+.mark{ width:17px; height:17px; flex:0 0 auto; }
+.card h3{
+  margin:0; flex:1 1 auto; min-width:0;
+  font-size:var(--t-xl); font-weight:660; letter-spacing:var(--tight);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+[data-lang="en"] .card h3{ font-size:var(--t-lg); }
+.kebab{
+  width:30px; height:30px; flex:0 0 auto; display:grid; place-items:center;
+  border:0; border-radius:var(--r-sm); background:transparent;
+  color:currentColor; opacity:.55; cursor:pointer;
+  transition:opacity var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+.kebab:hover{ opacity:1; background:rgb(128 128 128 / .18); }
+.kebab:focus-visible{ outline:none; box-shadow:var(--focus); opacity:1; }
+
+.card-b{ padding:0 12px 11px 14px; display:flex; flex-direction:column; gap:9px; }
+
+.sel{
+  position:relative; display:flex; align-items:center;
+  height:34px; padding:0 28px 0 10px; width:100%;
+  font:inherit; font-size:var(--t-md); font-weight:540;
+  color:inherit; background:var(--sunken);
+  border:1px solid var(--border); border-radius:var(--r-sm);
+  appearance:none; cursor:pointer;
+}
+.card[data-color="program"] .sel{
+  background:rgb(0 0 0 / .16); border-color:rgb(0 0 0 / .22); color:var(--on-fill);
+}
+[data-theme="light"] .card[data-color="program"] .sel{
+  background:rgb(255 255 255 / .14); border-color:rgb(255 255 255 / .26);
+}
+.sel:focus-visible{ outline:none; box-shadow:var(--focus); }
+.sel-w{ position:relative; }
+.sel-w::after{
+  content:""; position:absolute; right:11px; top:50%; width:7px; height:7px;
+  margin-top:-5px; border-right:1.6px solid currentColor; border-bottom:1.6px solid currentColor;
+  transform:rotate(45deg); opacity:.5; pointer-events:none;
+}
+.card[data-color="unpatched"] .sel{
+  border-color:var(--unpatched); border-style:dashed; color:var(--unpatched);
+}
+
+/* the meta strip — this is the density the old design left on the floor */
+.meta{
+  margin:0; display:grid; grid-template-columns:1fr auto; gap:2px 10px;
+  font-size:var(--t-xs); font-family:var(--mono);
+  color:var(--text-muted); font-variant-numeric:tabular-nums;
+}
+.card[data-color="program"] .meta{ color:rgb(0 0 0 / .68); }
+[data-theme="light"] .card[data-color="program"] .meta{ color:rgb(255 255 255 / .82); }
+.meta .r{ text-align:right; display:flex; align-items:center; gap:5px; justify-content:flex-end; }
+
+.bars{ display:inline-flex; align-items:flex-end; gap:1.5px; height:9px; }
+.bars i{ width:2.5px; background:currentColor; opacity:.28; border-radius:.5px; }
+.bars i:nth-child(1){ height:3px; } .bars i:nth-child(2){ height:5px; }
+.bars i:nth-child(3){ height:7px; } .bars i:nth-child(4){ height:9px; }
+.bars[data-n="4"] i{ opacity:.95; }
+.bars[data-n="3"] i:nth-child(-n+3){ opacity:.95; }
+.bars[data-n="2"] i:nth-child(-n+2){ opacity:.95; }
+.bars[data-n="0"] i{ opacity:.22; }
+
+/* footer — the word. never truncated, never a tooltip. */
+.card-f{
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+  padding:8px 12px 8px 14px;
+  border-top:1px solid var(--border);
+  font-size:var(--t-xs);
+}
+.card[data-color="program"] .card-f{ border-top-color:rgb(0 0 0 / .18); }
+[data-theme="light"] .card[data-color="program"] .card-f{ border-top-color:rgb(255 255 255 / .22); }
+
+.word{
+  font-weight:720; letter-spacing:var(--wide); text-transform:uppercase;
+  white-space:nowrap;
+}
+.card[data-color="preview"]   .word{ color:var(--preview); }
+.card[data-color="idle"]      .word{ color:var(--text-subtle); }
+.card[data-color="unpatched"] .word{ color:var(--unpatched); }
+.card[data-color="program"]   .word{ color:var(--on-fill); }
+.card[data-health="disconnected"] .word{ text-decoration:line-through; text-decoration-thickness:1.5px; }
+
+.health{
+  font-weight:640; letter-spacing:.03em; white-space:nowrap;
+  color:var(--text-subtle);
+}
+.card[data-health="disconnected"] .health{ color:var(--disconnected); }
+.card[data-color="program"][data-health="disconnected"] .health{ color:var(--on-fill); opacity:.9; }
+
+/* missing = the whole footer goes amber. loudest thing on the card. */
+.card[data-health="missing"] .card-f{
+  background:var(--missing); color:var(--on-fill); border-top-color:transparent;
+}
+[data-theme="dark"] .card[data-health="missing"] .card-f,
+:root .card[data-health="missing"] .card-f{ color:#0B0E11; }
+[data-theme="light"] .card[data-health="missing"] .card-f{ color:#FFFFFF; }
+.card[data-health="missing"] .word,
+.card[data-health="missing"] .health{ color:inherit; }
+
+/* add-tally */
+.add{
+  width:236px; min-height:158px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:7px;
+  border:1.5px dashed var(--border-strong); border-radius:var(--r-md);
+  background:transparent; color:var(--text-subtle);
+  font:inherit; font-size:var(--t-md); cursor:pointer;
+  transition:all var(--fast) var(--ease);
+}
+.add:hover{ color:var(--text); border-color:var(--text-subtle); background:var(--surface-hover); }
+.add:focus-visible{ outline:none; box-shadow:var(--focus); }
+.add .plus{ width:20px; height:20px; }
+
+/* demo strip */
+.demo{
+  position:fixed; bottom:0; left:0; right:0; z-index:20;
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  padding:9px 20px;
+  background:color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter:blur(12px);
+  border-top:1px solid var(--border);
+  font-size:var(--t-xs); color:var(--text-subtle);
+}
+.demo b{ font-weight:700; letter-spacing:var(--wide); text-transform:uppercase; color:var(--text-muted); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ── nav ─────────────────────────────────────────────── -->
+  <nav class="nav">
+    <div class="brand"><span class="glyph">V</span>vTally</div>
+    <a href="#" aria-current="page"><span class="ko">탈리</span><span class="en">Tallies</span></a>
+    <a href="#"><span class="ko">설정</span><span class="en">Configuration</span></a>
+    <a href="#"><span class="ko">로그</span><span class="en">Logs</span></a>
+    <a href="#"><span class="ko">펌웨어</span><span class="en">Flash</span></a>
+    <div class="nav-end">
+      <button class="chip-btn" id="lang">KO / EN</button>
+      <button class="chip-btn" id="theme">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M13.5 9.2A5.8 5.8 0 0 1 6.8 2.5 5.8 5.8 0 1 0 13.5 9.2Z"
+                stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+        </svg>
+        <span class="ko">라이트</span><span class="en">Light</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ── status rail ─────────────────────────────────────── -->
+  <div class="rail">
+    <div class="rail-cell">
+      <span class="rail-k"><span class="ko">허브</span><span class="en">Hub</span></span>
+      <span class="rail-v"><i class="dot ok"></i><span class="ko">연결됨</span><span class="en">Connected</span></span>
+    </div>
+    <div class="rail-cell">
+      <span class="rail-k"><span class="ko">믹서</span><span class="en">Mixer</span></span>
+      <span class="rail-v"><i class="dot ok"></i>vMix <span class="mono">192.168.1.10:8088</span></span>
+    </div>
+    <div class="rail-cell">
+      <span class="rail-k"><span class="ko">탈리</span><span class="en">Tallies</span></span>
+      <span class="rail-v"><span class="mono" style="font-size:var(--t-md);color:var(--text)">6 / 8</span>
+        <span style="font-size:var(--t-xs);color:var(--missing);font-weight:600">
+          <span class="ko">2대 응답 없음</span><span class="en">2 not reporting</span></span></span>
+    </div>
+    <div class="rail-cell bus">
+      <span class="rail-k"><span class="ko">프로그램 버스</span><span class="en">Program bus</span></span>
+      <div class="bus-row">
+        <span class="bus-ch" data-s="program">1</span>
+        <span class="bus-ch" data-s="preview">2</span>
+        <span class="bus-ch">3</span>
+        <span class="bus-ch" data-s="program">4</span>
+        <span class="bus-ch">5</span>
+        <span class="bus-ch">6</span>
+        <span class="bus-ch">7</span>
+        <span class="bus-ch">8</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── hub-down banner (demo toggle) ───────────────────── -->
+  <div class="banner" role="alert">
+    <svg class="banner-i" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 3 2 20h20L12 3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+      <path d="M12 9.5v4.5M12 17h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+    </svg>
+    <div>
+      <h2><span class="ko">허브 연결 끊김</span><span class="en">Hub disconnected</span></h2>
+      <p><span class="ko">아래 정보는 최신 상태가 아닐 수 있습니다. 자동으로 다시 연결하는 중입니다.</span>
+         <span class="en">The information below might be outdated. Reconnecting automatically.</span></p>
+    </div>
+    <button class="chip-btn act"><span class="ko">새로고침</span><span class="en">Reload</span></button>
+  </div>
+
+  <!-- ── page ────────────────────────────────────────────── -->
+  <main class="page">
+
+    <div class="toolbar">
+      <div class="filters">
+        <button class="toggle" aria-pressed="true">
+          <svg class="tick" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M3 8.5 6.3 12 13 4.5" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="ko">연결 끊김 표시</span><span class="en">Show disconnected</span>
+        </button>
+        <button class="toggle" aria-pressed="true">
+          <svg class="tick" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M3 8.5 6.3 12 13 4.5" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="ko">미할당 표시</span><span class="en">Show unpatched</span>
+        </button>
+      </div>
+      <div class="count">
+        <span class="ko">탈리 <b>8</b>대</span><span class="en"><b>8</b> tallies</span>
+      </div>
+    </div>
+
+    <!-- ON AIR group — spatial position is a CVD-proof carrier -->
+    <div class="sec">
+      <span class="sec-l live"><span class="ko">온에어</span><span class="en">On air</span></span>
+      <span class="sec-r"></span>
+      <span class="sec-n">2</span>
+    </div>
+
+    <div class="grid">
+
+      <!-- program + connected -->
+      <article class="card" data-color="program" data-health="connected"
+               role="group" aria-label="카메라 1, 온에어, 연결됨">
+        <div class="card-h">
+          <svg class="mark" viewBox="0 0 20 20" aria-hidden="true">
+            <circle cx="10" cy="10" r="7" fill="currentColor"/></svg>
+          <h3>카메라 1</h3>
+          <button class="kebab" aria-label="메뉴">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+              <circle cx="8" cy="3" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="8" cy="13" r="1.4"/></svg>
+          </button>
+        </div>
+        <div class="card-b">
+          <div class="sel-w"><select class="sel"><option>채널 1</option></select></div>
+          <dl class="meta">
+            <span>192.168.1.44</span>
+            <span class="r">
+              <span class="bars" data-n="4"><i></i><i></i><i></i><i></i></span>
+            </span>
+          </dl>
+        </div>
+        <div class="card-f">
+          <span class="word"><span class="ko">온에어</span><span class="en">On air</span></span>
+          <span class="health"><span class="ko">연결됨</span><span class="en">Connected</span></span>
+        </div>
+      </article>
+
+      <!-- ★ program AND disconnected — the worst case -->
+      <article class="card" data-color="program" data-health="disconnected"
+               role="group" aria-label="카메라 4, 온에어, 신호 없음">
+        <div class="card-h">
+          <svg class="mark" viewBox="0 0 20 20" aria-hidden="true">
+            <circle cx="10" cy="10" r="7" fill="currentColor"/></svg>
+          <h3>카메라 4</h3>
+          <button class="kebab" aria-label="메뉴">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+              <circle cx="8" cy="3" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="8" cy="13" r="1.4"/></svg>
+          </button>
+        </div>
+        <div class="card-b">
+          <div class="sel-w"><select class="sel"><option>채널 4</option></select></div>
+          <dl class="meta">
+            <span>192.168.1.47</span>
+            <span class="r">
+              <span class="ko">42초 전</span><span class="en">42s ago</span>
+              <span class="bars" data-n="0"><i></i><i></i><i></i><i></i></span>
+            </span>
+          </dl>
+        </div>
+        <div class="card-f">
+          <span class="word"><span class="ko">온에어</span><span class="en">On air</span></span>
+          <span class="health"><span class="ko">⊘ 신호 없음</span><span class="en">⊘ No signal</span></span>
+        </div>
+      </article>
+
+    </div>
+
+    <div class="sec" style="margin-top:26px">
+      <span class="sec-l"><span class="ko">그 외</span><span class="en">Others</span></span>
+      <span class="sec-r"></span>
+      <span class="sec-n">6</span>
+    </div>
+
+    <div class="grid">
+
+      <!-- preview -->
+      <article class="card" data-color="preview" data-health="connected"
+               role="group" aria-label="카메라 2, 프리뷰, 연결됨">
+        <div class="card-h">
+          <svg class="mark" viewBox="0 0 20 20" fill="none" aria-hidden="true" style="color:var(--preview)">
+            <path d="M5 3.5 16 10 5 16.5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+          <h3>카메라 2</h3>
+          <button class="kebab" aria-label="메뉴">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+              <circle cx="8" cy="3" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="8" cy="13" r="1.4"/></svg>
+          </button>
+        </div>
+        <div class="card-b">
+          <div class="sel-w"><select class="sel"><option>채널 2</option></select></div>
+          <dl class="meta">
+            <span>192.168.1.45</span>
+            <span class="r"><span class="bars" data-n="4"><i></i><i></i><i></i><i></i></span></span>
+          </dl>
+        </div>
+        <div class="card-f">
+          <span class="word"><span class="ko">프리뷰</span><span class="en">Preview</span></span>
+          <span class="health"><span class="ko">연결됨</span><span class="en">Connected</span></span>
+        </div>
+      </article>
+
+      <!-- idle -->
+      <article class="card" data-color="idle" data-health="connected"
+               role="group" aria-label="카메라 3, 대기, 연결됨">
+        <div class="card-h">
+          <svg class="mark" viewBox="0 0 20 20" fill="none" aria-hidden="true" style="color:var(--idle)">
+            <rect x="6" y="6" width="8" height="8" rx="1" stroke="currentColor" stroke-width="2"/></svg>
+          <h3>카메라 3</h3>
+          <button class="kebab" aria-label="메뉴">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+              <circle cx="8" cy="3" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="8" cy="13" r="1.4"/></svg>
+          </button>
+        </div>
+        <div class="card-b">
+          <div class="sel-w"><select class="sel"><option>채널 3</option></select></div>
+          <dl class="meta">
+            <span>192.168.1.46</span>
+            <span class="r"><span class="bars" data-n="3"><i></i><i></i><i></i><i></i></span></span>
+          </dl>
+        </div>
+        <div class="card-f">
+          <span class="word"><span class="ko">대기</span><span class="en">Idle</span></span>
+          <span class="health"><span class="ko">연결됨</span><span class="en">Connected</span></span>
+        </div>
+      </article>
+
+      <!-- idle + missing (amber footer) -->
+      <article class="card" data-color="idle" data-health="missing"
+               role="group" aria-label="카메라 5, 대기, 응답 없음">
+        <div class="card-h">
+          <svg class="mark" viewBox="0 0 20 20" fill="none" aria-hidden="true" style="color:var(--idle)">
+            <rect x="6" y="6" width="8" height="8" rx="1" stroke="currentColor" stroke-width="2"/></svg>
+          <h3>카메라 5</h3>
+          <button class="kebab" aria-label="메뉴">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+              <circle cx="8" cy="3" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="8" cy="13" r="1.4"/></svg>
+          </button>
+        </div>
+        <div class="card-b">
+          <div class="sel-w"><select class="sel"><option>채널 5</option></select></div>
+          <dl class="meta">
+            <span>192.168.1.48</span>
+            <span class="r"><span class="ko">8분 전</span><span class="en">8m ago</span>
+              <span class="bars" data-n="2"><i></i><i></i><i></i><i></i></span></span>
+          </dl>
+        </div>
+        <div class="card-f">
+          <span class="word"><span class="ko">대기</span><span class="en">Idle</span></span>
+          <span class="health"><span class="ko">⚠ 응답 없음</span><span class="en">⚠ Not reporting</span></span>
+        </div>
+      </article>
+
+      <!-- unpatched -->
+      <article class="card" data-color="unpatched" data-health="connected"
+               role="group" aria-label="카메라 6, 채널 미할당, 연결됨">
+        <div class="card-h">
+          <svg class="mark" viewBox="0 0 20 20" fill="none" aria-hidden="true" style="color:var(--unpatched)">
+            <circle cx="10" cy="10" r="7.5" stroke="currentColor" stroke-width="1.8"/>
+            <path d="M8 7.6a2.1 2.1 0 1 1 2.4 2.2v1.3" stroke="currentColor" stroke-width="1.8"
+                  stroke-linecap="round" fill="none"/>
+            <circle cx="10.4" cy="13.7" r="1" fill="currentColor"/></svg>
+          <h3>카메라 6</h3>
+          <button class="kebab" aria-label="메뉴">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+              <circle cx="8" cy="3" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="8" cy="13" r="1.4"/></svg>
+          </button>
+        </div>
+        <div class="card-b">
+          <div class="sel-w"><select class="sel">
+            <option><span>채널 없음</span></option></select></div>
+          <dl class="meta">
+            <span>192.168.1.49</span>
+            <span class="r"><span class="bars" data-n="4"><i></i><i></i><i></i><i></i></span></span>
+          </dl>
+        </div>
+        <div class="card-f">
+          <span class="word"><span class="ko">미할당</span><span class="en">Unpatched</span></span>
+          <span class="health"><span class="ko">연결됨</span><span class="en">Connected</span></span>
+        </div>
+      </article>
+
+      <!-- idle + disconnected -->
+      <article class="card" data-color="idle" data-health="disconnected"
+               role="group" aria-label="카메라 7, 대기, 신호 없음">
+        <div class="card-h">
+          <svg class="mark" viewBox="0 0 20 20" fill="none" aria-hidden="true" style="color:var(--disconnected)">
+            <circle cx="10" cy="10" r="7.5" stroke="currentColor" stroke-width="1.8"/>
+            <path d="M5 15 15 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <h3>카메라 7</h3>
+          <button class="kebab" aria-label="메뉴">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+              <circle cx="8" cy="3" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="8" cy="13" r="1.4"/></svg>
+          </button>
+        </div>
+        <div class="card-b">
+          <div class="sel-w"><select class="sel"><option>채널 7</option></select></div>
+          <dl class="meta">
+            <span>192.168.1.50</span>
+            <span class="r"><span class="ko">3분 전</span><span class="en">3m ago</span>
+              <span class="bars" data-n="0"><i></i><i></i><i></i><i></i></span></span>
+          </dl>
+        </div>
+        <div class="card-f">
+          <span class="word"><span class="ko">대기</span><span class="en">Idle</span></span>
+          <span class="health"><span class="ko">⊘ 신호 없음</span><span class="en">⊘ No signal</span></span>
+        </div>
+      </article>
+
+      <!-- web tally, long Korean name — the wrapping / truncation test -->
+      <article class="card" data-color="idle" data-health="connected"
+               role="group" aria-label="진행자 모니터, 대기, 연결됨">
+        <div class="card-h">
+          <svg class="mark" viewBox="0 0 20 20" fill="none" aria-hidden="true" style="color:var(--idle)">
+            <rect x="6" y="6" width="8" height="8" rx="1" stroke="currentColor" stroke-width="2"/></svg>
+          <h3><span class="ko">진행자 모니터</span><span class="en">Host monitor</span></h3>
+          <button class="kebab" aria-label="메뉴">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+              <circle cx="8" cy="3" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="8" cy="13" r="1.4"/></svg>
+          </button>
+        </div>
+        <div class="card-b">
+          <div class="sel-w"><select class="sel"><option>채널 6</option></select></div>
+          <dl class="meta">
+            <span><span class="ko">웹 탈리</span><span class="en">Web tally</span></span>
+            <span class="r"><span class="bars" data-n="4"><i></i><i></i><i></i><i></i></span></span>
+          </dl>
+        </div>
+        <div class="card-f">
+          <span class="word"><span class="ko">대기</span><span class="en">Idle</span></span>
+          <span class="health"><span class="ko">연결됨</span><span class="en">Connected</span></span>
+        </div>
+      </article>
+
+      <button class="add">
+        <svg class="plus" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span class="ko">탈리 추가</span><span class="en">Add tally</span>
+      </button>
+
+    </div>
+  </main>
+
+  <div class="demo">
+    <b><span class="ko">미리보기</span><span class="en">Demo</span></b>
+    <button class="chip-btn" id="hub"><span class="ko">허브 끊김 상태</span><span class="en">Hub-down state</span></button>
+    <span style="margin-left:auto">01 — <span class="ko">탈리 그리드</span><span class="en">Tally grid</span></span>
+  </div>
+</div>
+
+<script>
+  const H = document.documentElement;
+  document.getElementById('theme').onclick = () => {
+    const dark = H.dataset.theme === 'dark';
+    H.dataset.theme = dark ? 'light' : 'dark';
+    document.querySelectorAll('#theme .ko')[0].textContent = dark ? '다크' : '라이트';
+    document.querySelectorAll('#theme .en')[0].textContent = dark ? 'Dark' : 'Light';
+  };
+  document.getElementById('lang').onclick = () => {
+    H.dataset.lang = H.dataset.lang === 'ko' ? 'en' : 'ko';
+    H.lang = H.dataset.lang;
+  };
+  document.getElementById('hub').onclick = () => {
+    H.dataset.hub = H.dataset.hub === 'down' ? '' : 'down';
+  };
+  document.querySelectorAll('.toggle').forEach(b => b.onclick = () =>
+    b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') === 'true' ? 'false' : 'true'));
+</script>
+</body>
+</html>
