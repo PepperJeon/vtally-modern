@@ -97,26 +97,48 @@ diff to that one file. Current values (from Phase 0): 25/26 unit suites,
 `got > want` → PASS with a note to consider raising the baseline. Nothing
 auto-raises it.
 
-### `cypress_failed` — the failure allowlist
+### `cypress_allowed_failures` — the failure allowlist
 
 `verify.sh` used to gate only `cypress_passed`, a passing *count*. That let a
 change land brand-new failing tests and still print `RESULT: PASS`, as long
 as it also landed enough new passing tests to raise the ratio — nine new
 tests, two of which passed, raised `cypress_passed` from 54 to 58 while two
-tests were genuinely red. `cypress_failed` in `baseline.json` closes that
-hole: it's an allowlist, not a ratio. `verify.sh` fails the run if the actual
-failing count (`CY_FAIL`) exceeds it — the inverse of `gate_count`'s normal
-"more is better" logic, since for failures fewer is always better. A newly
-introduced failure trips the gate immediately; a previously-red test that
-gets fixed does not (it's still `<=` the allowlist, same as `gate_count`
-treating `got > want` as a pass).
+tests were genuinely red. The first fix for that was `cypress_failed: 2`, a
+budget: fail the run if the failing *count* exceeded it.
 
-Every test counted in `cypress_failed` must be named here, so the number is
-never a place to quietly hide new red tests:
+**A budget was not enough, and this is worth understanding before touching
+it.** The count says nothing about *which* tests are red, so the identity of
+the failures could rotate freely underneath it. Observed live on a real run:
+both known-red `tally-settings.spec.ts` tests passed and `dialog-cancel`
+failed instead, so the gate printed `1 (allowlist: 2)` and read green — a
+different failure than the day before, invisible. A budget is exactly the
+"hide new red tests in a number" behaviour the allowlist was meant to
+prevent.
 
-- **`tally-settings.spec.ts`** (1 test, `'correctly implements settings into
-  udp commands'`) — was two distinct flakes stacked in the same test; one is
-  now fixed, one remains:
+So the gate is now on **identity, not quantity**. `cypress_allowed_failures`
+is a list of `<spec file> :: <test title>` strings, and `verify.sh`:
+
+- **FAIL**s, naming each one as `NEW RED`, if any failing test is not on the
+  list — regardless of how many tests fail in total;
+- prints `NOW GREEN … drop it from cypress_allowed_failures` for any listed
+  test that passed, so the list shrinks by attrition instead of going stale.
+  This is a note, not a failure: a red test going green is good news.
+
+Titles come from mocha's run list, cut at the `N passing` summary line (the
+failure detail below that line repeats `N)` with the *describe* title, not
+the test). The counts printed above the gate already depend on that same
+summary line, so the parsing adds no new assumption about Cypress's output
+format.
+
+Granularity is per **test**, not per spec file, because `tally-settings.spec.ts`
+has one known-red test sitting beside a dozen green ones — a per-file
+allowlist would let any of the others rot unnoticed.
+
+Every entry must be named here with its cause:
+
+- **`tally-settings.spec.ts :: operator brightness`** (inside the
+  `'correctly implements settings into udp commands'` describe) — was two
+  distinct flakes stacked in the same test; one is now fixed, one remains:
   - **Fixed** (`b4bbadc`): the test mixer's config compare used raw
     `toJson()`, which includes live `programs`/`previews` — every
     `mixerProgPrev` cypress task call looked like a settings change and
@@ -143,16 +165,18 @@ never a place to quietly hide new red tests:
     returns `null` with no ack, so a lost or delayed *delivery* of that
     second emit fits the symptom — needs live socket-level instrumentation
     to confirm, not yet done. Tracked for Phase 3.
-- **`dialog-cancel.spec.ts`** (1 test) — `'closes without saving edits when
-  Cancel is clicked'` fails reproducibly on a second open cycle: MUI's
-  popover doesn't survive the settings dialog being reopened after Cancel.
-  Root cause not yet identified; tracked for Phase 3.
+- **`dialog-cancel.spec.ts :: closes without saving edits when Cancel is
+  clicked`** — fails on a second open cycle: MUI's popover doesn't survive the
+  settings dialog being reopened after Cancel. Root cause not yet identified;
+  tracked for Phase 3. Described as "reproducible" when it was written, but it
+  passed on at least one run where `tally-settings` failed instead, so treat
+  both entries as intermittent rather than permanently red.
 
 These two used to be `.skip`'d instead of allowlisted. A permanent skip
 vanishes from the run output entirely — nobody sees it's still broken — while
 a permanently red, undocumented test just trains people to ignore red. Named
-allowlist entries avoid both: the count is visible, the cause is on record,
-and `verify.sh` still trips if a *new* failure shows up alongside them.
+allowlist entries avoid both: the failure is visible, the cause is on record,
+and `verify.sh` trips if a *different* test goes red alongside them.
 
 ## Surviving the Phase 1 restructure
 

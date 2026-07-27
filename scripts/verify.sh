@@ -322,6 +322,7 @@ elif ! kill -0 "$BACKEND_PID" 2>/dev/null; then
   FAIL=1
 else
   CY_PASS=0 CY_FAIL=0 CY_PEND=0
+  CY_FAILED_TESTS=()
   while IFS= read -r spec; do
     [ -z "$spec" ] && continue
     CY_LOG=$(mktemp)
@@ -335,6 +336,16 @@ else
       # Counts alone are not actionable. Name the failing tests and keep the log.
       grep -E '^\s+[0-9]+\) ' "$CY_LOG" | sed 's/^/     /'
       echo "     log: $CY_LOG"
+      # Collect the failing TEST titles for the identity gate below. mocha
+      # prints "  N) <title>" twice: once in the run list, where <title> is the
+      # test, and again in the failure detail below the summary, where it is
+      # the *describe* and the test title is on the following line. Cutting at
+      # the "N passing" summary line keeps only the first form. That line is
+      # always printed (even as "0 passing"), and the counts above already
+      # depend on it, so this adds no new assumption about the output format.
+      while IFS= read -r title; do
+        [ -n "$title" ] && CY_FAILED_TESTS+=("$spec :: $title")
+      done < <(sed -n "1,/[0-9]* passing/p" "$CY_LOG" | sed -nE 's/^[[:space:]]+[0-9]+\) (.*)$/\1/p')
     fi
     if ! kill -0 "$BACKEND_PID" 2>/dev/null; then
       if [ "$spec" = "smoke.spec.ts" ]; then
@@ -348,19 +359,32 @@ else
   done < <(cd "$HUB" && ls "$CYPRESS_SPEC_DIR" | grep -v '^manual_' | sort)
   CY_TOTAL=$((CY_PASS + CY_FAIL + CY_PEND))
   gate_count "cypress passed" "$CY_PASS" "$(base cypress_passed)"
-  # Inverted gate: fewer failures is better, so "got > want" must FAIL here,
-  # the opposite of gate_count's semantics (where more is always fine). This
-  # is the fix for the gate hole: verify.sh used to compare only passing
-  # counts, so landing new tests that both pass AND fail could still raise
-  # the passing count and print RESULT: PASS. Every failure must now be an
-  # allowlisted, named test (see scripts/README.md) or the run fails.
-  CY_FAIL_BASELINE=$(base cypress_failed)
-  if [ "$CY_FAIL" -gt "$CY_FAIL_BASELINE" ]; then
-    printf "FAIL  %-28s %s  (allowlist: %s — new failing test(s), see scripts/README.md)\n" "cypress failed" "$CY_FAIL" "$CY_FAIL_BASELINE"
+  # Identity gate, not a budget. This used to compare CY_FAIL against a count
+  # (cypress_failed: 2), which let the *identity* of the failures rotate
+  # freely: a new red test could appear while an old one went green and the
+  # gate still printed PASS, which is precisely what the allowlist existed to
+  # prevent. Observed live — dialog-cancel failed while both known-red
+  # tally-settings tests passed, and "1 (allowlist: 2)" read green. Now every
+  # failure must be named in baseline.json's cypress_allowed_failures.
+  CY_ALLOWED=$(node -pe "require('./$BASELINE').cypress_allowed_failures.join('\n')")
+  CY_UNEXPECTED=()
+  for t in ${CY_FAILED_TESTS[@]+"${CY_FAILED_TESTS[@]}"}; do
+    grep -Fxq "$t" <<<"$CY_ALLOWED" || CY_UNEXPECTED+=("$t")
+  done
+  if [ ${#CY_UNEXPECTED[@]} -ne 0 ]; then
+    printf "FAIL  %-28s %s  (not in the allowlist, see %s)\n" "cypress failed" "${#CY_UNEXPECTED[@]}" "scripts/README.md"
+    for t in "${CY_UNEXPECTED[@]}"; do echo "        NEW RED  $t"; done
     FAIL=1
   else
-    printf "PASS  %-28s %s  (allowlist: %s)\n" "cypress failed" "$CY_FAIL" "$CY_FAIL_BASELINE"
+    printf "PASS  %-28s %s  (all allowlisted)\n" "cypress failed" "$CY_FAIL"
   fi
+  # A listed test that passed is good news, not a failure — but say so, or the
+  # list never shrinks and goes stale the way the count did.
+  while IFS= read -r t; do
+    [ -z "$t" ] && continue
+    printf '%s\n' ${CY_FAILED_TESTS[@]+"${CY_FAILED_TESTS[@]}"} | grep -Fxq "$t" ||
+      echo "        NOW GREEN  $t — drop it from cypress_allowed_failures in $BASELINE"
+  done <<<"$CY_ALLOWED"
   echo "        (total: $CY_PASS/$CY_TOTAL, baseline total: $(base cypress_total), server log: $SERVER_LOG)"
 fi
 echo
