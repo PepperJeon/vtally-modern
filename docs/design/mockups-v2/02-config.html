@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="ko" data-theme="dark" data-lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>vTally v2 — 설정</title>
+<style>
+/* ═══ tokens (identical to 01-tally-grid.html) ═══ */
+:root, [data-theme="dark"] {
+  color-scheme: dark;
+  --bg:#0B0E11; --bg-elev:#101419; --surface:#12161A; --surface-hover:#171C21;
+  --raised:#1B2127; --sunken:#0E1216;
+  --border:#232B33; --border-strong:#37414C;
+  --text:#E3E8ED; --text-muted:#8A98A8; --text-subtle:#6B7787;
+  --edge:inset 0 1px 0 rgb(255 255 255 / .045);
+  --edge-soft:inset 0 1px 0 rgb(255 255 255 / .028);
+  --lift:0 1px 2px rgb(0 0 0 / .40), 0 8px 24px -12px rgb(0 0 0 / .60);
+  --live:#FF3B30; --live-text:#FF6257; --live-deep:#B3261E;
+  --preview:#34D07A; --idle:#6B7787; --unpatched:#4C8DFF;
+  --disconnected:#8A98A8; --missing:#FFB020; --highlight:#FFFFFF;
+  --on-fill:#0B0E11;
+  --focus:0 0 0 2px var(--bg), 0 0 0 4px #FFFFFF;
+  --grid-line:rgb(255 255 255 / .022);
+  --led-off-ring:#3A444F;
+}
+[data-theme="light"] {
+  color-scheme: light;
+  --bg:#F6F7F9; --bg-elev:#FFFFFF; --surface:#FFFFFF; --surface-hover:#F1F3F6;
+  --raised:#FFFFFF; --sunken:#EDEFF3;
+  --border:#E2E6EB; --border-strong:#C3CAD3;
+  --text:#111820; --text-muted:#5B6774; --text-subtle:#78838F;
+  --edge:inset 0 1px 0 rgb(255 255 255 / 1);
+  --edge-soft:inset 0 1px 0 rgb(255 255 255 / 1);
+  --lift:0 1px 2px rgb(16 24 40 / .05), 0 8px 24px -14px rgb(16 24 40 / .18);
+  --live:#C4291E; --live-text:#A81F17; --live-deep:#8E1C13;
+  --preview:#0E7040; --idle:#6B7787; --unpatched:#2563EB;
+  --disconnected:#5B6774; --missing:#B45309; --highlight:#0B0E11;
+  --on-fill:#FFFFFF;
+  --focus:0 0 0 2px var(--bg), 0 0 0 4px #111820;
+  --grid-line:rgb(16 24 40 / .028);
+  --led-off-ring:#C3CAD3;
+}
+:root{
+  --sans:Pretendard,"Pretendard Variable",Inter,-apple-system,"Apple SD Gothic Neo",
+         "Noto Sans KR","Malgun Gothic","Segoe UI",Roboto,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --t-2xs:.6875rem; --t-xs:.75rem; --t-sm:.8125rem; --t-md:.875rem;
+  --t-base:1rem; --t-lg:1.125rem; --t-xl:1.3125rem; --t-2xl:1.625rem;
+  --tight:-.02em; --wide:.075em;
+  --r-xs:3px; --r-sm:6px; --r-md:10px; --r-lg:14px; --r-full:9999px;
+  --fast:110ms; --base:170ms; --ease:cubic-bezier(.2,0,0,1);
+}
+@media (prefers-reduced-motion:reduce){ :root{ --fast:0ms; --base:0ms; } }
+
+*,*::before,*::after{ box-sizing:border-box; }
+html,body{ height:100%; }
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font-family:var(--sans); font-size:var(--t-base); line-height:1.5;
+  -webkit-font-smoothing:antialiased; font-feature-settings:"tnum" 1;
+  transition:background var(--base) var(--ease), color var(--base) var(--ease);
+}
+[data-lang="ko"] body{ line-height:1.62; letter-spacing:-.003em; }
+[data-lang="ko"] .en,[data-lang="en"] .ko{ display:none; }
+
+.app{ min-height:100%; display:flex; flex-direction:column; }
+.app::before{
+  content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background:
+    linear-gradient(var(--grid-line) 1px,transparent 1px) 0 0/100% 88px,
+    linear-gradient(90deg,var(--grid-line) 1px,transparent 1px) 0 0/88px 100%;
+  mask-image:radial-gradient(120% 80% at 50% 0%,#000 30%,transparent 78%);
+}
+.app > *{ position:relative; z-index:1; }
+
+/* ── nav ── */
+.nav{
+  height:56px; display:flex; align-items:center; gap:2px; padding:0 20px;
+  background:var(--surface); border-bottom:1px solid var(--border); box-shadow:var(--edge);
+}
+.brand{ display:flex; align-items:center; gap:9px; margin-right:22px;
+  font-weight:680; font-size:var(--t-md); letter-spacing:var(--tight); }
+.brand .glyph{ width:22px; height:22px; border-radius:var(--r-xs);
+  background:var(--text); color:var(--bg); display:grid; place-items:center;
+  font-size:11px; font-weight:800; }
+.nav a{ display:inline-flex; align-items:center; height:34px; padding:0 11px;
+  border-radius:var(--r-sm); color:var(--text-muted); text-decoration:none;
+  font-size:var(--t-md); font-weight:520;
+  transition:color var(--fast) var(--ease), background var(--fast) var(--ease); }
+.nav a:hover{ color:var(--text); background:var(--surface-hover); }
+.nav a[aria-current]{ color:var(--text); background:var(--surface-hover); box-shadow:var(--edge-soft); }
+.nav-end{ margin-left:auto; display:flex; gap:6px; }
+
+.chip-btn{ height:32px; padding:0 10px; display:inline-flex; align-items:center; gap:6px;
+  font:inherit; font-size:var(--t-xs); font-weight:600; color:var(--text-muted);
+  background:transparent; border:1px solid var(--border); border-radius:var(--r-sm);
+  cursor:pointer; transition:all var(--fast) var(--ease); }
+.chip-btn:hover{ color:var(--text); border-color:var(--border-strong); background:var(--surface-hover); }
+.chip-btn:focus-visible{ outline:none; box-shadow:var(--focus); }
+
+/* ═════ page ═════ */
+.page{ width:100%; max-width:1360px; margin:0 auto; padding:26px 20px 72px; flex:1; }
+
+.head{ margin:0 0 20px; }
+.head h1{ margin:0 0 4px; font-size:var(--t-2xl); font-weight:680; letter-spacing:var(--tight); }
+.head p{ margin:0; color:var(--text-muted); font-size:var(--t-md); }
+
+/* ── section label ── */
+.sec{ display:flex; align-items:center; gap:12px; margin:0 0 11px; }
+.sec-l{ font-size:var(--t-2xs); font-weight:700; letter-spacing:var(--wide);
+  text-transform:uppercase; color:var(--text-muted); white-space:nowrap; }
+.sec-r{ flex:1; height:1px; background:var(--border); }
+
+/*  ROW 1 — the source picker.
+    The mixer selector is the widest-reaching decision on this page, so it
+    gets the full width instead of hiding in a 560px column with nothing
+    under it. This is what kills the empty column. */
+.sources{
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(158px,1fr));
+  gap:8px; margin-bottom:30px;
+}
+.src{
+  position:relative; text-align:left;
+  padding:11px 12px 10px; min-height:66px;
+  display:flex; flex-direction:column; gap:3px;
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--r-md); box-shadow:var(--edge);
+  color:var(--text-muted); font:inherit; cursor:pointer;
+  transition:all var(--fast) var(--ease);
+}
+.src:hover{ border-color:var(--border-strong); color:var(--text); }
+.src:focus-visible{ outline:none; box-shadow:var(--focus); }
+.src .n{ font-size:var(--t-md); font-weight:640; letter-spacing:var(--tight); color:var(--text); }
+.src .s{ font-size:var(--t-2xs); font-family:var(--mono); }
+.src[aria-checked="true"]{
+  background:var(--raised); border-color:var(--border-strong);
+  box-shadow:var(--edge), var(--lift);
+}
+/* selected: an achromatic top tick — never a state hue */
+.src[aria-checked="true"]::before{
+  content:""; position:absolute; left:11px; right:11px; top:-1px; height:2px;
+  background:var(--text); border-radius:0 0 2px 2px;
+}
+.src .live-dot{ position:absolute; top:11px; right:11px; width:6px; height:6px;
+  border-radius:var(--r-full); background:var(--preview); }
+.src[data-conn="off"] .live-dot{ background:var(--text-subtle); opacity:.45; }
+
+/*  ROW 2 — two columns, both carrying weight */
+.cols{
+  display:grid; grid-template-columns:minmax(0,1.12fr) minmax(0,.88fr);
+  gap:20px; align-items:start;
+}
+@media (max-width:1024px){ .cols{ grid-template-columns:minmax(0,1fr); } }
+
+.stack{ display:flex; flex-direction:column; gap:20px; }
+
+/* ── panel: chrome subtracted, not added ── */
+.panel{
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--r-lg); box-shadow:var(--edge), var(--lift);
+  overflow:hidden;
+}
+.panel-h{ padding:15px 18px 13px; display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+.panel-h h2{ margin:0; font-size:var(--t-lg); font-weight:660; letter-spacing:var(--tight); }
+.panel-h .sub{ font-size:var(--t-md); color:var(--text-muted); }
+.panel-b{ padding:2px 18px 18px; }
+.panel-f{
+  padding:12px 18px; border-top:1px solid var(--border);
+  background:var(--bg-elev);
+  display:flex; align-items:center; gap:12px; justify-content:flex-end;
+}
+.panel-f .note{ margin-right:auto; font-size:var(--t-xs); color:var(--text-subtle); }
+
+/* ── form ── */
+.field{ margin-bottom:14px; max-width:400px; }
+.field label{
+  display:block; margin-bottom:5px;
+  font-size:var(--t-xs); font-weight:620; letter-spacing:.02em; color:var(--text-muted);
+}
+.inp{
+  width:100%; height:38px; padding:0 11px;
+  font:inherit; font-size:var(--t-md); font-family:var(--mono);
+  color:var(--text); background:var(--sunken);
+  border:1px solid var(--border-strong); border-radius:var(--r-sm);
+  transition:border-color var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
+}
+.inp::placeholder{ color:var(--text-subtle); }
+.inp:focus{ outline:none; border-color:var(--text-subtle); box-shadow:var(--focus); }
+.inp[aria-invalid="true"]{ border-color:var(--missing); }
+/* help slot is ALWAYS reserved — nothing shifts when a warning appears */
+.help{
+  min-height:20px; margin-top:5px;
+  font-size:var(--t-xs); line-height:1.45; color:var(--text-subtle);
+  display:flex; gap:5px;
+}
+.help.warn{ color:var(--missing); }
+.help svg{ width:13px; height:13px; flex:0 0 auto; margin-top:2px; }
+
+.btn{
+  height:36px; padding:0 15px; font:inherit; font-size:var(--t-md); font-weight:600;
+  border-radius:var(--r-sm); cursor:pointer; border:1px solid transparent;
+  transition:all var(--fast) var(--ease);
+}
+.btn-p{ background:var(--text); color:var(--bg); }
+.btn-p:hover{ opacity:.88; }
+.btn-g{ background:transparent; color:var(--text-muted); border-color:var(--border); }
+.btn-g:hover{ color:var(--text); border-color:var(--border-strong); }
+.btn:focus-visible{ outline:none; box-shadow:var(--focus); }
+
+/* ═══ the link panel — what fills the "empty" column.
+       Not decoration: state the hub already has and never showed. ═══ */
+.link-grid{
+  display:grid; grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:1px; background:var(--border);
+  border:1px solid var(--border); border-radius:var(--r-md); overflow:hidden;
+  margin-bottom:14px;
+}
+.link-cell{ background:var(--surface); padding:10px 12px; }
+.link-k{ font-size:var(--t-2xs); font-weight:640; letter-spacing:var(--wide);
+  text-transform:uppercase; color:var(--text-subtle); display:block; margin-bottom:2px; }
+.link-v{ font-size:var(--t-md); font-weight:600; font-family:var(--mono);
+  display:flex; align-items:center; gap:6px; }
+.link-v.ok{ color:var(--preview); }
+.dot{ width:7px; height:7px; border-radius:var(--r-full); background:var(--preview); flex:0 0 auto; }
+
+.log{ margin:0; border:1px solid var(--border); border-radius:var(--r-md);
+  background:var(--sunken); overflow:hidden; }
+.log li{
+  display:grid; grid-template-columns:74px 1fr; gap:10px;
+  padding:6px 12px; list-style:none;
+  font-size:var(--t-xs); font-family:var(--mono);
+  border-bottom:1px solid var(--border); color:var(--text-muted);
+}
+.log li:last-child{ border-bottom:0; }
+.log time{ color:var(--text-subtle); }
+
+/* ═══ tally defaults ═══ */
+.group{ margin-bottom:6px; }
+.group + .group{ margin-top:20px; padding-top:20px; border-top:1px solid var(--border); }
+.group-l{
+  font-size:var(--t-2xs); font-weight:700; letter-spacing:var(--wide);
+  text-transform:uppercase; color:var(--text-muted); margin:0 0 14px;
+  display:flex; align-items:center; gap:8px;
+}
+.group-l::after{ content:""; flex:1; height:1px; background:var(--border); }
+
+.ctl{ margin-bottom:16px; }
+.ctl-l{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:7px; }
+.ctl-l span{ font-size:var(--t-md); font-weight:540; }
+.ctl-l b{ font-size:var(--t-md); font-weight:680; font-family:var(--mono); }
+
+input[type=range]{
+  width:100%; height:22px; appearance:none; background:transparent; cursor:pointer;
+}
+input[type=range]::-webkit-slider-runnable-track{
+  height:5px; border-radius:var(--r-full); background:var(--sunken);
+  border:1px solid var(--border);
+}
+input[type=range]::-webkit-slider-thumb{
+  appearance:none; width:17px; height:17px; margin-top:-7px;
+  border-radius:var(--r-full); background:var(--text);
+  border:1px solid var(--bg); box-shadow:var(--lift);
+}
+input[type=range]:focus-visible{ outline:none; }
+input[type=range]:focus-visible::-webkit-slider-thumb{ box-shadow:var(--focus); }
+.floor{
+  margin-top:5px; font-size:var(--t-xs); color:var(--text-subtle);
+  display:flex; gap:5px; align-items:flex-start;
+}
+.floor svg{ width:13px; height:13px; flex:0 0 auto; margin-top:2px; }
+
+/* LED swatches — hardware truth, unstyled */
+.schemes{ display:flex; gap:8px; }
+.scheme{
+  flex:1; padding:9px 10px 10px; text-align:left;
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--r-md); cursor:pointer; font:inherit;
+  color:var(--text-muted); transition:all var(--fast) var(--ease);
+}
+.scheme:hover{ border-color:var(--border-strong); }
+.scheme:focus-visible{ outline:none; box-shadow:var(--focus); }
+.scheme[aria-checked="true"]{
+  border-color:var(--border-strong); background:var(--raised);
+  box-shadow:var(--edge); color:var(--text);
+}
+.scheme .nm{ font-size:var(--t-md); font-weight:620; color:var(--text); display:block; margin-bottom:7px; }
+.leds{ display:flex; gap:4px; margin-bottom:6px; }
+.led{ width:19px; height:19px; border-radius:var(--r-xs); border:1px solid var(--led-off-ring); }
+.scheme .why{ font-size:var(--t-2xs); line-height:1.4; display:block; }
+
+.check{ display:flex; align-items:center; gap:9px; cursor:pointer; padding:5px 0;
+  font-size:var(--t-md); }
+.check input{ position:absolute; opacity:0; width:0; height:0; }
+.box{
+  width:17px; height:17px; flex:0 0 auto; border-radius:var(--r-xs);
+  border:1.5px solid var(--border-strong); background:var(--sunken);
+  display:grid; place-items:center; transition:all var(--fast) var(--ease);
+}
+.box svg{ width:11px; height:11px; opacity:0; color:var(--bg); }
+.check input:checked + .box{ background:var(--text); border-color:var(--text); }
+.check input:checked + .box svg{ opacity:1; }
+.check input:focus-visible + .box{ box-shadow:var(--focus); }
+
+.demo{
+  position:fixed; bottom:0; left:0; right:0; z-index:20;
+  display:flex; align-items:center; gap:8px;
+  padding:9px 20px;
+  background:color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter:blur(12px); border-top:1px solid var(--border);
+  font-size:var(--t-xs); color:var(--text-subtle);
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <nav class="nav">
+    <div class="brand"><span class="glyph">V</span>vTally</div>
+    <a href="#"><span class="ko">탈리</span><span class="en">Tallies</span></a>
+    <a href="#" aria-current="page"><span class="ko">설정</span><span class="en">Configuration</span></a>
+    <a href="#"><span class="ko">로그</span><span class="en">Logs</span></a>
+    <a href="#"><span class="ko">펌웨어</span><span class="en">Flash</span></a>
+    <div class="nav-end">
+      <button class="chip-btn" id="lang">KO / EN</button>
+      <button class="chip-btn" id="theme">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M13.5 9.2A5.8 5.8 0 0 1 6.8 2.5 5.8 5.8 0 1 0 13.5 9.2Z"
+                stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+        <span class="ko">라이트</span><span class="en">Light</span>
+      </button>
+    </div>
+  </nav>
+
+  <main class="page">
+
+    <div class="head">
+      <h1><span class="ko">설정</span><span class="en">Configuration</span></h1>
+      <p><span class="ko">쇼 시작 전에 한 번 맞춥니다. 방송 중에는 건드릴 일이 없습니다.</span>
+         <span class="en">Set once before the show. Rarely touched during one.</span></p>
+    </div>
+
+    <!-- ROW 1: full-width source picker -->
+    <div class="sec">
+      <span class="sec-l"><span class="ko">비디오 믹서</span><span class="en">Video mixer</span></span>
+      <span class="sec-r"></span>
+    </div>
+
+    <div class="sources" role="radiogroup" aria-label="비디오 믹서 선택">
+      <button class="src" role="radio" aria-checked="true" data-conn="on">
+        <span class="live-dot"></span>
+        <span class="n">vMix</span><span class="s">192.168.1.10</span>
+      </button>
+      <button class="src" role="radio" aria-checked="false" data-conn="off">
+        <span class="live-dot"></span>
+        <span class="n">ATEM</span><span class="s">—</span>
+      </button>
+      <button class="src" role="radio" aria-checked="false" data-conn="off">
+        <span class="live-dot"></span>
+        <span class="n">OBS Studio</span><span class="s">—</span>
+      </button>
+      <button class="src" role="radio" aria-checked="false" data-conn="off">
+        <span class="live-dot"></span>
+        <span class="n">Roland V-60HD</span><span class="s">—</span>
+      </button>
+      <button class="src" role="radio" aria-checked="false" data-conn="off">
+        <span class="live-dot"></span>
+        <span class="n">Roland V-8HD</span><span class="s">—</span>
+      </button>
+      <button class="src" role="radio" aria-checked="false" data-conn="off">
+        <span class="live-dot"></span>
+        <span class="n">FeelWorld</span><span class="s">—</span>
+      </button>
+      <button class="src" role="radio" aria-checked="false" data-conn="off">
+        <span class="live-dot"></span>
+        <span class="n"><span class="ko">사용 안 함</span><span class="en">None</span></span>
+        <span class="s">null</span>
+      </button>
+      <button class="src" role="radio" aria-checked="false" data-conn="off">
+        <span class="live-dot"></span>
+        <span class="n"><span class="ko">테스트 패턴</span><span class="en">Test pattern</span></span>
+        <span class="s">mock</span>
+      </button>
+    </div>
+
+    <!-- ROW 2: two columns, both loaded -->
+    <div class="cols">
+
+      <!-- LEFT: the form, plus the telemetry that used to be nowhere -->
+      <div class="stack">
+
+        <section class="panel">
+          <div class="panel-h">
+            <h2>vMix</h2>
+            <span class="sub"><span class="ko">TCP API로 네트워크상의 vMix에 연결합니다.</span>
+                              <span class="en">Connects to vMix over the network using the TCP API.</span></span>
+          </div>
+          <div class="panel-b">
+            <div class="field">
+              <label for="ip"><span class="ko">vMix IP 주소</span><span class="en">vMix IP address</span></label>
+              <input class="inp" id="ip" value="192.168.1.10">
+              <div class="help"></div>
+            </div>
+            <div class="field">
+              <label for="port"><span class="ko">vMix 포트</span><span class="en">vMix port</span></label>
+              <input class="inp" id="port" value="8088">
+              <div class="help warn">
+                <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="M8 2 1.5 14h13L8 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                  <path d="M8 6.5v3M8 11.6h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                <span>
+                  <span class="ko">8088은 웹 UI 포트입니다. TCP API 포트가 아닙니다. 비워두면 기본값을 씁니다.</span>
+                  <span class="en">8088 is the Web UI port, not the TCP API port. Leave blank for the default.</span>
+                </span>
+              </div>
+            </div>
+          </div>
+          <div class="panel-f">
+            <span class="note"><span class="ko">저장하지 않은 변경 1건</span><span class="en">1 unsaved change</span></span>
+            <button class="btn btn-p"><span class="ko">저장</span><span class="en">Save</span></button>
+          </div>
+        </section>
+
+        <!-- ★ this panel is the answer to the empty column -->
+        <section class="panel">
+          <div class="panel-h">
+            <h2><span class="ko">연결 상태</span><span class="en">Link</span></h2>
+            <span class="sub"><span class="ko">믹서가 실제로 응답하고 있는지 확인합니다.</span>
+                              <span class="en">Whether the mixer is actually answering.</span></span>
+          </div>
+          <div class="panel-b">
+            <div class="link-grid">
+              <div class="link-cell">
+                <span class="link-k"><span class="ko">상태</span><span class="en">State</span></span>
+                <span class="link-v ok"><i class="dot"></i><span class="ko">연결됨</span><span class="en">Connected</span></span>
+              </div>
+              <div class="link-cell">
+                <span class="link-k"><span class="ko">연결 유지</span><span class="en">Uptime</span></span>
+                <span class="link-v">01:42:08</span>
+              </div>
+              <div class="link-cell">
+                <span class="link-k"><span class="ko">마지막 수신</span><span class="en">Last packet</span></span>
+                <span class="link-v">0.2<span style="font-size:var(--t-xs);color:var(--text-subtle)">s</span></span>
+              </div>
+              <div class="link-cell">
+                <span class="link-k"><span class="ko">입력 채널</span><span class="en">Inputs</span></span>
+                <span class="link-v">8</span>
+              </div>
+            </div>
+            <div class="sec" style="margin-bottom:8px">
+              <span class="sec-l"><span class="ko">최근 이벤트</span><span class="en">Recent events</span></span>
+              <span class="sec-r"></span>
+            </div>
+            <ul class="log">
+              <li><time>14:22:41</time><span>PROGRAM → 4</span></li>
+              <li><time>14:22:38</time><span>PREVIEW → 2</span></li>
+              <li><time>14:21:02</time><span>PROGRAM → 1</span></li>
+              <li><time>12:40:33</time><span><span class="ko">연결됨</span><span class="en">connected</span> 192.168.1.10</span></li>
+            </ul>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- RIGHT: tally defaults -->
+      <section class="panel">
+        <div class="panel-h">
+          <h2><span class="ko">탈리 기본값</span><span class="en">Tally defaults</span></h2>
+          <span class="sub"><span class="ko">개별 설정이 없는 탈리에 적용됩니다.</span>
+                            <span class="en">Applied to any tally without its own override.</span></span>
+        </div>
+        <div class="panel-b">
+
+          <div class="group">
+            <h3 class="group-l"><span class="ko">오퍼레이터 라이트</span><span class="en">Operator light</span></h3>
+
+            <div class="ctl">
+              <div class="ctl-l">
+                <span><span class="ko">밝기</span><span class="en">Brightness</span></span><b>70%</b>
+              </div>
+              <input type="range" min="0" max="100" value="70" aria-label="오퍼레이터 라이트 밝기">
+              <div class="floor">
+                <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.4"/>
+                  <path d="M8 4.8v3.6M8 10.8h.01" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+                <span><span class="ko">오퍼레이터 라이트는 완전히 끌 수 없습니다. 최소 20%.</span>
+                      <span class="en">Operator light can not be turned off. Minimum 20%.</span></span>
+              </div>
+            </div>
+
+            <div class="ctl">
+              <div class="ctl-l"><span><span class="ko">색상 구성</span><span class="en">Colour scheme</span></span></div>
+              <div class="schemes" role="radiogroup">
+                <button class="scheme" role="radio" aria-checked="true">
+                  <span class="nm"><span class="ko">기본</span><span class="en">Default</span></span>
+                  <span class="leds">
+                    <i class="led" style="background:rgb(255,0,0)"></i>
+                    <i class="led" style="background:rgb(0,255,0)"></i>
+                    <i class="led" style="background:rgb(0,0,255)"></i>
+                    <i class="led" style="background:rgb(0,1,0)"></i>
+                  </span>
+                  <span class="why"><span class="ko">빨강 / 초록</span><span class="en">Red / green</span></span>
+                </button>
+                <button class="scheme" role="radio" aria-checked="false">
+                  <span class="nm"><span class="ko">옐로 · 핑크</span><span class="en">Yellow · pink</span></span>
+                  <span class="leds">
+                    <i class="led" style="background:rgb(255,255,0)"></i>
+                    <i class="led" style="background:rgb(255,0,255)"></i>
+                    <i class="led" style="background:rgb(0,0,255)"></i>
+                    <i class="led" style="background:rgb(0,1,0)"></i>
+                  </span>
+                  <span class="why"><span class="ko">적녹색약에서 더 잘 구분됩니다.</span>
+                                    <span class="en">Easier to tell apart with red-green colour blindness.</span></span>
+                </button>
+              </div>
+            </div>
+
+            <label class="check">
+              <input type="checkbox" checked>
+              <span class="box"><svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M3 8.5 6.3 12 13 4.5" stroke="currentColor" stroke-width="2.4"
+                      stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+              <span><span class="ko">대기 상태 표시</span><span class="en">Show idle state</span></span>
+            </label>
+          </div>
+
+          <div class="group">
+            <h3 class="group-l"><span class="ko">스테이지 라이트</span><span class="en">Stage light</span></h3>
+
+            <div class="ctl">
+              <div class="ctl-l">
+                <span><span class="ko">밝기</span><span class="en">Brightness</span></span><b>90%</b>
+              </div>
+              <input type="range" min="0" max="100" value="90" aria-label="스테이지 라이트 밝기">
+              <div class="floor" style="visibility:hidden"><svg viewBox="0 0 16 16"></svg><span>·</span></div>
+            </div>
+
+            <div class="ctl">
+              <div class="ctl-l"><span><span class="ko">색상 구성</span><span class="en">Colour scheme</span></span></div>
+              <div class="schemes" role="radiogroup">
+                <button class="scheme" role="radio" aria-checked="true">
+                  <span class="nm"><span class="ko">기본</span><span class="en">Default</span></span>
+                  <span class="leds">
+                    <i class="led" style="background:rgb(255,0,0)"></i>
+                    <i class="led" style="background:rgb(0,255,0)"></i>
+                    <i class="led" style="background:rgb(0,0,255)"></i>
+                    <i class="led" style="background:rgb(0,1,0)"></i>
+                  </span>
+                  <span class="why"><span class="ko">빨강 / 초록</span><span class="en">Red / green</span></span>
+                </button>
+                <button class="scheme" role="radio" aria-checked="false">
+                  <span class="nm"><span class="ko">옐로 · 핑크</span><span class="en">Yellow · pink</span></span>
+                  <span class="leds">
+                    <i class="led" style="background:rgb(255,255,0)"></i>
+                    <i class="led" style="background:rgb(255,0,255)"></i>
+                    <i class="led" style="background:rgb(0,0,255)"></i>
+                    <i class="led" style="background:rgb(0,1,0)"></i>
+                  </span>
+                  <span class="why"><span class="ko">적녹색약에서 더 잘 구분됩니다.</span>
+                                    <span class="en">Easier to tell apart with red-green colour blindness.</span></span>
+                </button>
+              </div>
+            </div>
+
+            <label class="check">
+              <input type="checkbox">
+              <span class="box"><svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M3 8.5 6.3 12 13 4.5" stroke="currentColor" stroke-width="2.4"
+                      stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+              <span><span class="ko">프리뷰 상태 표시</span><span class="en">Show preview state</span></span>
+            </label>
+          </div>
+
+        </div>
+        <div class="panel-f">
+          <span class="note"><span class="ko">마지막 저장 14:03</span><span class="en">Saved 14:03</span></span>
+          <button class="btn btn-p"><span class="ko">저장</span><span class="en">Save</span></button>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <div class="demo">
+    <span>02 — <span class="ko">설정</span><span class="en">Configuration</span></span>
+    <span style="margin-left:auto"><span class="ko">믹서 타일을 눌러 선택 상태를 확인하세요.</span>
+      <span class="en">Click a mixer tile to see the selected state.</span></span>
+  </div>
+</div>
+
+<script>
+  const H = document.documentElement;
+  document.getElementById('theme').onclick = () => {
+    const dark = H.dataset.theme === 'dark';
+    H.dataset.theme = dark ? 'light' : 'dark';
+    document.querySelector('#theme .ko').textContent = dark ? '다크' : '라이트';
+    document.querySelector('#theme .en').textContent = dark ? 'Dark' : 'Light';
+  };
+  document.getElementById('lang').onclick = () => {
+    H.dataset.lang = H.dataset.lang === 'ko' ? 'en' : 'ko';
+    H.lang = H.dataset.lang;
+  };
+  document.querySelectorAll('[role=radiogroup]').forEach(g =>
+    g.querySelectorAll('[role=radio]').forEach(r => r.onclick = () => {
+      g.querySelectorAll('[role=radio]').forEach(x => x.setAttribute('aria-checked','false'));
+      r.setAttribute('aria-checked','true');
+    }));
+  document.querySelectorAll('input[type=range]').forEach(s => s.oninput = () =>
+    s.closest('.ctl').querySelector('b').textContent = s.value + '%');
+</script>
+</body>
+</html>

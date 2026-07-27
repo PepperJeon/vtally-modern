@@ -233,9 +233,55 @@ listed here only because the team-lead's brief asked for it to be checked.
 
 ## 3. Hard boundary — instructions to the implementing agent
 
+### 3.0 What this boundary binds on: effect, not file path
+
+**This section was added after the boundary's edge was found and reported rather
+than used.** Everything below §3.0 was written as rules about *spec files*. That
+wording has a hole in it: a change can alter what the suite asserts, what it
+asserts against, or the environment it runs in, without any spec file appearing
+in the diff.
+
+**The rule binds on effect.** Any change that alters
+
+- what the suite asserts,
+- what it runs against, or
+- the environment it runs in
+
+needs the same authorisation as editing a spec — no matter where it lives.
+That explicitly includes `cypress/e2e/**`, `cypress/support/**`,
+`cypress/plugins/**`, `cypress.config.ts`, `vitest.config.ts`,
+`src/client/setupTests.ts`, `playwright.config.ts`, `e2e/**`, and anything else
+that reaches the suite. If you are unsure whether a change qualifies, ask
+whether a spec's outcome could differ afterwards. If it could, it qualifies.
+
+**Worked example — the case that motivated this section.** The localisation
+work (`docs/design/i18n-plan.md` §1.3) needs the suite pinned to English so that
+flipping the app's default to Korean does not break 23 assertions. The
+mechanism is four lines in `cypress/support/e2e.ts` and one in
+`src/client/setupTests.ts`:
+
+```ts
+// cypress/support/e2e.ts
+Cypress.on('window:before:load', win => {
+  win.localStorage.setItem('vtally.lang', 'en')
+})
+```
+
+Neither file is a spec file, so §3's original wording did not reach either one —
+yet the hook pins the locale for **every spec in the suite**. Under §3.0 it
+needs authorisation like any spec edit. It was granted one (see the 2026-07-27
+i18n entry in §3.2); the point of recording it here is that the authorisation
+was asked for, not that the wording was read narrowly enough to skip asking.
+
+An agent that finds a similar edge is expected to report it, not use it. Finding
+a gap in this document is not a licence to walk through it.
+
+---
+
 > You are implementing the MUI4 → Tailwind/shadcn rebuild. The following rules on
 > `hub/cypress/` are non-negotiable and pre-date your task; you did not author them
-> and may not override them.
+> and may not override them. Read them as applying to anything in §3.0's scope,
+> not only to files under `cypress/e2e/`.
 >
 > **You MAY edit, in exactly these two files, exactly these changes:**
 > - `cypress/integration/configVmix.spec.ts` lines 45 and 50 — replace the
@@ -320,6 +366,7 @@ make it one of the three kinds.
 | 2026-07-26 | `tally-settings.spec.ts` (14 sites) | `cy.task('tallyLastCommand', name).then(v => expect(v).to.eq(X))` → `cy.task('tallyLastCommand', name).should('eq', X)` | removes a race | orchestrating agent | `.then()` samples the task result exactly once; `.should()` polls it until it matches or times out. Asserted values unchanged — verified this is **not yet proven to have fixed the underlying flake** (see note below) |
 
 | 2026-07-27 | `tally-remove.spec.ts` (lines 39, 46, 48, 61, 62) | `.find('.MuiMenuItem-root')` + `.Mui-disabled` class assertions → `aria-disabled` on the item itself (§1.2) | human sign-off, §1.2 now AUTHORISED | team lead (explicit, at task hand-off) | MUI's generated classes cannot exist under a Radix `DropdownMenu.Item`. Same states, same outcomes, stable selector; the testid now sits on the clickable node so no `.find()` is needed |
+| 2026-07-27 | `cypress/support/e2e.ts`, `src/client/setupTests.ts` | locale pin — both suites forced to `en` before any app code runs, so the app's default can become Korean (`i18n-plan.md` §1.3) | human sign-off under the new §3.0 | team lead (explicit) | Pins the suite to the locale it already tests today; changes no assertion, no selector, no timing. Its cost — that the automated suite then never exercises the shipping default — is covered by the new `cypress/e2e/i18n.spec.ts` (`i18n-plan.md` §1.4), which asserts detection, switching, persistence and `<html lang>`. Zero edits to any file under `cypress/e2e/`. Reached the owner because the implementing agent reported §3's file-path hole rather than using it; §3.0 now closes it |
 
 **Flagging one entry above for the human owner, not deciding it here:** commit
 `273201f` also added `.skip()` to one test each in `dialog-cancel.spec.ts` and

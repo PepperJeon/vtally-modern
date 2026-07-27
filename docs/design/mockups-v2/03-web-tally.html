@@ -1,0 +1,490 @@
+<!doctype html>
+<html lang="ko" data-theme="dark" data-lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>vTally v2 — 웹 탈리</title>
+<style>
+/* ═══ tokens ═══ */
+:root, [data-theme="dark"] {
+  color-scheme: dark;
+  --bg:#0B0E11; --bg-elev:#101419; --surface:#12161A; --surface-hover:#171C21;
+  --raised:#1B2127; --sunken:#0E1216;
+  --border:#232B33; --border-strong:#37414C;
+  --text:#E3E8ED; --text-muted:#8A98A8; --text-subtle:#6B7787;
+  --edge:inset 0 1px 0 rgb(255 255 255 / .045);
+  --edge-soft:inset 0 1px 0 rgb(255 255 255 / .028);
+  --lift:0 1px 2px rgb(0 0 0 / .4), 0 8px 24px -12px rgb(0 0 0 / .6);
+  --live:#FF3B30; --preview:#34D07A; --idle:#6B7787;
+  --missing:#FFB020; --disconnected:#8A98A8; --on-fill:#0B0E11;
+  --focus:0 0 0 2px var(--bg), 0 0 0 4px #FFFFFF;
+  --grid-line:rgb(255 255 255 / .022);
+  --room:#07090B;                     /* the studio behind the phone */
+  --shell:#22282F;
+}
+[data-theme="light"] {
+  color-scheme: light;
+  --bg:#F6F7F9; --bg-elev:#FFFFFF; --surface:#FFFFFF; --surface-hover:#F1F3F6;
+  --raised:#FFFFFF; --sunken:#EDEFF3;
+  --border:#E2E6EB; --border-strong:#C3CAD3;
+  --text:#111820; --text-muted:#5B6774; --text-subtle:#78838F;
+  --edge:inset 0 1px 0 #FFF; --edge-soft:inset 0 1px 0 #FFF;
+  --lift:0 1px 2px rgb(16 24 40 / .05), 0 8px 24px -14px rgb(16 24 40 / .18);
+  --live:#C4291E; --preview:#0E7040; --idle:#6B7787;
+  --missing:#B45309; --disconnected:#5B6774; --on-fill:#FFFFFF;
+  --focus:0 0 0 2px var(--bg), 0 0 0 4px #111820;
+  --grid-line:rgb(16 24 40 / .028);
+  --room:#DCE0E6;
+  --shell:#B9BFC7;
+}
+:root{
+  --sans:Pretendard,"Pretendard Variable",Inter,-apple-system,"Apple SD Gothic Neo",
+         "Noto Sans KR","Malgun Gothic","Segoe UI",Roboto,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --t-2xs:.6875rem; --t-xs:.75rem; --t-sm:.8125rem; --t-md:.875rem;
+  --t-base:1rem; --t-lg:1.125rem; --t-xl:1.3125rem; --t-2xl:1.625rem;
+  --tight:-.02em; --wide:.075em;
+  --r-xs:3px; --r-sm:6px; --r-md:10px; --r-lg:14px; --r-full:9999px;
+  --fast:110ms; --base:170ms; --ease:cubic-bezier(.2,0,0,1);
+}
+@media (prefers-reduced-motion:reduce){ :root{ --fast:0ms; --base:0ms; } }
+
+*,*::before,*::after{ box-sizing:border-box; }
+html,body{ height:100%; }
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font-family:var(--sans); font-size:var(--t-base); line-height:1.5;
+  -webkit-font-smoothing:antialiased; font-feature-settings:"tnum" 1;
+  transition:background var(--base) var(--ease), color var(--base) var(--ease);
+}
+[data-lang="ko"] body{ line-height:1.62; letter-spacing:-.003em; }
+[data-lang="ko"] .en,[data-lang="en"] .ko{ display:none; }
+
+.app{ min-height:100%; display:flex; flex-direction:column; }
+.app::before{
+  content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background:
+    linear-gradient(var(--grid-line) 1px,transparent 1px) 0 0/100% 88px,
+    linear-gradient(90deg,var(--grid-line) 1px,transparent 1px) 0 0/88px 100%;
+  mask-image:radial-gradient(120% 80% at 50% 0%,#000 30%,transparent 78%);
+}
+.app > *{ position:relative; z-index:1; }
+
+.nav{
+  height:56px; display:flex; align-items:center; gap:2px; padding:0 20px;
+  background:var(--surface); border-bottom:1px solid var(--border); box-shadow:var(--edge);
+}
+.brand{ display:flex; align-items:center; gap:9px; margin-right:22px;
+  font-weight:680; font-size:var(--t-md); letter-spacing:var(--tight); }
+.brand .glyph{ width:22px; height:22px; border-radius:var(--r-xs);
+  background:var(--text); color:var(--bg); display:grid; place-items:center;
+  font-size:11px; font-weight:800; }
+.crumb{ color:var(--text-muted); font-size:var(--t-md); }
+.crumb b{ color:var(--text); font-weight:600; }
+.nav-end{ margin-left:auto; display:flex; gap:6px; }
+.chip-btn{ height:32px; padding:0 10px; display:inline-flex; align-items:center; gap:6px;
+  font:inherit; font-size:var(--t-xs); font-weight:600; color:var(--text-muted);
+  background:transparent; border:1px solid var(--border); border-radius:var(--r-sm);
+  cursor:pointer; transition:all var(--fast) var(--ease); }
+.chip-btn:hover{ color:var(--text); border-color:var(--border-strong); background:var(--surface-hover); }
+.chip-btn:focus-visible{ outline:none; box-shadow:var(--focus); }
+
+/* ═════ stage ═════ */
+.wrap{
+  flex:1; display:grid; grid-template-columns:minmax(0,1fr) 330px;
+  gap:28px; width:100%; max-width:1280px; margin:0 auto; padding:28px 20px 64px;
+}
+@media (max-width:940px){ .wrap{ grid-template-columns:minmax(0,1fr); } }
+
+.stage{
+  border-radius:var(--r-lg); border:1px solid var(--border);
+  background:
+    radial-gradient(90% 70% at 50% 42%, color-mix(in srgb,var(--room) 82%, transparent), var(--room));
+  display:grid; place-items:center; padding:44px 20px; min-height:620px;
+  box-shadow:var(--edge);
+}
+
+/* ── the phone ── */
+.phone{
+  width:290px; aspect-ratio:9/19.5;
+  border-radius:34px; padding:9px;
+  background:var(--shell);
+  box-shadow:0 0 0 1px rgb(0 0 0 / .5), 0 26px 60px -18px rgb(0 0 0 / .7);
+  transition:width var(--base) var(--ease);
+}
+.stage[data-scale="3m"] .phone{ width:88px; }
+.stage[data-scale="3m"] .screen{ border-radius:11px; }
+
+.screen{
+  position:relative; height:100%; width:100%;
+  border-radius:26px; overflow:hidden;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:2.5%; text-align:center; padding:7%;
+  background:#000; color:#fff;
+  /* state changes are instant — no transition on background */
+}
+
+.tname{
+  font-weight:760; letter-spacing:var(--tight); line-height:1.05;
+  font-size:clamp(1rem, 13cqw, 3.1rem);
+  overflow-wrap:anywhere;
+}
+.tword{
+  font-weight:660; letter-spacing:var(--wide); text-transform:uppercase;
+  font-size:clamp(.55rem, 5.6cqw, 1.35rem); opacity:.86;
+}
+.screen{ container-type:inline-size; }
+
+/* chrome — 70% alpha of the derived text colour */
+.sc-tl,.sc-tr,.sc-br,.sc-bl{ position:absolute; opacity:.7; }
+.sc-tr{ top:5%; right:6%; } .sc-br{ bottom:5%; right:6%; }
+.sc-bl{ bottom:5%; left:6%; font-size:9px; letter-spacing:.02em; display:flex; gap:4px; align-items:center; }
+.sc-tr svg,.sc-br svg{ width:17px; height:17px; }
+.stage[data-scale="3m"] .sc-tr,.stage[data-scale="3m"] .sc-br,
+.stage[data-scale="3m"] .sc-bl{ display:none; }
+
+.spin{
+  width:34%; aspect-ratio:1; border-radius:50%;
+  border:3px solid currentColor; border-top-color:transparent;
+  opacity:.5; animation:spin 900ms linear infinite;
+}
+@keyframes spin{ to{ transform:rotate(360deg); } }
+@media (prefers-reduced-motion:reduce){ .spin{ animation:none; } }
+
+/* highlight strobe — 4Hz hard step, never dimmed */
+.screen[data-color="highlight"]{ animation:strobe .25s steps(1,end) infinite; }
+@keyframes strobe{
+  0%,49.9%  { background:#FFFFFF; color:#000000; }
+  50%,100%  { background:#000000; color:#FFFFFF; }
+}
+@media (prefers-reduced-motion:reduce){
+  .screen[data-color="highlight"]{ animation:none; background:#FFF!important; color:#000!important; }
+}
+
+.caption{
+  margin-top:20px; text-align:center; font-size:var(--t-xs);
+  color:var(--text-subtle); font-family:var(--mono);
+}
+
+/* ═════ control column ═════ */
+.side{ display:flex; flex-direction:column; gap:16px; }
+.panel{
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--r-lg); box-shadow:var(--edge), var(--lift); overflow:hidden;
+}
+.panel-h{ padding:13px 16px 11px; }
+.panel-h h2{ margin:0; font-size:var(--t-md); font-weight:680;
+  letter-spacing:var(--wide); text-transform:uppercase; color:var(--text-muted); }
+.panel-b{ padding:0 16px 16px; }
+
+.states{ display:flex; flex-direction:column; gap:5px; }
+.st{
+  display:flex; align-items:center; gap:10px;
+  height:40px; padding:0 11px; width:100%;
+  font:inherit; font-size:var(--t-md); font-weight:560; text-align:left;
+  color:var(--text-muted); background:transparent;
+  border:1px solid var(--border); border-radius:var(--r-sm);
+  cursor:pointer; transition:all var(--fast) var(--ease);
+}
+.st:hover{ color:var(--text); border-color:var(--border-strong); }
+.st:focus-visible{ outline:none; box-shadow:var(--focus); }
+.st[aria-pressed="true"]{
+  color:var(--text); background:var(--raised);
+  border-color:var(--border-strong); box-shadow:var(--edge);
+}
+.sw{ width:15px; height:15px; border-radius:var(--r-xs); flex:0 0 auto;
+  border:1px solid var(--border-strong); }
+.st .cmd{ margin-left:auto; font-family:var(--mono); font-size:var(--t-2xs); color:var(--text-subtle); }
+
+.ctl-l{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:7px; }
+.ctl-l span{ font-size:var(--t-md); font-weight:540; }
+.ctl-l b{ font-size:var(--t-md); font-weight:680; font-family:var(--mono); }
+input[type=range]{ width:100%; height:22px; appearance:none; background:transparent; cursor:pointer; }
+input[type=range]::-webkit-slider-runnable-track{
+  height:5px; border-radius:var(--r-full); background:var(--sunken); border:1px solid var(--border); }
+input[type=range]::-webkit-slider-thumb{
+  appearance:none; width:17px; height:17px; margin-top:-7px; border-radius:var(--r-full);
+  background:var(--text); border:1px solid var(--bg); box-shadow:var(--lift); }
+input[type=range]:focus-visible{ outline:none; }
+input[type=range]:focus-visible::-webkit-slider-thumb{ box-shadow:var(--focus); }
+
+.note{
+  margin:9px 0 0; font-size:var(--t-xs); line-height:1.5; color:var(--text-subtle);
+  display:flex; gap:6px;
+}
+.note svg{ width:13px; height:13px; flex:0 0 auto; margin-top:3px; }
+
+.kv{ display:grid; grid-template-columns:auto 1fr; gap:5px 12px;
+  font-size:var(--t-xs); font-family:var(--mono); }
+.kv dt{ color:var(--text-subtle); }
+.kv dd{ margin:0; text-align:right; }
+
+.seg{ display:flex; gap:4px; }
+.seg button{
+  flex:1; height:32px; font:inherit; font-size:var(--t-xs); font-weight:600;
+  color:var(--text-muted); background:transparent;
+  border:1px solid var(--border); border-radius:var(--r-sm); cursor:pointer;
+  transition:all var(--fast) var(--ease);
+}
+.seg button[aria-pressed="true"]{ color:var(--text); background:var(--raised);
+  border-color:var(--border-strong); box-shadow:var(--edge); }
+.seg button:focus-visible{ outline:none; box-shadow:var(--focus); }
+
+.demo{
+  position:fixed; bottom:0; left:0; right:0; z-index:20;
+  display:flex; align-items:center; gap:8px; padding:9px 20px;
+  background:color-mix(in srgb,var(--surface) 88%,transparent);
+  backdrop-filter:blur(12px); border-top:1px solid var(--border);
+  font-size:var(--t-xs); color:var(--text-subtle);
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <nav class="nav">
+    <div class="brand"><span class="glyph">V</span>vTally</div>
+    <span class="crumb"><span class="ko">웹 탈리</span><span class="en">Web tally</span>
+      &nbsp;/&nbsp;<b>카메라 2</b></span>
+    <div class="nav-end">
+      <button class="chip-btn" id="lang">KO / EN</button>
+      <button class="chip-btn" id="theme">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M13.5 9.2A5.8 5.8 0 0 1 6.8 2.5 5.8 5.8 0 1 0 13.5 9.2Z"
+                stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+        <span class="ko">라이트</span><span class="en">Light</span>
+      </button>
+    </div>
+  </nav>
+
+  <div class="wrap">
+
+    <div>
+      <div class="stage" id="stage" data-scale="1m">
+        <div>
+          <div class="phone">
+            <div class="screen" id="screen" data-color="program">
+              <div class="sc-tr">
+                <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                  <circle cx="10" cy="10" r="2.6" stroke="currentColor" stroke-width="1.6"/>
+                  <path d="M10 2.2v2.1M10 15.7v2.1M2.2 10h2.1M15.7 10h2.1M4.5 4.5l1.5 1.5M14 14l1.5 1.5M15.5 4.5 14 6M6 14l-1.5 1.5"
+                        stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+              </div>
+              <div class="tname" id="tname">카메라 2</div>
+              <div class="tword" id="tword">온에어</div>
+              <div class="sc-bl" id="wake">⦿ <span class="ko">화면 켜짐 유지</span><span class="en">Screen kept awake</span></div>
+              <div class="sc-br">
+                <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                  <path d="M3 7.2V3h4.2M16.8 7.2V3h-4.2M3 12.8V17h4.2M16.8 12.8V17h-4.2"
+                        stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+            </div>
+          </div>
+          <p class="caption" id="caption">rgb(255, 0, 0) × 1.00</p>
+        </div>
+      </div>
+    </div>
+
+    <aside class="side">
+
+      <section class="panel">
+        <div class="panel-h"><h2><span class="ko">상태</span><span class="en">State</span></h2></div>
+        <div class="panel-b">
+          <div class="states">
+            <button class="st" aria-pressed="true" data-s="program">
+              <i class="sw" style="background:rgb(255,0,0)"></i>
+              <span class="ko">온에어</span><span class="en">On air</span>
+              <span class="cmd">on-air</span></button>
+            <button class="st" aria-pressed="false" data-s="preview">
+              <i class="sw" style="background:rgb(0,255,0)"></i>
+              <span class="ko">프리뷰</span><span class="en">Preview</span>
+              <span class="cmd">preview</span></button>
+            <button class="st" aria-pressed="false" data-s="idle">
+              <i class="sw" style="background:rgb(0,1,0)"></i>
+              <span class="ko">대기</span><span class="en">Idle</span>
+              <span class="cmd">release</span></button>
+            <button class="st" aria-pressed="false" data-s="highlight">
+              <i class="sw" style="background:linear-gradient(90deg,#fff 50%,#000 50%)"></i>
+              <span class="ko">위치 확인</span><span class="en">Locate</span>
+              <span class="cmd">highlight</span></button>
+            <button class="st" aria-pressed="false" data-s="unknown">
+              <i class="sw" style="background:var(--raised)"></i>
+              <span class="ko">믹서 연결 없음</span><span class="en">No mixer</span>
+              <span class="cmd">unknown</span></button>
+            <button class="st" aria-pressed="false" data-s="loading">
+              <i class="sw" style="background:var(--raised)"></i>
+              <span class="ko">데이터 기다리는 중</span><span class="en">Waiting</span>
+              <span class="cmd">—</span></button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-h"><h2><span class="ko">밝기</span><span class="en">Brightness</span></h2></div>
+        <div class="panel-b">
+          <div class="ctl-l">
+            <span><span class="ko">적용 값</span><span class="en">Applied</span></span><b id="bval">100%</b>
+          </div>
+          <input type="range" min="5" max="100" value="100" id="bright" aria-label="밝기">
+          <p class="note">
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.4"/>
+              <path d="M8 4.8v3.6M8 10.8h.01" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+            <span>
+              <span class="ko">글자 색은 어두워진 배경에서 다시 계산됩니다. 밝기 조절이 깨지면 글자 색이 같이 뒤집혀 눈에 띕니다.</span>
+              <span class="en">Text colour is recomputed from the dimmed fill. If dimming breaks, the text colour flips with it — visibly.</span>
+            </span>
+          </p>
+          <p class="note">
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.4"/>
+              <path d="M8 4.8v3.6M8 10.8h.01" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+            <span>
+              <span class="ko">위치 확인 신호에는 밝기가 적용되지 않습니다.</span>
+              <span class="en">Brightness never applies to the locate strobe.</span>
+            </span>
+          </p>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-h"><h2><span class="ko">보는 거리</span><span class="en">Viewing distance</span></h2></div>
+        <div class="panel-b">
+          <div class="seg">
+            <button aria-pressed="true"  data-d="1m">1 m</button>
+            <button aria-pressed="false" data-d="3m">3 m</button>
+          </div>
+          <p class="note">
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.4"/>
+              <path d="M8 4.8v3.6M8 10.8h.01" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+            <span>
+              <span class="ko">3 m에서는 색면만 남습니다. 이름과 단어가 읽히지 않아도 상태는 읽혀야 합니다.</span>
+              <span class="en">At 3 m only the colour field survives. State must read even when the name does not.</span>
+            </span>
+          </p>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-h"><h2><span class="ko">연결</span><span class="en">Connection</span></h2></div>
+        <div class="panel-b">
+          <dl class="kv">
+            <dt><span class="ko">채널</span><span class="en">Channel</span></dt><dd>2</dd>
+            <dt><span class="ko">허브</span><span class="en">Hub</span></dt><dd>192.168.1.5:3000</dd>
+            <dt><span class="ko">화면 유지</span><span class="en">Wake lock</span></dt>
+            <dd style="color:var(--preview)"><span class="ko">활성</span><span class="en">Active</span></dd>
+          </dl>
+        </div>
+      </section>
+
+    </aside>
+  </div>
+
+  <div class="demo">
+    <span>03 — <span class="ko">웹 탈리</span><span class="en">Web tally</span></span>
+    <span style="margin-left:auto">
+      <span class="ko">채움 색은 LED 실측값입니다. 테마와 무관하게 두 테마에서 동일합니다.</span>
+      <span class="en">The fill is the LED's literal rgb(). It is identical in both themes, by design.</span>
+    </span>
+  </div>
+</div>
+
+<script>
+/* LED hardware truth — tokens §2.3, rendered exactly, dimmed only. */
+const LED = {
+  program:[255,0,0],
+  preview:[0,255,0],
+  idle:[0,1,0],
+};
+const WORD = {
+  program:  {ko:'온에어',            en:'On air'},
+  preview:  {ko:'프리뷰',            en:'Preview'},
+  idle:     {ko:'대기',              en:'Idle'},
+  highlight:{ko:'위치 확인',         en:'Locate'},
+  unknown:  {ko:'믹서에 연결되지 않음', en:'No connection to mixer'},
+  loading:  {ko:'데이터를 기다리는 중', en:'Waiting for data'},
+};
+
+const H = document.documentElement;
+const screen = document.getElementById('screen');
+const tname  = document.getElementById('tname');
+const tword  = document.getElementById('tword');
+const cap    = document.getElementById('caption');
+const bright = document.getElementById('bright');
+const bval   = document.getElementById('bval');
+let state = 'program';
+
+const srgb = c => { c/=255; return c<=.03928 ? c/12.92 : ((c+.055)/1.055)**2.4; };
+const lum  = ([r,g,b]) => .2126*srgb(r)+.7152*srgb(g)+.0722*srgb(b);
+const cr   = (a,b) => { const l1=Math.max(lum(a),lum(b)), l2=Math.min(lum(a),lum(b));
+                        return (l1+.05)/(l2+.05); };
+
+function render(){
+  const b = bright.value/100;
+  bval.textContent = bright.value + '%';
+
+  // clear anything a previous state set
+  screen.style.background = '';
+  screen.style.color = '';
+  screen.dataset.color = state;
+  screen.querySelectorAll('.spin').forEach(n => n.remove());
+  const chrome = [...screen.querySelectorAll('.sc-tr,.sc-br,.sc-bl')];
+
+  if (state === 'unknown' || state === 'loading') {
+    screen.style.background = getComputedStyle(H).getPropertyValue('--raised');
+    screen.style.color = getComputedStyle(H).getPropertyValue('--text-muted');
+    const s = document.createElement('div'); s.className = 'spin';
+    screen.insertBefore(s, tname);
+    tname.style.display = 'none';
+    chrome.forEach(n => n.style.display = 'none');   // nothing to configure yet
+    cap.textContent = state === 'unknown' ? '--raised · unknown' : '--raised · loading';
+  } else if (state === 'highlight') {
+    // strobe owns background+colour via @keyframes. brightness deliberately ignored.
+    tname.style.display = '';
+    chrome.forEach(n => n.style.display = '');
+    cap.textContent = '#FFFFFF ↔ #000000 · 4 Hz · ' +
+      (H.dataset.lang === 'ko' ? '밝기 미적용' : 'brightness not applied');
+  } else {
+    tname.style.display = '';
+    chrome.forEach(n => n.style.display = '');
+    const raw = LED[state];
+    const dim = raw.map(c => Math.round(c * b));
+    // ONE computed value drives both the fill and the text colour
+    const fg  = cr(dim,[0,0,0]) >= cr(dim,[255,255,255]) ? [0,0,0] : [255,255,255];
+    screen.style.background = `rgb(${dim.join(', ')})`;
+    screen.style.color      = `rgb(${fg.join(', ')})`;
+    cap.textContent = `rgb(${dim.join(', ')}) · ${b.toFixed(2)} × rgb(${raw.join(', ')})`;
+  }
+
+  const L = H.dataset.lang;
+  tword.textContent = WORD[state][L];
+  tname.textContent = L === 'ko' ? '카메라 2' : 'Camera 2';
+}
+
+document.querySelectorAll('.st').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.st').forEach(x => x.setAttribute('aria-pressed','false'));
+  b.setAttribute('aria-pressed','true');
+  state = b.dataset.s; render();
+});
+bright.oninput = render;
+document.querySelectorAll('.seg button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.seg button').forEach(x => x.setAttribute('aria-pressed','false'));
+  b.setAttribute('aria-pressed','true');
+  document.getElementById('stage').dataset.scale = b.dataset.d;
+});
+document.getElementById('theme').onclick = () => {
+  const dark = H.dataset.theme === 'dark';
+  H.dataset.theme = dark ? 'light' : 'dark';
+  document.querySelector('#theme .ko').textContent = dark ? '다크' : '라이트';
+  document.querySelector('#theme .en').textContent = dark ? 'Dark' : 'Light';
+  render();
+};
+document.getElementById('lang').onclick = () => {
+  H.dataset.lang = H.dataset.lang === 'ko' ? 'en' : 'ko';
+  H.lang = H.dataset.lang; render();
+};
+render();
+</script>
+</body>
+</html>
