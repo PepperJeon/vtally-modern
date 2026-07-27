@@ -119,6 +119,17 @@ export class MixerDriver {
             const ret = this.currentMixerInstance?.connect()
             await Promise.resolve(ret)
         }
+        catch (e) {
+            // Caught here rather than at the two call sites (:39 constructor,
+            // :58 config.changed), which both invoke this bare: an async method
+            // with a finally and no catch turns anything a connector's
+            // constructor/connect()/disconnect() throws into an unhandled
+            // rejection, and Node >=15 exits on those. Fixing it here covers both
+            // callers and any future one. The tallies must hear about it too, or
+            // they hold their last state with no mixer behind it.
+            console.error(`Error while switching to mixer "${newMixerId}":`, e)
+            this.communicator.notifyMixerIsDisconnected()
+        }
         finally {
             this.isChangingMixer = false
         }

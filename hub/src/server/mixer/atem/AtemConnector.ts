@@ -42,7 +42,17 @@ class AtemConnector implements Connector {
 
         console.log(`Connecting to ATEM at ${this.configuration.getIp().toString()}:${this.configuration.getPort().toNumber()}`)
 
+        // connect() returns a promise, and the 'error' listener above is a different
+        // channel that never sees its rejection. Unawaited and uncaught, a hostname
+        // that will not resolve (typed into ATEM settings, or a stale saved address
+        // at boot) took the whole hub down. Every other connector is either
+        // event-based or catches - see ObsConnector.doConnect().
         this.myAtem.connect(this.configuration.getIp().toString(), this.configuration.getPort().toNumber())
+            .catch(err => {
+                console.error("error when connecting to ATEM:", err.message)
+                this.isAtemConnected = false
+                this.communicator.notifyMixerIsDisconnected()
+            })
         this.myAtem.on('connected', () => {
             this.isAtemConnected = true
             console.log("Connected to ATEM")

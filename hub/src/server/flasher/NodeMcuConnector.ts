@@ -55,9 +55,13 @@ class NodeMcuConnector {
           clearInterval(interval)
           if (this.nodemcu.isConnected()) {
             console.warn("Serial terminal was not closed by previous process.")
-            this.nodemcu.disconnect()
           }
-          resolve(true)
+          // The 4th disconnect() call site, missed when safeDisconnect() was added for
+          // the other 3. Same lying isConnected(), same raw disconnect() that rejects
+          // with "Port is not open" - but inside a setInterval callback, where the
+          // rejection had no handler at all and killed the process. safeDisconnect()
+          // does the isConnected() check itself and never rejects.
+          resolve(this.safeDisconnect())
         }
       }, 100)
     })
@@ -369,20 +373,25 @@ class NodeMcuConnector {
 
     await new Promise(resolve => { setTimeout(resolve, 3000) }) // sleep
 
-    const failTimeout = setTimeout(() => {
-      throw new Error("Could not connect to NodeMCU after hardreset.")
-    }, 10000)
-
+    // A deadline checked inside the loop, not a `throw` inside a setTimeout: that
+    // throw had no promise linkage to this async function, so it surfaced as an
+    // uncaught exception on the event loop and terminated the hub - where the
+    // callers' try/catch in program()/writeTallySettingsIni() could never see it.
+    // Checking here also gives the retry loop a delay; it used to spin as fast as
+    // the serial layer allowed for the whole 10s.
+    const deadline = Date.now() + 10000
     let rebootSuccess = false
     while(!rebootSuccess) {
       try {
         await this.nodemcu.checkConnection()
         rebootSuccess = true
       } catch (e) {
-        rebootSuccess = false
+        if (Date.now() > deadline) {
+          throw new Error("Could not connect to NodeMCU after hardreset.")
+        }
+        await this.sleep(100)
       }
     }
-    clearTimeout(failTimeout)
   }
 
   /**

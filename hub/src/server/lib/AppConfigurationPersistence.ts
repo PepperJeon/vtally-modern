@@ -54,7 +54,12 @@ class AppConfigurationPersistence {
     /* don't save instantly, but wait a bit to prevent too many writes in short succession */
     private scheduleSave() {
         if (this.saveTimeout) { return }
-        this.saveTimeout = setTimeout(this.save.bind(this), AppConfigurationPersistence.saveDelay)
+        // The promise has to be caught here, not discarded: save() rejects on a full
+        // disk, a read-only $HOME, or an SD card that has gone read-only (the normal
+        // end of life for a Pi card), and an unhandled rejection terminates the
+        // process on Node >=15 - so patching a camera mid-show would take the hub
+        // down. save() already logs the reason on both failure paths.
+        this.saveTimeout = setTimeout(() => { this.save().catch(() => {}) }, AppConfigurationPersistence.saveDelay)
     }
 
     async save() {
