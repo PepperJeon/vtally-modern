@@ -1,6 +1,8 @@
 import { MixerCommunicator } from './MixerCommunicator'
 import { AppConfiguration } from './AppConfiguration'
 import { EventEmitter } from 'events'
+import CommandCreator from '../../shared/tally/CommandCreator'
+import { UdpTally } from '../../shared/domain/Tally'
 
 describe('MixerCommunicator', () => {
     describe('notifyProgramPreviewChanged', () => {
@@ -190,6 +192,29 @@ describe('MixerCommunicator', () => {
             communicator.notifyMixerIsConnected()
             expect(connectEventSeen).toEqual(2)
             expect(disconnectEventSeen).toEqual(1)
+        })
+        test('clears program state, so tallies are told "unknown" instead of the last program list', () => {
+            const emitter = new EventEmitter()
+            const config = new AppConfiguration(emitter)
+            config.save = async () => {} // mock it away
+
+            const communicator = new MixerCommunicator(config, emitter)
+            communicator.notifyMixerIsConnected()
+            communicator.notifyProgramPreviewChanged(["1"], ["2"])
+
+            const onAir = new UdpTally("cam1", "1")
+            const dark = new UdpTally("cam2", "3")
+            expect(CommandCreator.getState(onAir, communicator.getCurrentPrograms(), communicator.getCurrentPreviews())).toEqual("on-air")
+            expect(CommandCreator.getState(dark, communicator.getCurrentPrograms(), communicator.getCurrentPreviews())).toEqual("release")
+
+            communicator.notifyMixerIsDisconnected()
+
+            expect(communicator.getCurrentPrograms()).toEqual(null)
+            expect(communicator.getCurrentPreviews()).toEqual(null)
+            // both of them, not just the one that was lit: an operator whose light
+            // is dark must not be told "you are safe" when the hub cannot tell.
+            expect(CommandCreator.getState(onAir, communicator.getCurrentPrograms(), communicator.getCurrentPreviews())).toEqual("unknown")
+            expect(CommandCreator.getState(dark, communicator.getCurrentPrograms(), communicator.getCurrentPreviews())).toEqual("unknown")
         })
     })
     

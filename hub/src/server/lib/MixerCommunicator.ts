@@ -108,6 +108,15 @@ export class MixerCommunicator {
     notifyMixerIsDisconnected() {
         if (this.isConnected !== false) {
             this.isConnected = false
+            // Losing the mixer means we no longer know what is on air, so the last
+            // program list must not keep going out. null is what makes
+            // CommandCreator.getState() resolve to "unknown" - without this the
+            // tallies hold their last state at 10Hz forever and an operator whose
+            // light is dark believes they are safe while they may be live.
+            // Done here, not per connector, because every loss path in the tree
+            // routes through this method (the one connector that had no loss path
+            // at all was RolandV8HD - see its watchdog).
+            this.notifyProgramPreviewChanged(null, null)
             this.emitter.emit('mixer.disconnected')
         }
     }
