@@ -1,10 +1,10 @@
 {
-  "unit_suites_passed": 36,
-  "unit_suites_total": 37,
-  "unit_tests_passed": 407,
-  "unit_tests_total": 413,
-  "cypress_passed": 62,
-  "cypress_total": 81,
+  "unit_suites_passed": 38,
+  "unit_suites_total": 39,
+  "unit_tests_passed": 413,
+  "unit_tests_total": 419,
+  "cypress_passed": 66,
+  "cypress_total": 86,
   "cypress_allowed_failures": [
     "tally-settings.spec.ts :: operator brightness",
     "dialog-cancel.spec.ts :: closes without saving edits when Cancel is clicked"
