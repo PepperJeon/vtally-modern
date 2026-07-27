@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Configuration } from '../../../shared/mixer/interfaces'
+import { useT } from '../../i18n'
 
 type ValidatingInputProps = {
     label: string
@@ -35,6 +36,7 @@ const upperCaseFirst = (value: string) => `${value.substr(0, 1).toUpperCase()}${
  * input the same way it does today.
  */
 function ValidatingInput({label, testId, object, propertyName, errorMessage, warningMessage, onValid, onInvalid}: ValidatingInputProps) {
+    const t = useT()
     const getterName = `get${upperCaseFirst(propertyName)}`
     const setterName = `set${upperCaseFirst(propertyName)}`
     if (typeof object[getterName] !== "function") { throw new Error(`${getterName} is not a function`) }
@@ -73,7 +75,7 @@ function ValidatingInput({label, testId, object, propertyName, errorMessage, war
     // colours the border; a warning is amber text only and never blocks. The
     // warning node's testid is the one spec-changes.md §1.1 pre-authorises —
     // `vmix-port` + `-warning` is literally `vmix-port-warning`.
-    const message = !isValid ? (errorMessage || "invalid") : (warningMessage || "")
+    const message = !isValid ? (errorMessage || t.common.invalid) : (warningMessage || "")
     const messageTestId = `${testId}-${isValid ? "warning" : "error"}`
 
     return (

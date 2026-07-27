@@ -7,8 +7,10 @@ import { socket } from '../../../hooks/useSocket'
 import { ObsConfigurationLiveMode } from '../../../../shared/mixer/obs/ObsConfiguration'
 import { OBS_ID } from '../../../../shared/mixer/ids'
 import ObsLiveModeSelect from './ObsLiveModeSelect'
+import { useT } from '../../../i18n'
 
 function ObsSettings() {
+    const t = useT()
     const configuration = useObsConfiguration()
     const [ip, setIp] = useState<string|null>(null)
     const [ipValid, setIpValid] = useState(true)
@@ -43,18 +45,18 @@ function ObsSettings() {
 
     return (
         <MixerSettingsWrapper 
-            title="OBS Studio Configuration"
+            title={t.obs.title}
             testId="obs"
-            description={<>Connects to OBS Studio over network. Needs <ExternalLink href="https://github.com/obsproject/obs-websocket">obs-websocket version 5</ExternalLink>, which is built into OBS 28 and newer. Version 4 of the plugin is no longer supported.</>}
+            description={t.obs.description(text => <ExternalLink href="https://github.com/obsproject/obs-websocket">{text}</ExternalLink>)}
             canBeSaved={isValid}
             isLoading={isLoading}
             onSave={handleSave}
         >
             { configuration && (<>
-                <ValidatingInput label="Obs IP" testId="obs-ip" object={configuration} propertyName="ip" onValid={(newIp) => { setIp(newIp); setIpValid(true) }} onInvalid={() => setIpValid(false)} />
-                <ValidatingInput label="Obs Port" testId="obs-port" object={configuration} propertyName="port" warningMessage="OBS 28 and newer use 4455" onValid={(newPort) => { setPort(newPort); setPortValid(true) }} onInvalid={() => setPortValid(false)} />
-                <ValidatingInput label="Obs Password" testId="obs-password" object={configuration} propertyName="password" warningMessage="Leave empty if authentication is disabled" onValid={setPassword} />
-                <ObsLiveModeSelect label="On-Air Status" testId="obs-liveMode" value={liveMode} onChange={setLiveMode} />
+                <ValidatingInput label={t.obs.ip} testId="obs-ip" object={configuration} propertyName="ip" onValid={(newIp) => { setIp(newIp); setIpValid(true) }} onInvalid={() => setIpValid(false)} />
+                <ValidatingInput label={t.obs.port} testId="obs-port" object={configuration} propertyName="port" warningMessage={t.obs.portWarning} onValid={(newPort) => { setPort(newPort); setPortValid(true) }} onInvalid={() => setPortValid(false)} />
+                <ValidatingInput label={t.obs.password} testId="obs-password" object={configuration} propertyName="password" warningMessage={t.obs.passwordWarning} onValid={setPassword} />
+                <ObsLiveModeSelect label={t.obs.onAirStatus} testId="obs-liveMode" value={liveMode} onChange={setLiveMode} />
             </>)}
         </MixerSettingsWrapper>
     )

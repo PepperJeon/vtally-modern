@@ -1,6 +1,8 @@
 import React from 'react'
 import { Check, CircleDashed, X } from 'lucide-react'
 
+import { useT } from '../../i18n'
+
 export type StepType = {
   id: string
   label: string
@@ -61,8 +63,9 @@ type Props = {
 // pseudo-element on the icon column: unfocusable, unreadable by a screen
 // reader, and incapable of shifting layout.
 function StepDisplay({ steps }: Props) {
+  const t = useT()
   return (
-    <ol className="relative m-0 flex list-none flex-col p-0" aria-label="Flash progress">
+    <ol className="relative m-0 flex list-none flex-col p-0" aria-label={t.flasher.progressLabel}>
       {steps.map(step => {
         const state = stateOf(step)
         const hasCount = step.max !== undefined && step.max !== null && (step.active || step.done)

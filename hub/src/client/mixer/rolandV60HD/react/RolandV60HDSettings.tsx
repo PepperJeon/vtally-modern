@@ -4,8 +4,10 @@ import ValidatingInput from '../../../components/config/ValidatingInput'
 import { socket } from '../../../hooks/useSocket'
 import { useRolandV60HDConfiguration } from '../../../hooks/useConfiguration'
 import { ROLAND_V60HD_ID } from '../../../../shared/mixer/ids'
+import { useT } from '../../../i18n'
 
 function RolandV60HDSettings() {
+    const t = useT()
     const configuration = useRolandV60HDConfiguration()
     const [ip, setIp] = useState<string|null>(null)
     const [ipValid, setIpValid] = useState(true)
@@ -31,17 +33,17 @@ function RolandV60HDSettings() {
 
     return (
         <MixerSettingsWrapper
-            title="RolandV60HD SmartTally"
+            title={t.rolandV60HD.title}
             testId="rolandV60HD"
-            description="RolandV60HD Mixer with suport for Roland SmartTally"
+            description={t.rolandV60HD.description}
             canBeSaved={isValid}
             isLoading={isLoading}
             onSave={handleSave}
         >
         { configuration && (<>
-            <ValidatingInput label="IP" testId="rolandV60HD-ip" object={configuration} propertyName="ip" onValid={(newIp) => { setIp(newIp); setIpValid(true) }} onInvalid={() => setIpValid(false)} />
-            <ValidatingInput label="Port" testId="rolandV60HD-port" object={configuration} propertyName="port" onValid={(newPort) => { setPort(newPort); setPortValid(true) }} onInvalid={() => setPortValid(false)} />
-            <ValidatingInput label="Request Interval" testId="rolandV60HD-requestInterval" object={configuration} propertyName="requestInterval" onValid={(newRequestInterval) => { setRequestInterval(newRequestInterval); setRequestIntervalValid(true) }} onInvalid={() => setRequestIntervalValid(false)} />
+            <ValidatingInput label={t.rolandV60HD.ip} testId="rolandV60HD-ip" object={configuration} propertyName="ip" onValid={(newIp) => { setIp(newIp); setIpValid(true) }} onInvalid={() => setIpValid(false)} />
+            <ValidatingInput label={t.rolandV60HD.port} testId="rolandV60HD-port" object={configuration} propertyName="port" onValid={(newPort) => { setPort(newPort); setPortValid(true) }} onInvalid={() => setPortValid(false)} />
+            <ValidatingInput label={t.rolandV60HD.requestInterval} testId="rolandV60HD-requestInterval" object={configuration} propertyName="requestInterval" onValid={(newRequestInterval) => { setRequestInterval(newRequestInterval); setRequestIntervalValid(true) }} onInvalid={() => setRequestIntervalValid(false)} />
         </>)}
         </MixerSettingsWrapper>
     )

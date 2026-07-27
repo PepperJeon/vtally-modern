@@ -126,19 +126,22 @@ body{
 
 .tname{
   font-weight:760; letter-spacing:var(--tight); line-height:1.05;
-  font-size:clamp(1rem, 13cqw, 3.1rem);
+  font-size:clamp(1rem, 17cqw, 4rem);
   overflow-wrap:anywhere;
 }
 .tword{
   font-weight:660; letter-spacing:var(--wide); text-transform:uppercase;
-  font-size:clamp(.55rem, 5.6cqw, 1.35rem); opacity:.86;
+  font-size:clamp(.55rem, 7cqw, 1.7rem); opacity:.86;
 }
 .screen{ container-type:inline-size; }
 
 /* chrome — 70% alpha of the derived text colour */
 .sc-tl,.sc-tr,.sc-br,.sc-bl{ position:absolute; opacity:.7; }
 .sc-tr{ top:5%; right:6%; } .sc-br{ bottom:5%; right:6%; }
-.sc-bl{ bottom:5%; left:6%; font-size:9px; letter-spacing:.02em; display:flex; gap:4px; align-items:center; }
+/* the wake-lock indicator is load-bearing (spec §4.6) — scale it with the
+   screen instead of pinning it at 9px, or it stops being readable at all */
+.sc-bl{ bottom:5%; left:6%; font-size:max(9px, 3.2cqw); letter-spacing:.02em;
+  display:flex; gap:4px; align-items:center; }
 .sc-tr svg,.sc-br svg{ width:17px; height:17px; }
 .stage[data-scale="3m"] .sc-tr,.stage[data-scale="3m"] .sc-br,
 .stage[data-scale="3m"] .sc-bl{ display:none; }
@@ -201,7 +204,7 @@ body{
 .ctl-l b{ font-size:var(--t-md); font-weight:680; font-family:var(--mono); }
 input[type=range]{ width:100%; height:22px; appearance:none; background:transparent; cursor:pointer; }
 input[type=range]::-webkit-slider-runnable-track{
-  height:5px; border-radius:var(--r-full); background:var(--sunken); border:1px solid var(--border); }
+  height:5px; border-radius:var(--r-full); background:var(--sunken); border:1px solid var(--border-strong); }
 input[type=range]::-webkit-slider-thumb{
   appearance:none; width:17px; height:17px; margin-top:-7px; border-radius:var(--r-full);
   background:var(--text); border:1px solid var(--bg); box-shadow:var(--lift); }

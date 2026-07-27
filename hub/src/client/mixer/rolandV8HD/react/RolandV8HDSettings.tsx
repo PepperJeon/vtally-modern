@@ -4,8 +4,10 @@ import ValidatingInput from '../../../components/config/ValidatingInput'
 import { socket } from '../../../hooks/useSocket'
 import { useRolandV8HDConfiguration } from '../../../hooks/useConfiguration'
 import { ROLAND_V8HD_ID } from '../../../../shared/mixer/ids'
+import { useT } from '../../../i18n'
 
 function RolandV8HDSettings() {
+    const t = useT()
     const configuration = useRolandV8HDConfiguration()
     const [requestInterval, setRequestInterval] = useState<string|number|null>(null)
     const [requestIntervalValid, setRequestIntervalValid] = useState(true)
@@ -24,15 +26,15 @@ function RolandV8HDSettings() {
 
     return (
         <MixerSettingsWrapper
-            title="Roland V-8HD"
+            title={t.rolandV8HD.title}
             testId="rolandV8HD"
-            description="Roland V-8HD Mixer connected via USB-Midi"
+            description={t.rolandV8HD.description}
             canBeSaved={isValid}
             isLoading={isLoading}
             onSave={handleSave}
         >
         { configuration && (<>
-            <ValidatingInput label="Request Interval" testId="rolandV8HD-request-interval" object={configuration} propertyName="requestInterval" onValid={(newRequestInterval) => { setRequestInterval(newRequestInterval); setRequestIntervalValid(true) }} onInvalid={() => setRequestIntervalValid(false)} />
+            <ValidatingInput label={t.rolandV8HD.requestInterval} testId="rolandV8HD-request-interval" object={configuration} propertyName="requestInterval" onValid={(newRequestInterval) => { setRequestInterval(newRequestInterval); setRequestIntervalValid(true) }} onInvalid={() => setRequestIntervalValid(false)} />
             </>)}
         </MixerSettingsWrapper>
     )

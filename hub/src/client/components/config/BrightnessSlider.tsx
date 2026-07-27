@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Slider as SliderPrimitive } from 'radix-ui'
 
 import { cn } from '@/lib/utils'
+import { useT } from '../../i18n'
 
 type BrightnessSliderProps = {
   value: number|null
@@ -28,6 +29,7 @@ const marks = [0, 20, 40, 60, 80, 100]
  * 0–100 and the operator can see there is a floor rather than a broken slider.
  */
 function BrightnessSlider({value, testId, onChange, minValue = 0, minMessage, disabled = false}: BrightnessSliderProps) {
+  const t = useT()
   const [dragging, setDragging] = useState(false)
   const [focused, setFocused] = useState(false)
   const v = value ?? 0
@@ -63,8 +65,8 @@ function BrightnessSlider({value, testId, onChange, minValue = 0, minMessage, di
         <SliderPrimitive.Thumb
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
-          aria-label="Brightness"
-          aria-valuetext={v === 0 ? "off" : `${v} percent`}
+          aria-label={t.brightness.label}
+          aria-valuetext={t.brightness.valueText(v)}
           className={cn(
             "relative block size-5 rounded-full bg-white",
             "focus-visible:shadow-focus focus-visible:outline-none",
@@ -81,7 +83,7 @@ function BrightnessSlider({value, testId, onChange, minValue = 0, minMessage, di
               showBubble ? "opacity-100" : "opacity-0"
             )}
           >
-            {v === 0 ? "off" : `${v}%`}
+            {t.brightness.bubble(v)}
           </span>
         </SliderPrimitive.Thumb>
       </SliderPrimitive.Root>

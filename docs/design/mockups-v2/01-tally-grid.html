@@ -293,11 +293,31 @@ body{
 .grid{
   display:grid;
   grid-template-columns:repeat(auto-fill, minmax(236px, 236px));
-  gap:14px; justify-content:start;
+  /* 18px, not 14 — a disconnected card's dashed outline sits 2px outside the
+     border box, so 14px gap leaves only 6px of real air between two of them */
+  gap:18px; justify-content:start;
   transition:opacity var(--base) var(--ease);
 }
 .grid + .sec{ margin-top:30px; }
+/* Stale-data dim. Tuned per theme, not shared: on a near-black page 0.5 fades
+   toward black and the live red stays red, but on a white page the same 0.5
+   fades toward white and turns the on-air card pink — washing out the one
+   card that must survive. */
 [data-hub="down"] .grid{ opacity:.5; }
+[data-theme="light"][data-hub="down"] .grid{ opacity:.66; }
+
+/* Carrier 3: the rail flips with the banner, off the same flag. */
+[data-hub="down"] .rail-cell .dot.ok{ background:transparent; box-shadow:0 0 0 1px var(--missing); position:relative; }
+[data-hub="down"] .rail-cell .dot.ok::after{
+  content:""; position:absolute; inset:-1px; border-radius:inherit;
+  background:linear-gradient(45deg,transparent 44%,var(--missing) 44%,var(--missing) 56%,transparent 56%);
+}
+[data-hub="down"] .rail-cell .rail-v{ color:var(--missing); }
+[data-hub="down"] .rail-cell .rail-v .mono{ color:var(--missing); opacity:.75; }
+[data-hub="down"] .bus-ch{ opacity:.45; }
+.dn{ display:none; }
+[data-hub="down"] .up{ display:none; }
+[data-hub="down"] .dn{ display:inline; }
 
 /* ═════ THE TALLY CARD ═════ */
 .card{
@@ -424,7 +444,10 @@ body{
   color:var(--text-subtle);
 }
 .card[data-health="disconnected"] .health{ color:var(--disconnected); }
-.card[data-color="program"][data-health="disconnected"] .health{ color:var(--on-fill); opacity:.9; }
+/* on a state fill the health word inherits the on-fill colour — a muted grey
+   here is grey-on-red and unreadable, which is the one thing this card can't be */
+.card[data-color="program"] .health{ color:var(--on-fill); opacity:.72; }
+.card[data-color="program"][data-health="disconnected"] .health{ opacity:1; }
 
 /* missing = the whole footer goes amber. loudest thing on the card. */
 .card[data-health="missing"] .card-f{
@@ -488,7 +511,9 @@ body{
   <div class="rail">
     <div class="rail-cell">
       <span class="rail-k"><span class="ko">허브</span><span class="en">Hub</span></span>
-      <span class="rail-v"><i class="dot ok"></i><span class="ko">연결됨</span><span class="en">Connected</span></span>
+      <span class="rail-v"><i class="dot ok"></i>
+        <span class="up"><span class="ko">연결됨</span><span class="en">Connected</span></span>
+        <span class="dn"><span class="ko">연결 끊김</span><span class="en">Disconnected</span></span></span>
     </div>
     <div class="rail-cell">
       <span class="rail-k"><span class="ko">믹서</span><span class="en">Mixer</span></span>

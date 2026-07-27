@@ -1,6 +1,7 @@
 import React from 'react'
 import ColorSchemes, { ColorSchemeId } from '../../../shared/tally/ColorScheme'
 import ChipLikeButton from '../ChipLikeButton'
+import { useT } from '../../i18n'
 
 type ColorSchemeSelectorProps = {
   value: ColorSchemeId
@@ -14,6 +15,7 @@ type ColorSchemeSelectorProps = {
  * option's own id. configTally.spec.ts reads it off the root; tally-settings
  * reads `data-selected` off the buttons. */
 function ColorSchemeSelector({value, onChange, disabled, testId}: ColorSchemeSelectorProps) {
+  const t = useT()
   const schemes = ColorSchemes.getAll()
   const selectedScheme = value !== undefined ? ColorSchemes.getById(value) : undefined
 
@@ -35,12 +37,12 @@ function ColorSchemeSelector({value, onChange, disabled, testId}: ColorSchemeSel
               <span className="size-3.5" style={{backgroundColor: scheme.program.toCss()}} />
               <span className="size-3.5" style={{backgroundColor: scheme.preview.toCss()}} />
             </span>
-            {scheme.name}
+            {t.colorScheme[scheme.id].name}
           </ChipLikeButton>
         ))}
       </div>
-      { selectedScheme && selectedScheme.description && (
-        <p className="mt-1 text-2xs text-text-muted">{selectedScheme.description}</p>
+      { selectedScheme && (
+        <p className="mt-1 text-2xs text-text-muted">{t.colorScheme[selectedScheme.id].description}</p>
       )}
     </div>
   )

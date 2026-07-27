@@ -3,6 +3,7 @@ import { AlertTriangle } from 'lucide-react'
 
 import TallyDevice from '../../../shared/flasher/TallyDevice'
 import ExternalLink from '../ExternalLink'
+import { useT } from '../../i18n'
 
 type Props = {
   tallyDevice: TallyDevice
@@ -13,6 +14,7 @@ type Props = {
 // second alert (design-screens.md §5.2): it is reference material, and stacking
 // two coloured blocks makes both of them noise.
 function WarningWithRetry({ children, onReload }: { children: React.ReactNode, onReload: () => void }) {
+  const t = useT()
   return (
     <div
       role="alert"
@@ -24,21 +26,25 @@ function WarningWithRetry({ children, onReload }: { children: React.ReactNode, o
         type="button"
         onClick={() => onReload()}
         className="shrink-0 rounded-sm px-2 py-1 text-sm font-medium text-missing underline underline-offset-2 hover:bg-surface-hover focus-visible:shadow-focus focus-visible:outline-none"
-      >Try again</button>
+      >{t.common.tryAgain}</button>
     </div>
   )
 }
 
 function Fixes({ children }: { children: React.ReactNode }) {
+  const t = useT()
   return (
     <div className="rounded-md border border-border bg-surface-hover px-4 py-3 text-sm text-text">
-      <p className="m-0 mb-2 font-medium">Possible fixes</p>
+      <p className="m-0 mb-2 font-medium">{t.flasherHelp.possibleFixes}</p>
       <ul className="m-0 flex list-disc flex-col gap-2 pl-5">{children}</ul>
     </div>
   )
 }
 
 function Help({ tallyDevice, onReload }: Props) {
+  const t = useT()
+  const em = (text: string) => <em>{text}</em>
+
   if (tallyDevice.path === undefined) {
     const isLocalhost = (() => {
       const hostName = window.location.hostname
@@ -46,21 +52,21 @@ function Help({ tallyDevice, onReload }: Props) {
     })
 
     return <>
-      <WarningWithRetry onReload={onReload}>Did not find any connected device.</WarningWithRetry>
+      <WarningWithRetry onReload={onReload}>{t.flasherHelp.noDevice}</WarningWithRetry>
       <Fixes>
-        <li>Plug the Tally to the computer that runs the hub via USB.</li>
-        { !isLocalhost() && <li>The Tally has to be connected to the computer that <em>runs</em> the hub. It does not work on <em>remote machines</em>.</li> }
-        <li>Some USB cables can just be used for charging. Make sure you use an <em>USB data cable</em>.</li>
-        <li>If this has never worked from this computer ever, you might be missing the correct <ExternalLink href="https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers">USB drivers</ExternalLink>.</li>
+        <li>{t.flasherHelp.fixPlugUsb}</li>
+        { !isLocalhost() && <li>{t.flasherHelp.fixRemote(em)}</li> }
+        <li>{t.flasherHelp.fixDataCable(em)}</li>
+        <li>{t.flasherHelp.fixDrivers(text => <ExternalLink href="https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers">{text}</ExternalLink>)}</li>
       </Fixes>
     </>
   } else if (tallyDevice.nodeMcuVersion === undefined) {
     return <>
-      <WarningWithRetry onReload={onReload}>Device was found, but could not determine if LUA is running.</WarningWithRetry>
+      <WarningWithRetry onReload={onReload}>{t.flasherHelp.noLua}</WarningWithRetry>
       <Fixes>
-        <li>This happens sporadically. It could be fixed by trying again.</li>
-        <li>Make sure a firmware is flashed. For example with esptool.</li>
-        <li>Sometimes fault code on the Tally makes the firmware crash. Pushing the reset button might help.</li>
+        <li>{t.flasherHelp.fixSporadic}</li>
+        <li>{t.flasherHelp.fixFlashFirmware}</li>
+        <li>{t.flasherHelp.fixResetButton}</li>
       </Fixes>
     </>
   }
@@ -69,7 +75,7 @@ function Help({ tallyDevice, onReload }: Props) {
   return (
     <p className="m-0 flex items-center gap-2 text-base text-text">
       <span aria-hidden className="size-2 rounded-full bg-preview" />
-      Device on <span className="font-mono">{tallyDevice.path}</span>
+      {t.flasherHelp.deviceOn} <span className="font-mono">{tallyDevice.path}</span>
       { tallyDevice.nodeMcuVersion && <span className="text-text-muted">· NodeMCU {tallyDevice.nodeMcuVersion}</span> }
     </p>
   )

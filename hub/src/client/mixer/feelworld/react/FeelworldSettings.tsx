@@ -4,8 +4,10 @@ import ValidatingInput from '../../../components/config/ValidatingInput'
 import { socket } from '../../../hooks/useSocket'
 import { useFeelworldConfiguration } from '../../../hooks/useConfiguration'
 import { FEELWORLD_ID } from '../../../../shared/mixer/ids'
+import { useT } from '../../../i18n'
 
 function FeelworldSettings() {
+    const t = useT()
     const configuration = useFeelworldConfiguration()
     const [ip, setIp] = useState<string|null>(null)
     const [ipValid, setIpValid] = useState(true)
@@ -31,17 +33,17 @@ function FeelworldSettings() {
 
     return (
         <MixerSettingsWrapper
-            title="Feelworld (experimental, unverified)"
+            title={t.feelworld.title}
             testId="feelworld"
-            description="Feelworld video switcher tally over UDP. This connector has not been verified against real Feelworld hardware yet — only visible in dev builds."
+            description={t.feelworld.description}
             canBeSaved={isValid}
             isLoading={isLoading}
             onSave={handleSave}
         >
         { configuration && (<>
-            <ValidatingInput label="IP" testId="feelworld-ip" object={configuration} propertyName="ip" onValid={(newIp) => { setIp(newIp); setIpValid(true) }} onInvalid={() => setIpValid(false)} />
-            <ValidatingInput label="Port" testId="feelworld-port" object={configuration} propertyName="port" onValid={(newPort) => { setPort(newPort); setPortValid(true) }} onInvalid={() => setPortValid(false)} />
-            <ValidatingInput label="Request Interval" testId="feelworld-requestInterval" object={configuration} propertyName="requestInterval" onValid={(newRequestInterval) => { setRequestInterval(newRequestInterval); setRequestIntervalValid(true) }} onInvalid={() => setRequestIntervalValid(false)} />
+            <ValidatingInput label={t.feelworld.ip} testId="feelworld-ip" object={configuration} propertyName="ip" onValid={(newIp) => { setIp(newIp); setIpValid(true) }} onInvalid={() => setIpValid(false)} />
+            <ValidatingInput label={t.feelworld.port} testId="feelworld-port" object={configuration} propertyName="port" onValid={(newPort) => { setPort(newPort); setPortValid(true) }} onInvalid={() => setPortValid(false)} />
+            <ValidatingInput label={t.feelworld.requestInterval} testId="feelworld-requestInterval" object={configuration} propertyName="requestInterval" onValid={(newRequestInterval) => { setRequestInterval(newRequestInterval); setRequestIntervalValid(true) }} onInvalid={() => setRequestIntervalValid(false)} />
         </>)}
         </MixerSettingsWrapper>
     )

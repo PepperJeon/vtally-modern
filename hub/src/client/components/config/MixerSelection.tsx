@@ -4,8 +4,10 @@ import { MIXERS } from '../../mixer/registry'
 import { NativeSelect } from '../ui/native-select'
 import Spinner from '../layout/Spinner'
 import MiniPage from '../layout/MiniPage'
+import { useT } from '../../i18n'
 
 function MixerSelection() {
+    const t = useT()
     const mixerName = useMixerNameConfiguration()
     const allowedMixers = useAllowedMixersConfiguration()
 
@@ -29,12 +31,12 @@ function MixerSelection() {
     const currentMixer = availableMixers.find(mixer => mixer.id === mixerId)
 
     return (
-        <MiniPage title="Video Mixer" className="max-w-[560px]">
-            <p className="m-0 mb-4 text-sm text-text-muted">Select a Video Mixer to use.</p>
+        <MiniPage title={t.mixerSelection.title} className="max-w-[560px]">
+            <p className="m-0 mb-4 text-sm text-text-muted">{t.mixerSelection.description}</p>
             {isLoading ? <Spinner /> : (<>
-                <NativeSelect data-testid="mixer-select" aria-label="Video Mixer" value={mixerId} onChange={e => setMixerId(e.target.value)}>
+                <NativeSelect data-testid="mixer-select" aria-label={t.mixerSelection.title} value={mixerId} onChange={e => setMixerId(e.target.value)}>
                     {availableMixers.map(mixer => (
-                        <option key={mixer.id} value={mixer.id}>{mixer.label}</option>
+                        <option key={mixer.id} value={mixer.id}>{t.mixers[mixer.id]}</option>
                     ))}
                 </NativeSelect>
                 {/* the selector changes what is below it, so make that visible */}

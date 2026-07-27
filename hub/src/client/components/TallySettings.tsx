@@ -10,6 +10,7 @@ import ColorSchemeSelector from './config/ColorSchemeSelector';
 import FormDialog from './layout/FormDialog';
 import Spinner from './layout/Spinner';
 import TallySettingsField from './TallySettingsField';
+import { useT } from '../i18n';
 
 const fieldClass = "mb-4"
 
@@ -48,6 +49,7 @@ type TallySettingsProps = {
 }
 
 function TallySettings({ tally, open, onClose }: TallySettingsProps) {
+  const t = useT()
   const defaultSettings = useDefaultTallyConfiguration()
   const settings = tally.configuration
   // operatorBrightness
@@ -130,11 +132,11 @@ function TallySettings({ tally, open, onClose }: TallySettingsProps) {
       open={open}
       onClose={onClose}
       onSubmit={handleSave}
-      label={`${tally.name} Settings`}
+      label={t.tallySettings.title(tally.name)}
     >
       { isLoading ? (<Spinner />) : (<>
         <TallySettingsField
-          label="Operator Light Brightness"
+          label={t.tallySettings.operatorBrightness}
           isDefault={isObDefault}
           onChange={setObDefault}
           testId="tally-settings-ob"
@@ -144,13 +146,13 @@ function TallySettings({ tally, open, onClose }: TallySettingsProps) {
             testId="tally-settings-ob"
             disabled={isObDefault}
             minValue={DefaultTallyConfiguration.minOperatorLightBrightness}
-            minMessage="Operator Light can not be turned off."
+            minMessage={t.tallySettings.operatorCannotBeOff}
             value={isObDefault ? defaultSettings.getOperatorLightBrightness() : ob}
             onChange={(value) => { setOb(value) }}
           />
         </TallySettingsField>
         <TallySettingsField
-          label="Operator Light Colors"
+          label={t.tallySettings.operatorColors}
           isDefault={isOcDefault}
           onChange={setOcDefault}
           testId="tally-settings-oc"
@@ -164,7 +166,7 @@ function TallySettings({ tally, open, onClose }: TallySettingsProps) {
           />
         </TallySettingsField>
         <TallySettingsField
-          label="Operator Display"
+          label={t.tallySettings.operatorDisplay}
           isDefault={isOiDefault}
           onChange={setOiDefault}
           testId="tally-settings-oi"
@@ -175,12 +177,12 @@ function TallySettings({ tally, open, onClose }: TallySettingsProps) {
             value={isOiDefault ? defaultSettings.getOperatorShowsIdle() : oi}
             disabled={isOiDefault}
             onChange={setOi}
-            label="Shows Idle State"
+            label={t.tallySettings.showsIdleState}
           />
         </TallySettingsField>
         { tally.hasStageLight && (<>
         <TallySettingsField
-          label="Stage Light Brightness"
+          label={t.tallySettings.stageBrightness}
           isDefault={isSbDefault}
           onChange={setSbDefault}
           testId="tally-settings-sb"
@@ -194,7 +196,7 @@ function TallySettings({ tally, open, onClose }: TallySettingsProps) {
             />
             </TallySettingsField>
         <TallySettingsField
-          label="Stage Light Colors"
+          label={t.tallySettings.stageColors}
           isDefault={isScDefault}
           onChange={setScDefault}
           testId="tally-settings-sc"
@@ -208,7 +210,7 @@ function TallySettings({ tally, open, onClose }: TallySettingsProps) {
             />
         </TallySettingsField>
         <TallySettingsField
-          label="Stage Display"
+          label={t.tallySettings.stageDisplay}
           isDefault={isSpDefault}
           onChange={setSpDefault}
           testId="tally-settings-sp"
@@ -219,7 +221,7 @@ function TallySettings({ tally, open, onClose }: TallySettingsProps) {
             value={isSpDefault ? defaultSettings.getStageShowsPreview() : sp}
             disabled={isSpDefault}
             onChange={setSp}
-            label="Shows Preview State"
+            label={t.tallySettings.showsPreviewState}
           />
         </TallySettingsField>
         </>)}

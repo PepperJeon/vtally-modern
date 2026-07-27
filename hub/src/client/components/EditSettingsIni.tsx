@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
 
 import TallySettingsIni from '../../shared/flasher/TallySettingsIni'
+import { useT } from '../i18n'
 
 type EditTallySettingsProps = {
   settingsIni: TallySettingsIni
@@ -51,6 +52,7 @@ function Field({ label, testId, value, disabled, type, onChange, children }: Fie
 }
 
 const EditSettingsIni = ({settingsIni, onSave, disabled}: EditTallySettingsProps) => {
+  const t = useT()
   const [ini, setIni] = useState<TallySettingsIni>(settingsIni)
   const [stringContent, setStringContent] = useState(settingsIni?.toString())
   const [expertMode, setExpertMode] = useState(false)
@@ -82,7 +84,7 @@ const EditSettingsIni = ({settingsIni, onSave, disabled}: EditTallySettingsProps
       data-expertmode={expertMode ? "true" : "false"}
       className="flex cursor-pointer items-center justify-end gap-2 text-sm text-text"
     >
-      <span>Expert Mode</span>
+      <span>{t.settingsIni.expertMode}</span>
       <input
         type="checkbox"
         role="switch"
@@ -99,11 +101,11 @@ const EditSettingsIni = ({settingsIni, onSave, disabled}: EditTallySettingsProps
       </span>
     </label>
     <p className="mb-4 mt-1 text-right text-sm text-text-muted">
-      Expert mode shows every key in the file. Changes made there and in simple mode are the same settings.
+      {t.settingsIni.expertModeHelp}
     </p>
     { expertMode ?
       <div data-testid="tally-settings-all" className="mb-4">
-        <label htmlFor="field-tally-settings-all" className="mb-1 block text-sm font-medium text-text-muted">tally-settings.ini</label>
+        <label htmlFor="field-tally-settings-all" className="mb-1 block text-sm font-medium text-text-muted">{t.settingsIni.fileName}</label>
         <textarea
           id="field-tally-settings-all"
           rows={(ini?.lines.length || 0) + 1}
@@ -118,25 +120,25 @@ const EditSettingsIni = ({settingsIni, onSave, disabled}: EditTallySettingsProps
         />
       </div>
     : <>
-      <Field label="Name" testId="tally-settings-name" disabled={disabled} value={ini?.getTallyName() || ""}
+      <Field label={t.settingsIni.name} testId="tally-settings-name" disabled={disabled} value={ini?.getTallyName() || ""}
         onChange={value => update(clone => clone.setTallyName(value))} />
-      <Field label="Ssid" testId="tally-settings-ssid" disabled={disabled} value={ini?.getStationSsid() || ""}
+      <Field label={t.settingsIni.ssid} testId="tally-settings-ssid" disabled={disabled} value={ini?.getStationSsid() || ""}
         onChange={value => update(clone => clone.setStationSsid(value))} />
-      <Field label="Password" testId="tally-settings-password" disabled={disabled} value={ini?.getStationPassword() || ""}
+      <Field label={t.settingsIni.password} testId="tally-settings-password" disabled={disabled} value={ini?.getStationPassword() || ""}
         type={revealPassword ? "text" : "password"}
         onChange={value => update(clone => clone.setStationPassword(value))}>
         {/* A wifi password typed blind into a device that ends up taped to a
             truss is worth one eye icon. */}
         <button
           type="button"
-          aria-label={revealPassword ? "Hide password" : "Show password"}
+          aria-label={revealPassword ? t.settingsIni.hidePassword : t.settingsIni.showPassword}
           onClick={() => setRevealPassword(!revealPassword)}
           className="absolute right-1 top-1/2 -translate-y-1/2 rounded-sm p-2 text-n-400 hover:text-text focus-visible:shadow-focus focus-visible:outline-none"
         >{revealPassword ? <EyeOff aria-hidden className="size-4" /> : <Eye aria-hidden className="size-4" />}</button>
       </Field>
-      <Field label="Hub IP" testId="tally-settings-ip" disabled={disabled} value={ini?.getHubIp() || ""}
+      <Field label={t.settingsIni.hubIp} testId="tally-settings-ip" disabled={disabled} value={ini?.getHubIp() || ""}
         onChange={value => update(clone => clone.setHubIp(value))} />
-      <Field label="Hub Port" testId="tally-settings-port" disabled={disabled} value={ini?.getHubPort()?.toString() || ""}
+      <Field label={t.settingsIni.hubPort} testId="tally-settings-port" disabled={disabled} value={ini?.getHubPort()?.toString() || ""}
         onChange={value => {
           const number = parseInt(value, 10)
           update(clone => clone.setHubPort(isNaN(number) ? 0 : number))
@@ -150,7 +152,7 @@ const EditSettingsIni = ({settingsIni, onSave, disabled}: EditTallySettingsProps
         disabled={disabled}
         onClick={() => onSave(ini)}
         className="inline-flex h-11 items-center justify-center rounded-sm px-4 font-sans text-base font-medium transition-colors duration-[var(--duration-fast)] focus-visible:shadow-focus focus-visible:outline-none bg-white text-n-950 hover:bg-n-100 disabled:cursor-not-allowed disabled:bg-n-600 disabled:text-text-disabled disabled:hover:bg-n-600"
-      >Save</button>
+      >{t.common.save}</button>
     </div>
   </div>)
 }

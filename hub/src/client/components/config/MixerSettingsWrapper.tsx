@@ -1,5 +1,6 @@
 import React from 'react'
 import Spinner from '../layout/Spinner'
+import { useT } from '../../i18n'
 
 type MixerSettingsWrapperProps = {
     title: string,
@@ -22,7 +23,8 @@ export const saveButtonClass = `${buttonBase} bg-white text-n-950 hover:bg-n-100
 export const saveButtonDisabledClass = `${buttonBase} cursor-not-allowed bg-n-600 text-text-disabled`
 
 function MixerSettingsWrapper({title, testId, description, canBeSaved, isLoading, children, onSave}: MixerSettingsWrapperProps ) {
-    const buttonLabel = "Save"
+    const t = useT()
+    const buttonLabel = t.common.save
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
         if (onSave) {
@@ -52,7 +54,7 @@ function MixerSettingsWrapper({title, testId, description, canBeSaved, isLoading
                     { canBeSaved === false ? (
                         // A disabled <button> emits no events, so the explanation has to
                         // hang off a wrapper that is still hoverable.
-                        <span title="The form contains errors" className="inline-block">
+                        <span title={t.common.formHasErrors} className="inline-block">
                             <button type="button" data-testid={`${testId}-submit`} disabled className={saveButtonDisabledClass}>{buttonLabel}</button>
                         </span>
                     ) : (

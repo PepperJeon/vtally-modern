@@ -11,8 +11,10 @@ import Spinner from '../layout/Spinner'
 import BrightnessSlider from './BrightnessSlider'
 import ColorSchemeSelector from './ColorSchemeSelector'
 import { saveButtonClass } from './MixerSettingsWrapper'
+import { useT } from '../../i18n'
+import { latinCaps } from '@/lib/utils'
 
-const groupHeading = "m-0 mb-4 text-xs font-semibold uppercase tracking-wide text-text-muted"
+const groupHeading = `m-0 mb-4 text-xs font-semibold ${latinCaps} text-text-muted`
 const fieldLabel = "mb-1 block text-sm font-medium text-text-muted"
 
 type SettingsCheckboxProps = {
@@ -52,6 +54,7 @@ function SettingsCheckbox({testId, checked, onCheckedChange, label}: SettingsChe
 }
 
 function TallySettings() {
+  const t = useT()
   const settings = useDefaultTallyConfiguration()
   const [operatorBrightness, setOperatorBrightness] = useState<number>(undefined)
   const [stageBrightness, setStageBrightness] = useState<number>(undefined)
@@ -86,22 +89,22 @@ function TallySettings() {
   // testId, not data-testid: MiniPage destructures its props and drops unknown
   // ones, so the old `data-testid="tally-defaults"` never reached the DOM at all
   // (design-screens.md §2.5). No spec asserts it; fixing it is free.
-  return <MiniPage testId="tally-defaults" title="Tally Defaults" className="max-w-[480px]">
+  return <MiniPage testId="tally-defaults" title={t.tallyDefaults.title} className="max-w-[480px]">
     { isLoading ? <Spinner /> : (<form onSubmit={handleSubmit}>
       <section>
-        <h3 className={groupHeading}>Operator Light</h3>
+        <h3 className={groupHeading}>{t.tallyDefaults.operatorLight}</h3>
         <div className="mb-6">
-          <span className={fieldLabel}>Brightness</span>
+          <span className={fieldLabel}>{t.tallyDefaults.brightness}</span>
           <BrightnessSlider
             testId="tally-defaults-ob"
             minValue={DefaultTallyConfiguration.minOperatorLightBrightness}
-            minMessage="Operator Light can not be turned off."
+            minMessage={t.tallySettings.operatorCannotBeOff}
             value={operatorBrightness}
             onChange={(value) => {setOperatorBrightness(value)}}
           />
         </div>
         <div className="mb-6">
-          <span className={fieldLabel}>Colours</span>
+          <span className={fieldLabel}>{t.tallyDefaults.colours}</span>
           <ColorSchemeSelector
             testId="tally-defaults-oc"
             value={operatorColorScheme}
@@ -112,16 +115,16 @@ function TallySettings() {
           testId="tally-defaults-oi"
           checked={operatorShowsIdle}
           onCheckedChange={setOperatorShowsIdle}
-          label="Shows idle state"
+          label={t.tallyDefaults.showsIdle}
         />
       </section>
 
       <hr className="my-6 border-0 border-t border-border" />
 
       <section>
-        <h3 className={groupHeading}>Stage Light</h3>
+        <h3 className={groupHeading}>{t.tallyDefaults.stageLight}</h3>
         <div className="mb-6">
-          <span className={fieldLabel}>Brightness</span>
+          <span className={fieldLabel}>{t.tallyDefaults.brightness}</span>
           <BrightnessSlider
             testId="tally-defaults-sb"
             value={stageBrightness}
@@ -129,7 +132,7 @@ function TallySettings() {
           />
         </div>
         <div className="mb-6">
-          <span className={fieldLabel}>Colours</span>
+          <span className={fieldLabel}>{t.tallyDefaults.colours}</span>
           <ColorSchemeSelector
             testId="tally-defaults-sc"
             value={stageColorScheme}
@@ -140,12 +143,12 @@ function TallySettings() {
           testId="tally-defaults-sp"
           checked={stageShowsPreview}
           onCheckedChange={setStageShowsPreview}
-          label="Shows preview state"
+          label={t.tallyDefaults.showsPreview}
         />
       </section>
 
       <div className="-mx-6 mt-6 border-t border-border px-6 pt-4 text-right">
-        <button data-testid="tally-defaults-submit" type="submit" className={saveButtonClass}>Save</button>
+        <button data-testid="tally-defaults-submit" type="submit" className={saveButtonClass}>{t.common.save}</button>
       </div>
     </form>)}
   </MiniPage>

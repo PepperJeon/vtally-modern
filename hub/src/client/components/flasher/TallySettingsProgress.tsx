@@ -2,37 +2,38 @@ import React from 'react'
 import type { TallySettingsIniProgressType } from '../../../shared/flasher/TallyDevice'
 import useTallies from '../../hooks/useTallies'
 import StepDisplay, { StepType } from './StepDisplay'
+import { useT, Translations } from '../../i18n'
 
-function getSteps(progress: TallySettingsIniProgressType, isTallyConnected: boolean): StepType[] {
+function getSteps(progress: TallySettingsIniProgressType, isTallyConnected: boolean, t: Translations): StepType[] {
   const steps: any = [
     {
       id: "initialize",
-      label: "Initializing",
+      label: t.flasher.steps.initializing,
       done: progress?.inititalizeDone,
     },
     {
       id: "connection",
-      label: "Establishing connection",
+      label: t.flasher.steps.establishingConnection,
       done: progress?.connectionDone,
     },
     {
       id: "upload",
-      label: "Uploading tally-settings.ini",
+      label: t.flasher.steps.uploadingIni,
       done: progress?.uploadDone,
     },
     {
       id: "reboot",
-      label: "Rebooting Tally to apply settings",
+      label: t.flasher.steps.rebooting,
       done: progress?.rebootDone,
     },
     {
       id: "done",
-      label: "Upload Done",
+      label: t.flasher.steps.uploadDone,
       done: progress?.allDone,
     },
     {
       id: "connected",
-      label: "Tally is connected to Hub",
+      label: t.flasher.steps.tallyConnected,
       done: progress?.allDone && isTallyConnected,
     },
   ]
@@ -59,7 +60,8 @@ function TallySettingsIniProgress({progress} : Props) {
   const tallies = useTallies()
   const isTallyConnected = !!tallies.find(tally => tally.name === progress?.tallyName && tally.isConnected())
 
-  const steps = getSteps(progress, isTallyConnected)
+  const t = useT()
+  const steps = getSteps(progress, isTallyConnected, t)
   
   return <StepDisplay steps={steps} />
 }

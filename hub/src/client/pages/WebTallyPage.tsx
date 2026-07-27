@@ -23,6 +23,13 @@ function useWebTally(tallyName: string) {
 
   useEffect(() => {
     const onChange = ({tally: tallyData, command} : {tally: WebTallyObjectType, command: StateCommand}) => {
+      // Defence in depth. One socket can be subscribed to several web tallies at
+      // once (the server emits per-socket, with no room separation), so the name
+      // on the event is the only thing that distinguishes them. Without this
+      // guard, a leaked subscription for another tally paints THIS phone with
+      // that camera's state -- steadily, since the server walks an insertion-
+      // ordered Map, not intermittently.
+      if (tallyData.name !== tallyName) { return }
       const tally = WebTally.fromJson(tallyData)
       setTally(tally)
       setCommand(command)
@@ -56,7 +63,13 @@ function useWebTally(tallyName: string) {
 
     socket.connected && onConnect()
     return () => {
-      // cleanup
+      // socket is a module-scope singleton that outlives this component, so
+      // these two must be removed by hand. onDisconnect() only detaches the
+      // webTally.* listeners. Without these, every visit to a web tally leaves
+      // a permanent onConnect closure bound to that visit's tallyName, and the
+      // next reconnect re-subscribes all of them at once.
+      socket.off('connect', onConnect)
+      socket.off('disconnect', onDisconnect)
       onDisconnect()
     }
   }, [tallyName])

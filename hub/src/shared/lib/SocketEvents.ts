@@ -131,4 +131,14 @@ export interface ClientSideSocket {
         event: EventName,
         listener: ServerSentEvents[EventName]
     ): any
+    // These three mirror the `on` overloads above, and their absence was not
+    // cosmetic: `on` accepted the lifecycle events while `off` did not, so
+    // removing such a listener was a type error. WebTallyPage registered
+    // connect/disconnect and could not detach them, leaking one closure per
+    // visit — every reconnect then re-subscribed every tally the session had
+    // ever opened. A type that permits attaching and forbids detaching will
+    // produce a leak whatever the author intends.
+    off(event: "disconnect", listener: () => void) : any
+    off(event: "connect", listener: () => void) : any
+    off(event: "connect_error", listener: () => void) : any
 }

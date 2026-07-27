@@ -1,6 +1,7 @@
 import React from 'react'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { useT } from '../../i18n'
 
 type FormDialogProps = {
   "data-testid": string
@@ -22,6 +23,7 @@ type FormDialogProps = {
  * carries no testid of its own.
  */
 function FormDialog({label, onSubmit, onClose, isLoading, open, children, ...rest}: FormDialogProps) {
+  const t = useT()
   const testId = rest["data-testid"]
 
   return (
@@ -40,7 +42,7 @@ function FormDialog({label, onSubmit, onClose, isLoading, open, children, ...res
             <DialogTitle className="text-xl font-semibold text-text">{label}</DialogTitle>
             <button
               type="button"
-              aria-label="Close Dialog"
+              aria-label={t.common.closeDialog}
               onClick={onClose}
               className="-mr-2 flex size-11 items-center justify-center rounded-sm border-0 bg-transparent text-text-muted hover:bg-surface-hover focus-visible:shadow-focus focus-visible:outline-none"
             >
@@ -53,8 +55,8 @@ function FormDialog({label, onSubmit, onClose, isLoading, open, children, ...res
             {children}
           </div>
           <div className="flex justify-between gap-2 border-t border-border px-4 py-3">
-            <Button type="button" variant="outline" className="h-11 px-4" onClick={onClose} data-testid={`${testId}-close`}>Cancel</Button>
-            <Button type="submit" className="h-11 px-4" disabled={isLoading} data-testid={`${testId}-submit`}>Save</Button>
+            <Button type="button" variant="outline" className="h-11 px-4" onClick={onClose} data-testid={`${testId}-close`}>{t.common.cancel}</Button>
+            <Button type="submit" className="h-11 px-4" disabled={isLoading} data-testid={`${testId}-submit`}>{t.common.save}</Button>
           </div>
         </form>
       </DialogContent>

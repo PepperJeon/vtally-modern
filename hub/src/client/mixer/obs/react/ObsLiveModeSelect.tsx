@@ -1,6 +1,7 @@
 import React from 'react'
 import ObsConfiguration, { ObsConfigurationLiveMode } from '../../../../shared/mixer/obs/ObsConfiguration'
 import { NativeSelect } from '../../../components/ui/native-select'
+import { useT, Translations } from '../../../i18n'
 
 type ObsLiveModeSelectProps = {
   label: string
@@ -9,29 +10,21 @@ type ObsLiveModeSelectProps = {
   onChange: (value: ObsConfigurationLiveMode) => void
 }
 
-const options = {
-  always: {
-    label: "Always",
-    help: "",
-  },
-  stream: {
-    label: "Only when streaming",
-    help: "Tally Lights will not show on-air status unless OBS is streaming.",
-  },
-  record: {
-    label: "Only when recording",
-    help: "Tally Lights will not show on-air status unless OBS is recording.",
-  },
-  streamOrRecord: {
-    label: "When recording or streaming",
-    help: "Tally Lights will not show on-air status unless OBS is recording or streaming.",
-  },
-}
+// Option ORDER is fixed here; the copy comes from the table. configObs.spec.ts
+// drives this with `.select('record')` — by value, never by label — so the
+// labels are free to be translated.
+const getOptions = (t: Translations) => ({
+  always: { label: t.obs.liveMode.always, help: t.obs.liveMode.alwaysHelp },
+  stream: { label: t.obs.liveMode.stream, help: t.obs.liveMode.streamHelp },
+  record: { label: t.obs.liveMode.record, help: t.obs.liveMode.recordHelp },
+  streamOrRecord: { label: t.obs.liveMode.streamOrRecord, help: t.obs.liveMode.streamOrRecordHelp },
+})
 
 /* `configObs.spec.ts` reads this as `*[data-testid=obs-liveMode] select :selected`
  * and drives it with `.find("select").select(...)`, so it must stay a real
  * native <select> with the testid above it — see components/ui/native-select. */
 function ObsLiveModeSelect({label, testId, value, onChange}: ObsLiveModeSelectProps) {
+  const options = getOptions(useT())
   const currentOption = options[value]
   const selectId = `field-${testId}`
 

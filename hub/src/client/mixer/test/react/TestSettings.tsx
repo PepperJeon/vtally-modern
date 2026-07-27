@@ -3,16 +3,18 @@ import MixerSettingsWrapper from '../../../components/config/MixerSettingsWrappe
 import { socket } from '../../../hooks/useSocket'
 import TestConfiguration from '../../../../shared/mixer/test/TestConfiguration'
 import { TEST_ID } from '../../../../shared/mixer/ids'
+import { useT } from '../../../i18n'
 
 function TestSettings() {
+    const t = useT()
     const handleSave = () => {
         socket.emit('config.change.test', new TestConfiguration(), TEST_ID)
     }
 
     return (<MixerSettingsWrapper 
-        title="Test Configuration"
+        title={t.testMixer.title}
         testId="test"
-        description="A mixer used for automatic testing. You should never have to select it manually."
+        description={t.testMixer.description}
         onSave={handleSave}
     ></MixerSettingsWrapper>)
 }
