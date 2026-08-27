@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 440" width="1000" height="440" font-family="'Space Grotesk','Inter',sans-serif" role="img" aria-label="vTally 아키텍처: 비디오 믹서 → Hub → WiFi → 탈리">
+  <defs>
+    <linearGradient id="wire" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ff2f42"/><stop offset="1" stop-color="#18d67d"/>
+    </linearGradient>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#000" flood-opacity="0.45"/>
+    </filter>
+    <style>
+      .box{fill:#161a20;stroke:#333b47;stroke-width:1.5;rx:14;}
+      .lbl{fill:#e8ebf0;font-weight:600;font-size:17px;}
+      .sub{fill:#97a1b0;font-size:12px;font-family:'JetBrains Mono',monospace;}
+      .pin{fill:#6b7482;font-size:11px;font-family:'JetBrains Mono',monospace;}
+    </style>
+  </defs>
+
+  <!-- wires -->
+  <g fill="none" stroke-width="2.5" stroke-linecap="round">
+    <path d="M232 150 H300" stroke="#8a6bff"/>
+    <path d="M470 150 H540" stroke="url(#wire)"/>
+    <path d="M700 150 C760 150 760 90 820 90"  stroke="#ff2f42"/>
+    <path d="M700 150 H820"                      stroke="#18d67d"/>
+    <path d="M700 150 C760 150 760 300 820 300" stroke="#4c8dff"/>
+  </g>
+
+  <!-- Video Mixer -->
+  <g filter="url(#soft)">
+    <rect class="box" x="40" y="104" width="192" height="92" rx="14"/>
+  </g>
+  <rect x="66" y="132" width="34" height="24" rx="3" fill="none" stroke="#8a6bff" stroke-width="2"/>
+  <circle cx="112" cy="144" r="5" fill="#8a6bff"/>
+  <text class="lbl" x="66" y="176">Video Mixer</text>
+  <text class="sub" x="136" y="150">ATEM·vMix·OBS</text>
+
+  <!-- Hub -->
+  <g filter="url(#soft)">
+    <rect class="box" x="300" y="104" width="170" height="92" rx="14" stroke="#ff2f42" stroke-width="2"/>
+  </g>
+  <rect x="326" y="130" width="26" height="30" rx="2" fill="none" stroke="#ff2f42" stroke-width="2"/>
+  <line x1="331" y1="138" x2="347" y2="138" stroke="#ff2f42" stroke-width="2"/>
+  <line x1="331" y1="145" x2="347" y2="145" stroke="#ff2f42" stroke-width="2"/>
+  <text class="lbl" x="362" y="146">Hub</text>
+  <text class="sub" x="362" y="166">이 소프트웨어</text>
+
+  <!-- WiFi -->
+  <g filter="url(#soft)">
+    <rect class="box" x="540" y="104" width="160" height="92" rx="14"/>
+  </g>
+  <g stroke="#e8ebf0" stroke-width="2.4" fill="none" stroke-linecap="round">
+    <path d="M596 158 a26 26 0 0 1 44 0"/>
+    <path d="M606 150 a14 14 0 0 1 24 0"/>
+  </g>
+  <circle cx="618" cy="160" r="3.2" fill="#e8ebf0"/>
+  <text class="lbl" x="560" y="184" font-size="15">WiFi Router</text>
+
+  <!-- Tally 01 (On-Air) -->
+  <g filter="url(#soft)">
+    <rect class="box" x="820" y="52" width="150" height="76" rx="12" stroke="#ff2f42" stroke-width="2"/>
+  </g>
+  <circle cx="852" cy="90" r="11" fill="#ff2f42"/>
+  <text class="lbl" x="874" y="86" font-size="15">Tally 01</text>
+  <text x="874" y="104" fill="#ff5a68" font-size="11" font-family="'JetBrains Mono',monospace" font-weight="600">ON-AIR</text>
+
+  <!-- Tally 02 (Preview) -->
+  <g filter="url(#soft)">
+    <rect class="box" x="820" y="152" width="150" height="76" rx="12" stroke="#18d67d" stroke-width="2"/>
+  </g>
+  <circle cx="852" cy="190" r="11" fill="#18d67d"/>
+  <text class="lbl" x="874" y="186" font-size="15">Tally 02</text>
+  <text x="874" y="204" fill="#4fe6a1" font-size="11" font-family="'JetBrains Mono',monospace" font-weight="600">PREVIEW</text>
+
+  <!-- Web Tally -->
+  <g filter="url(#soft)">
+    <rect class="box" x="820" y="262" width="150" height="76" rx="12"/>
+  </g>
+  <rect x="844" y="284" width="20" height="32" rx="3" fill="none" stroke="#4c8dff" stroke-width="2"/>
+  <text class="lbl" x="874" y="296" font-size="15">Web Tally</text>
+  <text x="874" y="314" fill="#7fb0ff" font-size="11" font-family="'JetBrains Mono',monospace">브라우저</text>
+
+  <!-- caption -->
+  <text x="40" y="410" fill="#6b7482" font-size="12.5" font-family="'JetBrains Mono',monospace">
+    믹서 상태를 읽어 → Hub가 각 탈리에 색을 지시 → 빨강=송출(On-Air), 초록=예비(Preview)</text>
+</svg>

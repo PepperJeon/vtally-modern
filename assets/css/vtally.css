@@ -1,0 +1,233 @@
+/* ============================================================
+   vTally 가이드 — "Broadcast Control Room" 다크 테마
+   기본 MkDocs Material 룩을 완전히 재정의한다.
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap');
+
+/* ---- 팔레트 (control room) ---- */
+:root {
+  --vt-bg:        #0b0d10;   /* 페이지 바탕 */
+  --vt-bg-2:      #101318;   /* 헤더/사이드 */
+  --vt-surface:   #161a20;   /* 카드 */
+  --vt-surface-2: #1c212a;   /* 카드 hover / 코드 */
+  --vt-border:    #262c36;
+  --vt-border-2:  #333b47;
+  --vt-fg:        #e8ebf0;
+  --vt-fg-muted:  #97a1b0;
+  --vt-fg-dim:    #6b7482;
+  --vt-onair:     #ff2f42;   /* Program / On-Air */
+  --vt-onair-2:   #ff5a68;
+  --vt-preview:   #18d67d;   /* Preview */
+  --vt-preview-2: #4fe6a1;
+  --vt-glow-air:  rgba(255,47,66,.35);
+}
+
+/* Material 변수 재정의 (slate 스킴 위에) */
+[data-md-color-scheme="slate"] {
+  --md-hue: 222;
+  --md-default-bg-color:        var(--vt-bg);
+  --md-default-fg-color:        var(--vt-fg);
+  --md-default-fg-color--light: var(--vt-fg-muted);
+  --md-default-fg-color--lighter: var(--vt-fg-dim);
+  --md-primary-fg-color:        #0e1116;
+  --md-primary-bg-color:        var(--vt-fg);
+  --md-accent-fg-color:         var(--vt-onair);
+  --md-typeset-a-color:         var(--vt-onair-2);
+  --md-code-bg-color:           var(--vt-surface-2);
+  --md-code-fg-color:           #d7deea;
+  --md-typeset-kbd-color:       var(--vt-surface-2);
+}
+
+/* ---- 타이포그래피 ---- */
+body, .md-typeset {
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.md-typeset h1, .md-typeset h2, .md-typeset h3,
+.md-header__title, .md-nav__title {
+  font-family: 'Space Grotesk', 'Inter', sans-serif;
+  letter-spacing: -.01em;
+}
+.md-typeset h1 { font-weight: 700; color: var(--vt-fg); }
+.md-typeset h2 { font-weight: 600; margin-top: 2.4em;
+  padding-bottom: .3em; border-bottom: 1px solid var(--vt-border); }
+.md-typeset code { font-family: 'JetBrains Mono', monospace; font-size: .82em;
+  border: 1px solid var(--vt-border); border-radius: 5px; padding: .1em .4em; }
+.md-typeset a { text-decoration: none; }
+.md-typeset a:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+/* ---- 전역 배경 ---- */
+.md-main, .md-container { background: var(--vt-bg); }
+
+/* ---- 헤더: 다크 + 상단 On-Air 액센트 라인 ---- */
+.md-header {
+  background: var(--vt-bg-2);
+  border-bottom: 1px solid var(--vt-border);
+  box-shadow: none;
+}
+.md-header::before {
+  content: ""; position: absolute; inset: 0 0 auto 0; height: 2px;
+  background: linear-gradient(90deg, var(--vt-onair), var(--vt-preview));
+}
+.md-header__title { font-weight: 600; }
+.md-search__form { background: var(--vt-surface); border: 1px solid var(--vt-border); border-radius: 8px; }
+.md-search__form:hover { background: var(--vt-surface-2); }
+[data-md-color-scheme="slate"] .md-search__input::placeholder { color: var(--vt-fg-dim); }
+.md-tabs { background: transparent; }
+
+/* ---- 사이드 내비 ---- */
+.md-nav { font-size: .74rem; }
+.md-nav__item .md-nav__link--active,
+.md-nav__link:focus, .md-nav__link:hover { color: var(--vt-onair-2); }
+.md-nav__link--active { font-weight: 600; }
+.md-sidebar { scrollbar-width: thin; }
+
+/* ---- 콘텐츠 링크 색 & 셀렉션 ---- */
+::selection { background: var(--vt-onair); color: #fff; }
+
+/* ---- 이미지: 프레임 + 은은한 그림자 ---- */
+.md-typeset img {
+  border-radius: 10px;
+  border: 1px solid var(--vt-border);
+  box-shadow: 0 8px 30px rgba(0,0,0,.4);
+}
+/* 히어로 등 내부 SVG는 프레임 제거 */
+.vt-hero img, .vt-diagram svg, .md-typeset .vt-plain img {
+  border: 0; box-shadow: none; border-radius: 0;
+}
+
+/* ---- 표 ---- */
+.md-typeset table:not([class]) {
+  border: 1px solid var(--vt-border); border-radius: 10px; overflow: hidden;
+  box-shadow: none;
+}
+.md-typeset table:not([class]) th {
+  background: var(--vt-surface-2); color: var(--vt-fg);
+  font-family: 'Space Grotesk', sans-serif; font-weight: 600;
+  border-bottom: 1px solid var(--vt-border);
+}
+.md-typeset table:not([class]) td { border-top: 1px solid var(--vt-border); }
+.md-typeset table:not([class]) tr:hover { background: rgba(255,255,255,.02); }
+
+/* ---- Admonition 리디자인 ---- */
+.md-typeset .admonition, .md-typeset details {
+  background: var(--vt-surface);
+  border: 1px solid var(--vt-border);
+  border-left: 3px solid var(--vt-border-2);
+  border-radius: 10px;
+  box-shadow: none;
+  font-size: .78rem;
+}
+.md-typeset .admonition-title { background: transparent !important; font-weight: 600; }
+.md-typeset .note   { border-left-color: #4c8dff; }
+.md-typeset .tip    { border-left-color: var(--vt-preview); }
+.md-typeset .warning{ border-left-color: #ffab2e; }
+.md-typeset .info   { border-left-color: #37c2d6; }
+.md-typeset .question { border-left-color: #a97bff; }
+
+/* ---- 버튼 (프리미엄) ---- */
+.md-typeset .md-button {
+  border-radius: 9px; font-family: 'Space Grotesk', sans-serif; font-weight: 600;
+  padding: .55em 1.3em; border: 1px solid var(--vt-border-2);
+  color: var(--vt-fg); background: var(--vt-surface); transition: all .15s;
+}
+.md-typeset .md-button:hover { background: var(--vt-surface-2); border-color: var(--vt-fg-dim); transform: translateY(-1px); }
+.md-typeset .md-button--primary {
+  background: var(--vt-onair); border-color: var(--vt-onair);
+  color: #fff; box-shadow: 0 6px 20px var(--vt-glow-air);
+}
+.md-typeset .md-button--primary:hover { background: var(--vt-onair-2); border-color: var(--vt-onair-2); color: #fff; }
+
+/* ============================================================
+   히어로 랜딩 (홈)
+   ============================================================ */
+.vt-hero {
+  margin: -1.2rem 0 2.5rem;
+  padding: 3.2rem 0 2.6rem;
+  text-align: center;
+  position: relative;
+}
+.vt-hero__eyebrow {
+  display: inline-flex; align-items: center; gap: .5em;
+  font: 600 .72rem/1 'Space Grotesk', sans-serif; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--vt-fg-muted);
+  padding: .5em .9em; border: 1px solid var(--vt-border);
+  border-radius: 999px; background: var(--vt-surface); margin-bottom: 1.4rem;
+}
+.vt-hero__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--vt-onair);
+  box-shadow: 0 0 0 0 var(--vt-glow-air); animation: vt-pulse 2s infinite; }
+@keyframes vt-pulse {
+  0%   { box-shadow: 0 0 0 0 var(--vt-glow-air); }
+  70%  { box-shadow: 0 0 0 8px rgba(255,47,66,0); }
+  100% { box-shadow: 0 0 0 0 rgba(255,47,66,0); }
+}
+.vt-hero h1 {
+  font: 700 clamp(2.4rem, 6vw, 3.9rem)/1.05 'Space Grotesk', sans-serif;
+  letter-spacing: -.02em; margin: 0 0 .5rem;
+  background: linear-gradient(180deg, #fff, #aeb7c6);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+.vt-hero h1 .vt-air { -webkit-text-fill-color: var(--vt-onair); color: var(--vt-onair); }
+.vt-hero__sub {
+  max-width: 40rem; margin: 0 auto 1.9rem; color: var(--vt-fg-muted);
+  font-size: 1.05rem; line-height: 1.6;
+}
+.vt-hero__cta { display: flex; gap: .8rem; justify-content: center; flex-wrap: wrap; }
+
+/* 기능 카드 그리드 */
+.vt-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem; margin: 2rem 0;
+}
+.vt-card {
+  position: relative; overflow: hidden;
+  background: var(--vt-surface); border: 1px solid var(--vt-border);
+  border-radius: 14px; padding: 1.4rem 1.3rem; transition: all .18s;
+}
+.vt-card::before {
+  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, var(--vt-onair), transparent 55%); opacity: .65;
+}
+.vt-card:hover { border-color: var(--vt-border-2); transform: translateY(-3px);
+  box-shadow: 0 12px 34px rgba(0,0,0,.35); }
+.vt-card:hover::before { opacity: 1; }
+/* 이모지 아이콘은 폰트 의존이라 제거하고 CSS 액센트로 대체 */
+.vt-card__ico { display: none; }
+.vt-card h3 { display: flex; align-items: baseline; gap: .5em; }
+.vt-card h3::before {
+  content: ""; width: 7px; height: 7px; border-radius: 2px; flex: 0 0 auto;
+  background: var(--vt-onair); transform: translateY(-2px);
+}
+a.vt-card__link h3::before { background: var(--vt-preview); }
+.vt-card h3 { font: 600 1rem/1.2 'Space Grotesk', sans-serif; margin: 0 0 .4rem; color: var(--vt-fg); }
+.vt-card p { margin: 0; color: var(--vt-fg-muted); font-size: .84rem; line-height: 1.55; }
+.vt-card a.vt-card__link { color: inherit; }
+
+/* 스크린샷 쇼케이스 */
+.vt-shot {
+  margin: 2.4rem auto; max-width: 900px;
+  border-radius: 14px; overflow: hidden; border: 1px solid var(--vt-border);
+  box-shadow: 0 24px 60px rgba(0,0,0,.5);
+}
+.vt-shot__bar {
+  display: flex; align-items: center; gap: .5rem; padding: .7rem .9rem;
+  background: var(--vt-bg-2); border-bottom: 1px solid var(--vt-border);
+}
+.vt-shot__bar i { width: 11px; height: 11px; border-radius: 50%; display: inline-block; }
+.vt-shot__bar .r { background: #ff5f57; } .vt-shot__bar .y { background: #febc2e; } .vt-shot__bar .g { background: #28c840; }
+.vt-shot__bar span { margin-left: .6rem; font: 500 .72rem/1 'JetBrains Mono', monospace; color: var(--vt-fg-dim); }
+.vt-shot img { display: block; width: 100%; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; }
+
+/* 상태 배지 (본문에서 재사용) */
+.vt-badge { display: inline-block; padding: .1em .6em; border-radius: 6px;
+  font: 600 .8em/1.5 'Space Grotesk', sans-serif; }
+.vt-badge--air     { background: rgba(255,47,66,.15);  color: var(--vt-onair-2);   border: 1px solid rgba(255,47,66,.3); }
+.vt-badge--preview { background: rgba(24,214,125,.15); color: var(--vt-preview-2); border: 1px solid rgba(24,214,125,.3); }
+
+/* 푸터 */
+.md-footer { background: var(--vt-bg-2); border-top: 1px solid var(--vt-border); }
+.md-footer-meta { background: transparent; }
+
+/* 홈(nav+toc 숨김) 콘텐츠는 넓게, 히어로/카드가 중앙 정렬되도록 */
+.md-content__inner { margin-bottom: 2rem; }

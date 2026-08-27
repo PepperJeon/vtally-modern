@@ -43,10 +43,12 @@
         
         
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
-        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
       
     
+    
+      <link rel="stylesheet" href="../assets/css/vtally.css">
     
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
@@ -69,12 +71,10 @@
   
     
     
-      
     
     
     
-    
-    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="red">
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="red">
   
     
     <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
@@ -83,7 +83,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#vtally-user-guide" class="md-skip">
+        <a href="#components" class="md-skip">
           Skip to content
         </a>
       
@@ -127,33 +127,7 @@
     </div>
     
       
-        <form class="md-header__option" data-md-component="palette">
-  
     
-    
-    
-    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="red"  aria-label="다크 모드로 전환"  type="radio" name="__palette" id="__palette_0">
-    
-      <label class="md-header__button md-icon" title="다크 모드로 전환" for="__palette_1" hidden>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
-      </label>
-    
-  
-    
-    
-    
-    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="red"  aria-label="라이트 모드로 전환"  type="radio" name="__palette" id="__palette_1">
-    
-      <label class="md-header__button md-icon" title="라이트 모드로 전환" for="__palette_0" hidden>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
-      </label>
-    
-  
-</form>
-      
-    
-    
-      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
     
     
       <div class="md-header__option">
@@ -251,7 +225,9 @@
           
             
               
-              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" hidden>
                 <div class="md-sidebar__scrollwrap">
                   <div class="md-sidebar__inner">
                     
@@ -296,8 +272,6 @@
       <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
       
       
-        
-      
       
         <label class="md-nav__link md-nav__link--active" for="__toc">
           
@@ -326,8 +300,6 @@
   
   
   
-    
-  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -345,9 +317,18 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#the-screens-this-guide-covers" class="md-nav__link">
+  <a href="#see-it-in-action" class="md-nav__link">
     <span class="md-ellipsis">
-      The screens this guide covers
+      See it in action
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-this-guide-covers" class="md-nav__link">
+    <span class="md-ellipsis">
+      What this guide covers
     </span>
   </a>
   
@@ -509,7 +490,9 @@
             
             
               
-              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" hidden>
                 <div class="md-sidebar__scrollwrap">
                   <div class="md-sidebar__inner">
                     
@@ -517,8 +500,6 @@
 <nav class="md-nav md-nav--secondary" aria-label="Table of contents">
   
   
-  
-    
   
   
     <label class="md-nav__title" for="__toc">
@@ -537,9 +518,18 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#the-screens-this-guide-covers" class="md-nav__link">
+  <a href="#see-it-in-action" class="md-nav__link">
     <span class="md-ellipsis">
-      The screens this guide covers
+      See it in action
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-this-guide-covers" class="md-nav__link">
+    <span class="md-ellipsis">
+      What this guide covers
     </span>
   </a>
   
@@ -563,66 +553,51 @@
   
 
 
-<h1 id="vtally-user-guide">vTally User Guide<a class="headerlink" href="#vtally-user-guide" title="Permanent link">&para;</a></h1>
-<p><strong>vTally</strong> is an open-source, ESP8266-based WiFi tally light. With inexpensive
-hardware costing about 10 euros per unit, it works with most broadcast video
-mixers to tell talent and camera operators, through a light, <strong>which camera is
-currently On-Air (Program)</strong>.</p>
-<p>This guide explains, screen by screen, how to use vTally's <strong>Hub software</strong> — a
-web application that runs on one computer on your network and bridges the mixer
-and the tallies.</p>
-<div class="admonition note">
-<p class="admonition-title">About the screenshots in this document</p>
-<p>Every screen is captured directly from a live, running vTally Hub. The
-original app's UI is in English, so the text in the screenshots is English,
-and the Korean explanations point to the parts marked with <strong>red outlines
-and numbers</strong>.</p>
+<div class="vt-hero" markdown="0">
+  <span class="vt-hero__eyebrow"><span class="vt-hero__dot"></span> LIVE · ON-AIR TALLY</span>
+  <h1>Know exactly when a camera is <span class="vt-air">on&nbsp;air</span>.</h1>
+  <p class="vt-hero__sub">vTally is an open-source WiFi tally light built on the ESP8266. At about €10 per unit, it works with most broadcast mixers and instantly tells talent and camera operators who is live. This guide covers the heart of the system — the <strong>Hub software</strong>.</p>
+  <div class="vt-hero__cta">
+    <a class="md-button md-button--primary" href="getting-started/">Get Started →</a>
+    <a class="md-button" href="https://github.com/wifi-tally/wifi-tally">GitHub</a>
+  </div>
 </div>
+
+<div class="vt-grid" markdown="0">
+  <div class="vt-card"><span class="vt-card__ico">📡</span><h3>WiFi tally light</h3><p>ESP8266-based, flexible USB power (battery, camera outlet, mains). ~€10 per unit.</p></div>
+  <div class="vt-card"><span class="vt-card__ico">🎛️</span><h3>Major mixers supported</h3><p>ATEM · vMix · OBS · Roland V-8HD/V-60HD — all through a single Hub.</p></div>
+  <div class="vt-card"><span class="vt-card__ico">📱</span><h3>Web tally</h3><p>Turn any phone or tablet browser into a tally light — instantly, no hardware.</p></div>
+  <div class="vt-card"><span class="vt-card__ico">🖥️</span><h3>Central Hub monitoring</h3><p>Manage every tally's connection and On-Air/Preview state from one screen.</p></div>
+  <div class="vt-card"><span class="vt-card__ico">⚡</span><h3>Fast, lightweight protocol</h3><p>Uses your local network and access points with lean communication.</p></div>
+  <div class="vt-card"><span class="vt-card__ico">🔓</span><h3>Open source / open hardware</h3><p>Everything is public — from schematics to firmware to the Hub.</p></div>
+</div>
+
 <h2 id="components">Components<a class="headerlink" href="#components" title="Permanent link">&para;</a></h2>
-<p><a class="glightbox" href="../assets/img/architecture.png" data-type="image" data-width="auto" data-height="auto" data-desc-position="bottom"><img alt="vTally architecture" loading="lazy" src="../assets/img/architecture.png" /></a></p>
-<p>vTally is made up of three parts.</p>
-<table>
-<thead>
-<tr>
-<th>Component</th>
-<th>Role</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>Video mixer</strong></td>
-<td>ATEM, vMix, OBS, Roland, and others. The source that tells you which input is Program (on-air) / Preview.</td>
-</tr>
-<tr>
-<td><strong>Hub</strong></td>
-<td>The software covered by this guide. It reads the mixer state, tells each tally which color to show, and provides a web screen for monitoring and configuration.</td>
-</tr>
-<tr>
-<td><strong>Tally</strong></td>
-<td>An ESP8266 light mounted on top of a camera. Or a <strong>web tally</strong>, which uses a smartphone or tablet browser as a tally.</td>
-</tr>
-</tbody>
-</table>
-<div class="highlight"><pre><span></span><code>[Video mixer] ──▶ [Hub (this software)] ──▶ [Tally light / web tally]
-   read state          color / monitor         red=on-air, green=preview
-</code></pre></div>
-<h2 id="the-screens-this-guide-covers">The screens this guide covers<a class="headerlink" href="#the-screens-this-guide-covers" title="Permanent link">&para;</a></h2>
-<p>The Hub web screen is divided by the three menus in the top navigation
-(<strong>TALLIES · CONFIGURATION · FLASH</strong>).</p>
-<ul>
-<li><a href="getting-started/">Getting Started</a> — Run the Hub and connect for the first time</li>
-<li><a href="dashboard/">Dashboard</a> — Monitor the tally list and connection status (TALLIES)</li>
-<li><a href="mixers/">Connecting a Video Mixer</a> — Configure ATEM, vMix, OBS, and Roland (CONFIGURATION)</li>
-<li><a href="tally-defaults/">Tally Defaults</a> — Brightness, color, and display behavior</li>
-<li><a href="web-tally/">Web Tally</a> — Use a smartphone or tablet as a tally</li>
-<li><a href="flasher/">Flashing Hardware Tallies</a> — Burn firmware to an ESP8266 (FLASH)</li>
-<li><a href="logs/">Logs and Troubleshooting</a> — Check tally logs and common issues</li>
-</ul>
+<div class="vt-diagram vt-plain" markdown="0">
+  <a class="glightbox" href="assets/img/architecture-vt.svg" data-type="image" data-width="auto" data-height="auto" data-desc-position="bottom"><img src="assets/img/architecture-vt.svg" alt="vTally architecture: Video Mixer → Hub → WiFi → tallies (red On-Air / green Preview / web tally)"></a>
+</div>
+
+<p>vTally has three parts. The <strong>video mixer</strong> reports which input is program/preview, and the <strong>Hub</strong> (this software) tells each <span class="vt-badge vt-badge--air">tally</span> and <span class="vt-badge vt-badge--preview">web tally</span> what color to show.</p>
+<h2 id="see-it-in-action">See it in action<a class="headerlink" href="#see-it-in-action" title="Permanent link">&para;</a></h2>
+<div class="vt-shot vt-plain" markdown="0">
+  <div class="vt-shot__bar"><i class="r"></i><i class="y"></i><i class="g"></i><span>vTally Hub · TALLIES</span></div>
+  <a class="glightbox" href="assets/img/dashboard.png" data-type="image" data-width="auto" data-height="auto" data-desc-position="bottom"><img src="assets/img/dashboard.png" alt="vTally Hub dashboard — Camera 3 On-Air (red), Camera 2 Preview (green)"></a>
+</div>
+
+<p>Captured straight from a running Hub. <code>Camera 3</code> is <span class="vt-badge vt-badge--air">on air</span> and <code>Camera 2</code> is in <span class="vt-badge vt-badge--preview">preview</span>.</p>
+<h2 id="what-this-guide-covers">What this guide covers<a class="headerlink" href="#what-this-guide-covers" title="Permanent link">&para;</a></h2>
+<div class="vt-grid" markdown="0">
+  <a class="vt-card vt-card__link" href="getting-started/"><h3>Getting Started</h3><p>Run the Hub and open it for the first time</p></a>
+  <a class="vt-card vt-card__link" href="dashboard/"><h3>Dashboard</h3><p>Monitor tallies and connection status</p></a>
+  <a class="vt-card vt-card__link" href="mixers/"><h3>Connect a Mixer</h3><p>Set up ATEM · vMix · OBS · Roland</p></a>
+  <a class="vt-card vt-card__link" href="tally-defaults/"><h3>Tally Defaults</h3><p>Brightness, colors, display behavior</p></a>
+  <a class="vt-card vt-card__link" href="web-tally/"><h3>Web Tally</h3><p>Turn a phone/tablet into a tally</p></a>
+  <a class="vt-card vt-card__link" href="flasher/"><h3>Flashing Hardware</h3><p>Burn firmware onto the ESP8266</p></a>
+</div>
+
 <div class="admonition tip">
-<p class="admonition-title">A good order to read first</p>
-<p>If this is your first time, following <strong>Getting Started → Connecting a Video
-Mixer → Web Tally</strong> in that order lets you confirm things working the fastest,
-even without any hardware.</p>
+<p class="admonition-title">The fastest path</p>
+<p>Even without hardware, follow <strong>Getting Started → Connect a Mixer → Web Tally</strong> to see it working right away.</p>
 </div>
 
 
@@ -631,8 +606,13 @@ even without any hardware.</p>
 
 
 
+  
+  
 
 
+
+
+  
 
 
 
@@ -655,6 +635,8 @@ even without any hardware.</p>
         <footer class="md-footer">
   
     
+      
+        
       
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
@@ -700,7 +682,7 @@ even without any hardware.</p>
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.tracking", "navigation.top", "navigation.footer", "toc.follow", "content.tooltips", "search.suggest"], "search": "../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.tracking", "navigation.top", "navigation.footer", "navigation.sections", "toc.follow", "content.tooltips", "search.suggest"], "search": "../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
       <script src="../assets/javascripts/bundle.525ec568.min.js"></script>
