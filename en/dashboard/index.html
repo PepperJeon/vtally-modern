@@ -651,10 +651,40 @@ to reconnect automatically, and refreshing the page can also recover it.</p>
 </ul>
 <p>When a button is <strong>blue</strong>, that item is being shown.</p>
 <h2 id="tally-cards">Tally cards<a class="headerlink" href="#tally-cards" title="Permanent link">&para;</a></h2>
-<p>Each tally appears as a card. The card shows the name, the currently patched mixer
-channel (e.g. <code>(unpatched)</code> = not patched), and the connection status (such as
-<code>DISCONNECTED</code>). The <strong>⋮ menu</strong> at the top right of the card lets you rename,
-patch, configure, delete, and more.</p>
+<p>Each tally appears as a card. The card shows the name, the patched mixer channel
+(e.g. <code>CAM 1</code>, or <code>(unpatched)</code> if none), and the connection status
+(<code>CONNECTED</code> / <code>DISCONNECTED</code>). The <strong>⋮ menu</strong> at the top right lets you rename,
+patch, configure, and delete.</p>
+<p><strong>The card color is the tally state.</strong> The screenshot above shows a real live
+show with three connected cameras.</p>
+<table>
+<thead>
+<tr>
+<th>Card color</th>
+<th>State</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Red</strong></td>
+<td>Program</td>
+<td>Currently <strong>on-air</strong> — e.g. <code>Camera 3</code></td>
+</tr>
+<tr>
+<td><strong>Green</strong></td>
+<td>Preview</td>
+<td>Next up in <strong>preview</strong> — e.g. <code>Camera 2</code></td>
+</tr>
+<tr>
+<td>Grey</td>
+<td>Idle</td>
+<td>Patched but neither program nor preview — e.g. <code>Camera 1</code></td>
+</tr>
+</tbody>
+</table>
+<p>This color is mirrored on the physical hardware tally light and on the
+<a href="../web-tally/">Web Tally</a> screen.</p>
 <div class="admonition tip">
 <p class="admonition-title">What is a patch?</p>
 <p>Patching specifies <strong>which input channel</strong> of the mixer a tally is connected

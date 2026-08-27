@@ -646,9 +646,36 @@
 </ul>
 <p>버튼이 <strong>파란색</strong>이면 해당 항목을 보여 주는 상태입니다.</p>
 <h2 id="_3">탈리 카드<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h2>
-<p>각 탈리는 카드로 나타납니다. 카드에는 이름, 현재 패치된 믹서 채널(예: <code>(unpatched)</code> = 미패치),
-연결 상태(<code>DISCONNECTED</code> 등)가 표시되며, 카드 우측 상단의 <strong>⋮ 메뉴</strong>로 이름 변경·패치·설정·삭제
-등을 할 수 있습니다.</p>
+<p>각 탈리는 카드로 나타납니다. 카드에는 이름, 패치된 믹서 채널(예: <code>CAM 1</code>, 미패치면 <code>(unpatched)</code>),
+연결 상태(<code>CONNECTED</code> / <code>DISCONNECTED</code>)가 표시되며, 우측 상단 <strong>⋮ 메뉴</strong>로 이름 변경·패치·설정·삭제를 합니다.</p>
+<p><strong>카드 색이 곧 탈리 상태입니다.</strong> 위 스크린샷은 3대가 연결된 실제 방송 상황입니다.</p>
+<table>
+<thead>
+<tr>
+<th>카드 색</th>
+<th>상태</th>
+<th>의미</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>빨강</strong></td>
+<td>Program</td>
+<td>지금 <strong>송출 중(On-Air)</strong> — 예: <code>Camera 3</code></td>
+</tr>
+<tr>
+<td><strong>초록</strong></td>
+<td>Preview</td>
+<td>다음 <strong>예비</strong> — 예: <code>Camera 2</code></td>
+</tr>
+<tr>
+<td>회색</td>
+<td>Idle</td>
+<td>패치됐지만 송출/예비가 아님 — 예: <code>Camera 1</code></td>
+</tr>
+</tbody>
+</table>
+<p>이 색이 실제 하드웨어 탈리 라이트와 <a href="../web-tally/">웹 탈리</a> 화면에 그대로 반영됩니다.</p>
 <div class="admonition tip">
 <p class="admonition-title">패치(Patch)란?</p>
 <p>탈리를 믹서의 <strong>어느 입력 채널</strong>에 연결할지 지정하는 것입니다. 채널을 패치해야 해당
